@@ -1,0 +1,12 @@
+import { Console } from "std";
+
+function main() {
+  let x = 2;
+  let y = 3;
+
+  Console::write_line(x + y); // 5
+  Console::write_line(x - y); // -1 
+  Console::write_line(x * y); // 6
+  Console::write_line(x / y); // 0.6 (integer division always returns f64)
+  Console::write_line(x ^ y); // 8
+}
