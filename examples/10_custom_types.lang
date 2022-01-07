@@ -8,7 +8,7 @@ define PersonId = immutable structure {
 
 define Person = structure {
   state(init) {
-    const id: shared PersonId,
+    public const id: shared PersonId,
     let first_name: string,
     let last_name: string,
     let age: uint,
