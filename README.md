@@ -16,6 +16,10 @@ Of course, building some of these concepts means losing some performance. But fo
 
 ---
 
+## Keywords
+
+###### Note: This list is a work-in-progress
+
 - `let` - Declares a new variable that is allowed to be reassigned
 
 ```
