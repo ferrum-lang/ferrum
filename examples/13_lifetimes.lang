@@ -1,0 +1,72 @@
+import { Console } from "std";
+
+define Person = structure {
+  state(init) {
+    const name: string,
+    const age: uint,
+  }
+
+  deinit(mutable &self) {
+    Console::write_line("Dropping {self.name}");
+  }
+}
+
+function get_oldest_person(person1: &Person, person2: &Person): optional<&Person> {
+  if person1.age > person2.age {
+    return some(person1);
+  }
+
+  if person1.age < person2.age {
+    return some(person2);
+  }
+
+  return none;
+}
+
+function test_lifetimes(
+  person1: Person,
+  person2: &Person,
+  person3: &Person,
+  person4: Person,
+  person5: &Person,
+): &Person {
+  return get_oldest_person(&person2, &person3).get_or_panic();
+}
+
+function main() {
+  {
+    const person1 = Person { name: "Madison", age: 23, };
+    const person2 = Person { name: "Adam", age: 25, };
+
+    const oldest = get_oldest_person(&person1, &person2).get_or_panic();
+
+    Console::write_line("Oldest person is {oldest.name} at age {oldest.age}");
+  }
+
+  const person4 = Person { name: "four", age: 4 };
+  const person3 = Person { name: "three", age: 3 };
+
+  const res;
+
+  {
+    const person2 = Person { name: "two", age: 2 };
+    const person5 = Person { name: "five", age: 5 };
+
+    {
+      const person1 = Person { name: "one", age: 1 };
+
+      res = test_lifetimes(
+        person1,
+        &person2,
+        &person3,
+        person4,
+        &person5,
+      );
+    }
+
+    // Res lives as long as person2 and person5, as those are used in return
+    Console::write_line("Res: {res.name}");
+  } // res is dropped here along with person2 and person5
+
+  Console::write_line("After drops");
+}
