@@ -2,8 +2,8 @@ import { Console } from "std";
 
 define Person = structure {
   state(init) {
-    let name: string,
-    let age: uint,
+    public let name: string,
+    public let age: uint,
   }
 
   public function requires_borrow(&self) {}

@@ -5,8 +5,8 @@ use lang_prelude::*;
 use lang_std::{ Console };
 
 struct Person {
-  name: LangString,
-  age: usize,
+  pub name: LangString,
+  pub age: usize,
 }
 impl Person {
   pub fn new(name: LangString, age: usize) -> Self {

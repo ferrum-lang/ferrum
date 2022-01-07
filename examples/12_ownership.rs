@@ -5,10 +5,14 @@ use lang_prelude::*;
 use lang_std::{ Console };
 
 struct Person {
-  name: LangString,
-  age: usize,
+  pub name: LangString,
+  pub age: usize,
 }
 impl Person {
+  fn new(name: LangString, age: usize) -> Self {
+    Self { name, age }
+  }
+  
   fn requires_borrow(&self) {}
   fn requires_borrow_mut(&mut self) {}
   fn requires_own(self) -> Self { self }

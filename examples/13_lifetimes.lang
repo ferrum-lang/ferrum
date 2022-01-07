@@ -2,8 +2,8 @@ import { Console } from "std";
 
 define Person = structure {
   state(init) {
-    const name: string,
-    const age: uint,
+    public const name: string,
+    public const age: uint,
   }
 
   deinit(mutable &self) {
@@ -30,7 +30,7 @@ function test_lifetimes(
   person4: Person,
   person5: &Person,
 ): &Person {
-  return get_oldest_person(&person2, &person3).get_or_panic();
+  return get_oldest_person(&person2, &person5).get_or_panic();
 }
 
 function main() {
