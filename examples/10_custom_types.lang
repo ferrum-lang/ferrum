@@ -1,7 +1,5 @@
 import { Console, Map } from "std";
 
-// TODO: Replace all unnecessary clones with `share` for auto-RC
-
 define PersonId = immutable structure {
   state {
     public const value: string,
@@ -10,23 +8,21 @@ define PersonId = immutable structure {
 
 define Person = structure {
   state(init) {
-    const id: PersonId,
+    const id: shared PersonId,
     let first_name: string,
     let last_name: string,
     let age: uint,
   }
 };
 
-define People = alias list<Person>;
-
 define PersonRepositoryError = structure {};
 
 define PersonRepository = contract {
-  public function create_person(mutable &self, person: Person): result<_, PersonRepositoryError>;
-  public function find_all_people(&self): result<People, PersonRepositoryError>;
-  public function find_person_by_id(&self, id: PersonId): result<optional<Person>, PersonRepositoryError>;
-  public function update_person_by_id(mutable &self, id: PersonId, person: Person): result<_, PersonRepositoryError>;
-  public function delete_person_by_id(mutable &self, id: PersonId): result<_, PersonRepositoryError>;
+  public function create_person(mutable &self, person: shared Person): result<_, PersonRepositoryError>;
+  public function find_all_people(&self): result<list<shared Person>, PersonRepositoryError>;
+  public function find_person_by_id(&self, id: shared PersonId): result<optional<shared Person>, PersonRepositoryError>;
+  public function update_person_by_id(mutable &self, id: shared PersonId, person: shared Person): result<_, PersonRepositoryError>;
+  public function delete_person_by_id(mutable &self, id: shared PersonId): result<_, PersonRepositoryError>;
 }
 
 define LocalPersonRepository = structure {
@@ -35,26 +31,26 @@ define LocalPersonRepository = structure {
     // `const` prevents re-assignment after construction
     // `mutable` allows Map to be mutated as long as `Self` is mutable
     // `= Map::new()` is a default value if no initial value given
-    const map: mutable Map<PersonId, Person> = Map::new(),
+    const map: mutable Map<shared PersonId, shared Person> = Map::new(),
   }
 
   implements PersonRepository {
-    function create_person(mutable &self, person: Person): result<_, PersonRepositoryError> {
-      self.map.put(person.id.clone(), person);
+    function create_person(mutable &self, person: shared Person): result<_, PersonRepositoryError> {
+      self.map.put(share person.id, person);
       return ok;
     }
 
-    function find_all_people(&self): result<People, PersonRepositoryError> {
+    function find_all_people(&self): result<list<shared Person>, PersonRepositoryError> {
       return ok(
-        self.map.values().cloned()
+        self.map.values().shared()
       );
     }
 
-    function find_person_by_id(&self, id: PersonId): result<optional<Person>, PersonRepositoryError> {
-      return ok(self.map.get(&id).cloned());
+    function find_person_by_id(&self, id: shared PersonId): result<optional<shared Person>, PersonRepositoryError> {
+      return ok(self.map.get(&id).shared());
     }
 
-    function update_person_by_id(mutable &self, id: PersonId, person: Person): result<_, PersonRepositoryError> {
+    function update_person_by_id(mutable &self, id: shared PersonId, person: shared Person): result<_, PersonRepositoryError> {
       self.map
         .put_existing(id, person)
         .ok_or(PersonRepositoryError {})?;
@@ -62,7 +58,7 @@ define LocalPersonRepository = structure {
       return ok;
     }
 
-    function delete_person_by_id(mutable &self, id: PersonId): result<_, PersonRepositoryError> {
+    function delete_person_by_id(mutable &self, id: shared PersonId): result<_, PersonRepositoryError> {
       return self.map
         .remove(id)
         .ok_or(PersonRepositoryError {});
@@ -78,12 +74,12 @@ define FindOrAdd = enum {
 }
 
 define PersonService = contract {
-  public function add_person(mutable &self, person: Person): result<Person, PersonServiceError>;
-  public function find_or_add_person(mutable &self, person: Person): result<FindOrAdd<Person>, PersonServiceError>;
-  public function find_all_people(&self): result<People, PersonServiceError>;
-  public function find_person_by_id(&self, id: PersonId): result<optional<Person>, PersonServiceError>;
-  public function update_person_by_id(mutable &self, id: PersonId, person: Person): result<Person, PersonServiceError>;
-  public function delete_person_by_id(mutable &self, id: PersonId): result<_, PersonServiceError>;
+  public function add_person(mutable &self, person: shared Person): result<shared Person, PersonServiceError>;
+  public function find_or_add_person(mutable &self, person: shared Person): result<FindOrAdd<shared Person>, PersonServiceError>;
+  public function find_all_people(&self): result<list<shared Person>, PersonServiceError>;
+  public function find_person_by_id(&self, id: shared PersonId): result<optional<shared Person>, PersonServiceError>;
+  public function update_person_by_id(mutable &self, id: shared PersonId, person: shared Person): result<shared Person, PersonServiceError>;
+  public function delete_person_by_id(mutable &self, id: shared PersonId): result<_, PersonServiceError>;
 };
 
 define StoredPersonService = structure {
@@ -91,7 +87,7 @@ define StoredPersonService = structure {
     const person_repository: mutable ~PersonRepository,
   }
 
-  function _get_person_by_id(&self, id: PersonId): result<Person, PersonServiceError> {
+  function _get_person_by_id(&self, id: shared PersonId): result<shared Person, PersonServiceError> {
     return self.person_repository
       .find_person_by_id(id)
       .map_err((e) => PersonServiceError {})?
@@ -99,8 +95,8 @@ define StoredPersonService = structure {
   }
 
   implements PersonService {
-    public function add_person(mutable &self, person: Person): result<Person, PersonServiceError> {
-      let id = person.id.clone();
+    public function add_person(mutable &self, person: shared Person): result<shared Person, PersonServiceError> {
+      let id = share person.id;
 
       self.person_repository
         .create_person(person)
@@ -109,9 +105,9 @@ define StoredPersonService = structure {
       return self._get_person_by_id(id);
     }
 
-    public function find_or_add_person(mutable &self, person: Person): result<FindOrAdd<Person>, PersonServiceError> {
+    public function find_or_add_person(mutable &self, person: shared Person): result<FindOrAdd<shared Person>, PersonServiceError> {
       let existing = self
-        .get_person_by_id(person.id.clone())
+        .get_person_by_id(share person.id)
         .map_err((e) => PersonServiceError {})?;
 
       if some(person) matches existing {
@@ -123,27 +119,27 @@ define StoredPersonService = structure {
         .map_err((e) => PersonServiceError {});
     }
 
-    public function find_all_people(&self): result<People, PersonServiceError> {
+    public function find_all_people(&self): result<list<shared Person>, PersonServiceError> {
       return self.person_repository
         .find_all_people()
         .map_err((e) => PersonServiceError {});
     }
 
-    public function find_person_by_id(&self, id: PersonId): result<optional<Person>, PersonServiceError> {
+    public function find_person_by_id(&self, id: shared PersonId): result<optional<shared Person>, PersonServiceError> {
       return self.person_repository
         .find_person_by_id(id)
         .map_err((e) => PersonServiceError {});
     }
 
-    public function update_person_by_id(mutable &self, id: PersonId, person: Person): result<Person, PersonServiceError> {
+    public function update_person_by_id(mutable &self, id: shared PersonId, person: shared Person): result<shared Person, PersonServiceError> {
       self.person_repository
-        .update_person_by_id(id.clone(), person)
+        .update_person_by_id(share id, person)
         .map_err((e) => PersonServiceError {})?;
       
       return self._get_person_by_id(id);
     }
 
-    public function delete_person_by_id(mutable &self, id: PersonId): result<_, PersonServiceError> {
+    public function delete_person_by_id(mutable &self, id: shared PersonId): result<_, PersonServiceError> {
       return self.person_repository
         .delete_person_by_id(id)
         .map_err((e) => PersonServiceError {});
@@ -170,25 +166,25 @@ function main(): result<_, PersonServiceError> {
     age: 23,
   };
 
-  const added1 = person_service.add_person(person1.clone())?;
+  const added1 = person_service.add_person(share person1)?;
   Console::write_line("Added person id {added1.id.value}");
 
-  const found_or_added1 = person_service.find_or_add_person(person2.clone())?;
+  const found_or_added1 = person_service.find_or_add_person(share person2)?;
   match found_or_added1 {
     FindOrAdd::Found(found) => Console::write_line("Found person id {found.id.value}"),
     FindOrAdd::Added(added) => Console::write_line("Added person id {added.id.value}"),
   };
 
-  const found_or_added2 = person_service.find_or_add_person(person2.clone())?;
+  const found_or_added2 = person_service.find_or_add_person(share person2)?;
   match found_or_added2 {
     FindOrAdd::Found(found) => Console::write_line("Found person id {found.id.value}"),
     FindOrAdd::Added(added) => Console::write_line("Added person id {added.id.value}"),
   };
 
   person1.age = 25;
-  const updated1 = person_service.update_person_by_id(person1.id.clone(), person1.clone())?;
+  const updated1 = person_service.update_person_by_id(share person1.id, share person1)?;
   Console::write_line("Updated person id {updated1.id.value}");
 
-  person_service.delete_person_by_id(person2.id.clone())?;
+  person_service.delete_person_by_id(share person2.id)?;
   Console::write_line("Deleted person id {person2.id.value}");
 }

@@ -1,8 +1,8 @@
 import { Console } from "std";
 
 function main() {
-  const x = (1, 2, 3);
-  const x = (42, "Adam");
+  const x: (int; 3) = (1, 2, 3);
+  const x: (int, string) = (42, "Adam");
   
   Console::write_line("{x.0} - {x.1}"); // "42 - Adam"
 

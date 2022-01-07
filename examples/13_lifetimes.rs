@@ -5,11 +5,11 @@ use lang_prelude::*;
 use lang_std::{ Console };
 
 struct Person {
-  name: Shareable<LangString>,
-  age: Shareable<usize>,
+  name: LangString,
+  age: usize,
 }
 impl Person {
-  pub fn new(name: Shareable<LangString>, age: Shareable<usize>) -> Self {
+  pub fn new(name: LangString, age: usize) -> Self {
     Self { name, age }
   }
 }
@@ -43,25 +43,25 @@ fn test_lifetimes<'ac, 'b>(
 
 fn main() {
   {
-    let person1 = Person { name: Shareable::of_unique(LangString::from_slice("Madison")), age: Shareable::of_unique(23), };
-    let person2 = Person { name: Shareable::of_unique(LangString::from_slice("Adam")), age: Shareable::of_unique(25), };
+    let person1 = Person { name: LangString::from_slice("Madison"), age: 23, };
+    let person2 = Person { name: LangString::from_slice("Adam"), age: 25, };
 
     let oldest = get_oldest_person(&person1, &person2).unwrap();
 
     Console::write_line(LangString::from_owned(format!("Oldest person is {} at age {}", oldest.name, oldest.age)));
   }
 
-  let person4 = Person { name: Shareable::of_unique(LangString::from_slice("four")), age: Shareable::of_unique(4) };
-  let person3 = Person { name: Shareable::of_unique(LangString::from_slice("three")), age: Shareable::of_unique(3) };
+  let person4 = Person { name: LangString::from_slice("four"), age: 4 };
+  let person3 = Person { name: LangString::from_slice("three"), age: 3 };
 
   let res;
 
   {
-    let person2 = Person { name: Shareable::of_unique(LangString::from_slice("two")), age: Shareable::of_unique(2) };
-    let person5 = Person { name: Shareable::of_unique(LangString::from_slice("five")), age: Shareable::of_unique(5) };
+    let person2 = Person { name: LangString::from_slice("two"), age: 2 };
+    let person5 = Person { name: LangString::from_slice("five"), age: 5 };
 
     {
-      let person1 = Person { name: Shareable::of_unique(LangString::from_slice("one")), age: Shareable::of_unique(1) };
+      let person1 = Person { name: LangString::from_slice("one"), age: 1 };
 
       res = test_lifetimes(
         person1,
@@ -76,9 +76,4 @@ fn main() {
   }
 
   Console::write_line(LangString::from_slice("After drops"));
-
-  let name = Shareable::of_shared(LangString::from_slice("Adam"));
-
-  let person1 = Person { name: name.share(), age: Shareable::of_unique(24) };
-  let person2 = Person { name: name.share(), age: Shareable::of_unique(25) };
 }

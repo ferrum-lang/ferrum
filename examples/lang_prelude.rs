@@ -81,85 +81,6 @@ impl BigUint {
   }
 }
 
-// pub struct Shareable<T> {
-//   value: T,
-// }
-// impl<T> Shareable<T> {
-
-//   // Transpiler should decide which constructor based on whether `share` and `mutable` keywords are used
-//   pub fn of_unique(value: T) -> Self {
-//     Self { value, }
-//   }
-
-//   pub fn of_unique_mutable(value: T) -> Self {
-//     Self { value, }
-//   }
-// }
-
-// impl<T> std::ops::Deref for Shareable<T> {
-//   type Target = T;
-
-//   fn deref(&self) -> &Self::Target {
-//     return &self.value;
-//   }
-// }
-
-// impl<T> Shareable<std::rc::Rc<T>> {
-//   pub fn of_shared(value: T) -> Self {
-//     Self {
-//       value: std::rc::Rc::new(value),
-//     }
-//   }
-
-//   pub fn share(&self) -> Self {
-//     let cloned = std::rc::Rc::clone(&self.value);
-
-//     return Self {
-//       value: cloned,
-//     };
-//   }
-// }
-
-// impl<T> Shareable<std::rc::Rc<std::cell::RefCell<T>>> {
-//   pub fn of_shared_mutable(value: T) -> Self {
-//     Self {
-//       value: std::rc::Rc::new(std::cell::RefCell::new(value)),
-//     }
-//   }
-
-//   pub fn borrow(&self) -> std::cell::Ref<T> {
-//     return self.value.borrow();
-//   }
-
-//   pub fn borrow_mut(&mut self) -> std::cell::RefMut<T> {
-//     return self.value.borrow_mut();
-//   }
-// }
-
-// impl<T> std::fmt::Display for Shareable<T> where T: std::fmt::Display {
-//   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//     self.value.fmt(f)
-//   }
-// }
-
-// impl<T> std::cmp::PartialEq for Shareable<T> where T: std::cmp::PartialEq {
-//   fn eq(&self, other: &Shareable<T>) -> bool {
-//     self.value.eq(&other.value)
-//   }
-// }
-// impl<T> std::cmp::Eq for Shareable<T> where T: std::cmp::Eq {}
-
-// impl<T> std::cmp::PartialOrd for Shareable<T> where T: std::cmp::PartialOrd {
-//   fn partial_cmp(&self, other: &Shareable<T>) -> Option<std::cmp::Ordering> {
-//     self.value.partial_cmp(&other.value)
-//   }
-// }
-// impl<T> std::cmp::Ord for Shareable<T> where T: std::cmp::Ord {
-//   fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-//     self.value.cmp(&other.value)
-//   }
-// }
-
 type Mut<T> = std::cell::RefCell<T>;
 type MutRc<T> = std::rc::Rc<Mut<T>>;
 
@@ -227,5 +148,11 @@ impl<T> std::cmp::PartialOrd for Shareable<T> where T: std::cmp::PartialOrd {
 impl<T> std::cmp::Ord for Shareable<T> where T: std::cmp::Ord {
   fn cmp(&self, other: &Self) -> std::cmp::Ordering {
     self.value.borrow().cmp(&other.value.borrow())
+  }
+}
+
+impl<T> std::hash::Hash for Shareable<T> where T: std::hash::Hash {
+  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    self.value.borrow().hash(state)
   }
 }

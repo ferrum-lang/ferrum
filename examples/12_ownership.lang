@@ -2,14 +2,16 @@ import { Console } from "std";
 
 define Person = structure {
   state(init) {
-    let name: mutable string,
-    let age: mutable uint,
+    let name: string,
+    let age: uint,
   }
 
   public function requires_borrow(&self) {}
 
   public function requires_borrow_mut(mutable &self) {}
 
+  // Note: methods that don't borrow data must be unique
+  // It is impossible to have shared + owned requirements on a method
   public function requires_own(unique self) -> Self {
     return self;
   }
@@ -19,16 +21,16 @@ define Person = structure {
   }
 }
 
-define Child = structure {
+define House = structure {
   state(init) {
-    const parents: (unique Person; 2),
+    public let owner = shared mutable Person,
   }
 }
 
-// Note: functions that don't borrow data must be unique
-// It is impossible to have shared + owned raw data passed in
-function consume_person(person: unique Person) {
-  // NO-OP
+define Child = structure {
+  state(init) {
+    const parents: (Person; 2),
+  }
 }
 
 function main() {
@@ -73,6 +75,21 @@ function main() {
 
   // --- //
 
+  const house1 = mutable House { owner: share person1 };
+  const house2 = House { owner: share person1 };
+
+  // Won't compile because person3 is not mutable, and house3 is mutable
+  // const house3 = mutable House { owner: share person3 };
+
+  const house4 = House { owner: share person3 };
+
+  house1.owner.age = 50;
+
+  // Won't compile because house2 is not mutable
+  // house2.owner.age = 60;
+
+  // --- //
+
   const mom = unique Person { name: "Madeline", age: 52, };
   const dad = unique Person { name: "Brian", age: 56, };
 
@@ -101,7 +118,7 @@ function main() {
     match opt_unique_person {
       ok(unique person) => {
         Console::write_line("Got unique person1 while person2 still exists!!!");
-        consume_person(person);
+        person.requires_own();
         person1 = Person { name: "new", age: 0, };
       },
       error(person) => {
@@ -116,7 +133,7 @@ function main() {
   match opt_unique_person {
     ok(unique person) => {
       Console::write_line("Got unique person1 after person2 dropped.");
-      consume_person(person);
+      person.requires_own();
     },
     error(person) => {
       Console::write_line("person1 cannot be made unique even after person2 dropped?!");

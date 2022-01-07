@@ -5,8 +5,8 @@ use lang_prelude::*;
 use lang_std::{ Console, LangStringBuilder, };
 
 fn main() {
-  let x = (1, 2, 3);
-  let x = (42, LangString::from_slice("Adam"));
+  let x: (isize, isize, isize) = (1, 2, 3);
+  let x: (isize, LangString) = (42, LangString::from_slice("Adam"));
   
   Console::write_line(LangString::from_owned(format!("{} - {}", x.0, x.1)));
   
