@@ -65,10 +65,17 @@ impl PersonRepository for LocalPersonRepository {
   }
 
   fn update_person_by_id(&mut self, id: PersonId, person: Person) -> Result<lang_std::Void, PersonRepositoryError> {
-    return self.map
-      .insert(id, person)
-      .ok_or(PersonRepositoryError {})
-      .map(|_| ());
+    ({
+      if self.map.get(&id).is_none() {
+        return Err(PersonRepositoryError {});
+      }
+
+      self.map
+        .insert(id, person)
+    })
+      .ok_or(PersonRepositoryError {})?;
+
+    return Ok(());
   }
 
   fn delete_person_by_id(&mut self, id: PersonId) -> Result<lang_std::Void, PersonRepositoryError> {
@@ -108,7 +115,7 @@ impl StoredPersonService {
   fn _get_person_by_id(&self, id: PersonId) -> Result<Person, PersonServiceError> {
     return self.person_repository
       .find_person_by_id(id)
-      .map_err(|e| PersonServiceError {})?
+      .map_err(|_e| PersonServiceError {})?
       .ok_or_else(|| PersonServiceError {});
   }
 }
@@ -119,13 +126,15 @@ impl PersonService for StoredPersonService {
 
     self.person_repository
       .create_person(person)
-      .map_err(|e| PersonServiceError {})?;
+      .map_err(|_e| PersonServiceError {})?;
     
     return self._get_person_by_id(id);
   }
 
   fn find_or_add_person(&mut self, person: Person) -> Result<FindOrAdd<Person>, PersonServiceError> {
-    let existing = self.find_person_by_id(person.id.clone()).map_err(|e| PersonServiceError {})?;
+    let existing = self
+      .find_person_by_id(person.id.clone())
+      .map_err(|_e| PersonServiceError {})?;
 
     if let Some(person) = existing {
       return Ok(FindOrAdd::Found(person));
@@ -133,25 +142,25 @@ impl PersonService for StoredPersonService {
 
     return self.add_person(person)
       .map(|person| FindOrAdd::Added(person))
-      .map_err(|e| PersonServiceError {});
+      .map_err(|_e| PersonServiceError {});
   }
 
   fn find_all_people(&self) -> Result<People, PersonServiceError> {
     return self.person_repository
       .find_all_people()
-      .map_err(|e| PersonServiceError {});
+      .map_err(|_e| PersonServiceError {});
   }
 
   fn find_person_by_id(&self, id: PersonId) -> Result<Option<Person>, PersonServiceError> {
     return self.person_repository
       .find_person_by_id(id)
-      .map_err(|e| PersonServiceError {});
+      .map_err(|_e| PersonServiceError {});
   }
 
   fn update_person_by_id(&mut self, id: PersonId, person: Person) -> Result<Person, PersonServiceError> {
     self.person_repository
       .update_person_by_id(id.clone(), person)
-      .map_err(|e| PersonServiceError {})?;
+      .map_err(|_e| PersonServiceError {})?;
     
     return self._get_person_by_id(id);
   }
@@ -159,7 +168,7 @@ impl PersonService for StoredPersonService {
   fn delete_person_by_id(&mut self, id: PersonId) -> Result<lang_std::Void, PersonServiceError> {
     return self.person_repository
       .delete_person_by_id(id)
-      .map_err(|e| PersonServiceError {});
+      .map_err(|_e| PersonServiceError {});
   }
 }
 

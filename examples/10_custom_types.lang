@@ -1,5 +1,7 @@
 import { Console, Map } from "std";
 
+// TODO: Replace all unnecessary clones with `share` for auto-RC
+
 define PersonId = immutable structure {
   state {
     public const value: string,
@@ -44,24 +46,26 @@ define LocalPersonRepository = structure {
 
     function find_all_people(&self): result<People, PersonRepositoryError> {
       return ok(
-        self.map.values() // TODO: Should this be borrow or clone?
+        self.map.values().cloned()
       );
     }
 
     function find_person_by_id(&self, id: PersonId): result<optional<Person>, PersonRepositoryError> {
-      return ok(self.map.get(id)); // TODO: Clone result or return borrowed?
+      return ok(self.map.get(&id).cloned());
     }
 
     function update_person_by_id(mutable &self, id: PersonId, person: Person): result<_, PersonRepositoryError> {
-      return self.map
+      self.map
         .put_existing(id, person)
-        .ok_or(error(PersonRepositoryError {}));
+        .ok_or(PersonRepositoryError {})?;
+
+      return ok;
     }
 
     function delete_person_by_id(mutable &self, id: PersonId): result<_, PersonRepositoryError> {
       return self.map
         .remove(id)
-        .ok_or(error(PersonRepositoryError {}));
+        .ok_or(PersonRepositoryError {});
     }
   }
 }
@@ -89,9 +93,9 @@ define StoredPersonService = structure {
 
   function _get_person_by_id(&self, id: PersonId): result<Person, PersonServiceError> {
     return self.person_repository
-      .find_person_by_id(person.id)
-      .flatmap_ok((opt_person) => opt_person.ok_or_else((e) => PersonServiceError {}))
-      .ok_or_else((e) => PersonServiceError {});
+      .find_person_by_id(id)
+      .map_err((e) => PersonServiceError {})?
+      .ok_or_else(() => PersonServiceError {});
   }
 
   implements PersonService {
@@ -106,7 +110,9 @@ define StoredPersonService = structure {
     }
 
     public function find_or_add_person(mutable &self, person: Person): result<FindOrAdd<Person>, PersonServiceError> {
-      let existing = self.get_person_by_id(person.id.clone()).map_err((e) => PersonServiceError {})?;
+      let existing = self
+        .get_person_by_id(person.id.clone())
+        .map_err((e) => PersonServiceError {})?;
 
       if some(person) matches existing {
         return ok(FindOrAdd::Found(person));
