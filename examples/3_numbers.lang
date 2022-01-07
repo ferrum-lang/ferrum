@@ -1,8 +1,8 @@
 import { Console } from "std";
 
 function main() {
-  let x = 2;
-  let y = 3;
+  const x = 2;
+  const y = 3;
 
   Console::write_line(x + y); // 5
   Console::write_line(x - y); // -1 

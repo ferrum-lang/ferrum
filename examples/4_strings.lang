@@ -1,0 +1,39 @@
+import { Console, StringBuilder } from "std";
+
+function main() {
+  const x = "abc";
+  Console::write_line(x);
+
+  const y = 123;
+
+  const x = "abc {y}";
+  Console::write_line(x); // "abc 123"
+
+  const x = "abc \{y}";
+  Console::write_line(x); // "abc {y}"
+
+  const x = "abc \\{y}";
+  Console::write_line(x); // "abc \123"
+
+  const x = mutable StringBuilder::new();
+  x.append(" ");
+  x.prepend("abc");
+  x.append(y);
+  const x = x.build(); // "abc 123"
+
+  // Notice how we can mutate `StringBuilder` without using `mutable`,
+  // This is because the return value of `StringBuilder::from` is implicitly `mutable`,
+  // And immutability is only set when assigned to a variable without the `mutable` keyword
+  const x = StringBuilder::from(" ")
+    .with_prepend("abc")
+    .with_append(y)
+    .build(); // "abc 123"
+
+  const z: list<char> = x.get_chars();
+  const z: std::Iterator<char> = x.iter_chars();
+
+  const z: list<byte> = x.get_bytes();
+  const z: std::Iterator<byte> = x.iter_bytes();
+
+  const z: uint = x.length;
+}

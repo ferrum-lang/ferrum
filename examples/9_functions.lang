@@ -1,0 +1,59 @@
+import { Console } from "std";
+
+function main() {
+  no_args_no_return();
+  
+  const x = no_args_with_return();
+  Console::write_line("Got {x}");
+
+  one_arg_no_return("Adam");
+
+  const x = one_arg_with_return("Adam");
+  Console::write_line("Got: {x}");
+
+  two_args_no_return("Adam", 25);
+
+  const x = two_args_with_return("Adam", 25);
+  Console::write_line("Got: {x}");
+
+  var_args("Adam", " ", "Bates", "!");
+
+  const x = ["Hello", " ", "World"];
+  var_args(..x);
+}
+
+function no_args_no_return() {
+  Console::write_line("no_args_no_return");
+}
+
+function no_args_with_return(): string {
+  Console::write_line("no_args_with_return");
+
+  // Unlike Rust, `return` keyword is mandatory
+  // Also note: returned string is owned here because there's no incoming data to borrow from
+  return "Bates";
+}
+
+function one_arg_no_return(arg1: &string) {
+  Console::write_line("one_arg_no_return: {arg1}");
+}
+
+function one_arg_with_return(arg1: &string): string {
+  Console::write_line("one_arg_with_owned_return: {arg1}");
+
+  return "Bates";
+}
+
+function two_args_no_return(arg1: &string, arg2: int) {
+  Console::write_line("two_args_no_return: {arg1}, {arg2}");
+}
+
+function two_args_with_return(arg1: &string, arg2: int): string {
+  Console::write_line("two_args_with_return: {arg1}, {arg2}");
+
+  return "Bates";
+}
+
+function var_args(..args: list<string>) {
+  Console::write_line("var_args: {args}");
+}

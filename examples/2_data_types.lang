@@ -1,83 +1,83 @@
 function main() {
   // Booleans
-  let x: boolean = true;
-  let x: boolean = false;
+  const x: boolean = true;
+  const x: boolean = false;
 
   // Numbers
-  let x: uint1 = 0;
-  let x: uint8 = 0;
-  let x: uint16 = 0;
-  let x: uint32 = 0;
-  let x: uint64 = 0;
-  let x: uint128 = 0;
-  let x: biguint = 0;
+  const x: uint1 = 0;
+  const x: uint8 = 0;
+  const x: uint16 = 0;
+  const x: uint32 = 0;
+  const x: uint64 = 0;
+  const x: uint128 = 0;
+  const x: biguint = 0;
 
-  let x: uint = 0; // `usize` in Rust
+  const x: uint = 0; // `usize` in Rust
 
-  let x: bit = 0; // `bit` is alias for uint1
-  let x: byte = 0; // `byte` is alias for uint8
+  const x: bit = 0; // `bit` is alias for uint1
+  const x: byte = 0; // `byte` is alias for uint8
 
-  let x: int8 = 0;
-  let x: int16 = 0;
-  let x: int32 = 0;
-  let x: int64 = 0;
-  let x: int128 = 0;
-  let x: bigint = 0;
+  const x: int8 = 0;
+  const x: int16 = 0;
+  const x: int32 = 0;
+  const x: int64 = 0;
+  const x: int128 = 0;
+  const x: bigint = 0;
 
-  let x: int = 0; // `isize` in Rust
+  const x: int = 0; // `isize` in Rust
 
-  let x = 0; // numbers type-inference to int
+  const x = 0; // numbers type-inference to int
 
-  let x: float32 = 0;
-  let x: float64 = 0;
+  const x: float32 = 0;
+  const x: float64 = 0;
 
   // Characters
-  let x: char = 'a';
+  const x: char = 'a';
 
   // Strings
-  let x: string = "Adam";
-  let x: string = `Adam {x}`;
+  const x: string = "Adam";
+  const x: string = `Adam {x}`;
 
   // Tuples
-  let x: (uint; 3) = (1, 2, 3);
-  let x: (int, string, char) = (42, "Adam", 'F');
+  const x: (uint; 3) = (1, 2, 3);
+  const x: (int, string, char) = (42, "Adam", 'F');
 
-  let y: int = x.0;
-  let y: string = x.1;
-  let y: char = x.2;
+  const y: int = x.0;
+  const y: string = x.1;
+  const y: char = x.2;
 
   // Lists
-  let x: list<int> = [1, 2, 3];
-  let x: list<int> = [i + 1 for i in 0..3];
+  const x: list<int> = [1, 2, 3];
+  const x: list<int> = [i + 1 for i in 0..3];
 
   // Optionals
-  let x: optional<int> = none;
-  let x: optional<int> = some(123);
+  const x: optional<int> = none;
+  const x: optional<int> = some(123);
 
-  let x: boolean = none.is_some();
-  let x: boolean = none.is_none();
+  const x: boolean = none.is_some();
+  const x: boolean = none.is_none();
 
-  let x: int = some(123).get_or_panic();
-  let x: int = none.get_or_default(0);
-  let x: int = none.get_or_else(() => 0);
+  const x: int = some(123).get_or_panic();
+  const x: int = none.get_or_default(0);
+  const x: int = none.get_or_else(() => 0);
 
-  let x: result<int> = none.ok_or(error("uh oh!"));
-  let x: result<int, string> = none.ok_or("uh oh!");
-  let x: result<int, string> = none.ok_or_else(() => "uh oh!");
-  let x = none.ok_or_else(() => "uh oh!");
+  const x: result<int> = none.ok_or(error("uh oh!"));
+  const x: result<int, string> = none.ok_or("uh oh!");
+  const x: result<int, string> = none.ok_or_else(() => "uh oh!");
+  const x = none.ok_or_else(() => "uh oh!");
 
   // Results
-  let x: result<type = void, error = std::Error> = ok();
-  let x: result<_, std::Error> = ok(); // `_` here just means use the default for that position, in this case `std::void`
-  let x: result = ok;
-  let x: result = error;
+  const x: result<type = void, error = std::Error> = ok();
+  const x: result<_, std::Error> = ok(); // `_` here just means use the default for that position, in this case `std::void`
+  const x: result = ok;
+  const x: result = error;
 
-  let x: result<error = string, type = int> = error("uh oh!");
-  let x: result<int, string> = ok(123);
+  const x: result<error = string, type = int> = error("uh oh!");
+  const x: result<int, string> = ok(123);
 
-  let x: boolean = ok(123).is_ok();
-  let x: boolean = ok(123).is_error();
+  const x: boolean = ok(123).is_ok();
+  const x: boolean = ok(123).is_error();
 
-  let x: optional<int> = ok(123).get_ok();
-  let x: optional<std::Error> = ok(123).get_error();
+  const x: optional<int> = ok(123).get_ok();
+  const x: optional<std::Error> = ok(123).get_error();
 }

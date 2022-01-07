@@ -1,0 +1,42 @@
+import { Console } from "std";
+
+function main() {
+  let i = 0;
+  loop {
+    if i >= 10 {
+      break;
+    }
+
+    Console::write_line("loop: {i}");
+
+    // ++ not supported in this language
+    // i++
+
+    i += 1;
+  }
+
+  let i = 0;
+  while i < 10 {
+    Console::write_line("while: {i}");
+    i += 1;
+  }
+
+  for i in 0..10 {
+    Console::write_line("for excl: {i}");
+  }
+
+  for i in 0..=10 {
+    Console::write_line("for incl: {i}");
+  }
+
+  const x = [1, 2, 3];
+
+  // Need to borrow x here otherwise it will drop after the loop
+  for i in &x {
+    Console::write_line("for in arr: {i}");
+  }
+
+  for (n, i) in &x.with_indicies() {
+    Console::write_line("for with idx: ({n}, {i})");
+  }
+}

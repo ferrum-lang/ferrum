@@ -1,4 +1,7 @@
+mod lang_prelude;
 mod lang_std;
+
+use lang_prelude::*;
 
 fn main() {
   let x: bool = true;
@@ -11,7 +14,7 @@ fn main() {
   let x: u64 = 0;
   let x: u128 = 0;
   let x: usize = 0;
-  let x: lang_std::BigUint = lang_std::BigUint::new(0);
+  let x: BigUint = BigUint::new(0);
 
   let x: u8 = false as u8;
   let x: u8 = 0;
@@ -22,7 +25,7 @@ fn main() {
   let x: i64 = 0;
   let x: i128 = 0;
   let x: isize = 0;
-  let x: lang_std::BigInt = lang_std::BigInt::new(0);
+  let x: BigInt = BigInt::new(0);
 
   let x: isize = 0;
 
@@ -31,14 +34,14 @@ fn main() {
 
   let x: char = 'a';
 
-  let x: &str = "Adam";
-  let x: &str = &*format!("Adam {}", x);
+  let x: LangString = LangString::from_slice("Adam");
+  let x: LangString = LangString::from_owned(format!("Adam {}", x));
 
   let x: (usize, usize, usize) = (1, 2, 3);
-  let x: (isize, &str, char) = (42, "Adam", 'F');
+  let x: (isize, LangString, char) = (42, LangString::from_slice("Adam"), 'F');
 
   let y: isize = x.0;
-  let y: &str = x.1;
+  let y: LangString = x.1;
   let y: char = x.2;
 
   let x: Vec<isize> = vec![1, 2, 3];
@@ -58,14 +61,14 @@ fn main() {
   let x: isize = None.unwrap_or(0);
   let x: isize = None.unwrap_or_else(|| 0);
 
-  let x: Result<isize, lang_std::Error> = None.ok_or(lang_std::Error::new("uh oh!"));
-  let x: Result<isize, &str> = None.ok_or("uh oh!");
-  let x: Result<isize, &str> = {
+  let x: Result<isize, lang_std::Error> = None.ok_or(lang_std::Error::new(LangString::from_slice("uh oh!")));
+  let x: Result<isize, LangString> = None.ok_or(LangString::from_slice("uh oh!"));
+  let x: Result<isize, LangString> = {
     let x: Option<isize> = None;
     if let Some(x) = x {
       Ok(x)
     } else {
-      let f = || "uh oh";
+      let f = || LangString::from_slice("uh oh");
       Err(f())
     }
   };
@@ -75,8 +78,8 @@ fn main() {
   let x: Result<(), lang_std::Error> = Ok(());
   let x: Result<(), lang_std::Error> = Err(lang_std::Error::empty());
 
-  let x: Result<isize, &str> = Err("uh oh!");
-  let x: Result<isize, &str> = Ok(123);
+  let x: Result<isize, LangString> = Err(LangString::from_slice("uh oh!"));
+  let x: Result<isize, LangString> = Ok(123);
 
   let x: bool = {
     let x: Result<isize, lang_std::Error> = Ok(123);

@@ -1,0 +1,165 @@
+
+define Person = structure {
+  state {
+    public mutable name: string,
+  }
+}
+
+function test_person() {
+  const person = Person { name: "Adam", };
+
+  // Won't compile because immutable
+  // person.name = "Adam Bates";
+
+  // Won't compile because `const`
+  // person = Person { name: "Adam Bates", };
+
+  // --- //
+
+  let person = Person { name: "Adam" };
+
+  // Won't compile because immutable
+  // person.name = "Adam Bates";
+
+  // Compiles ok because `let`
+  person = Person { name: "Adam Bates" };
+
+  // Won't compile because `person` is not `mutable`
+  // person = mutable Person { name: "Adam Bates" };
+
+  // --- //
+
+  const person = mutable Person { name: "Adam" };
+
+  // Compiles ok because `mutable`
+  person.name = "Adam Bates";
+
+  // Won't compile because `const`
+  // person = Person { name: "Adam Bates", };
+
+  // --- //
+
+  let person = mutable Person { name: "Adam" };
+
+  // Compiles ok because `mutable`
+  person.name = "Adam Bates";
+
+  // Compiles ok because `let`
+  person = mutable Person { name: "Adam Bates" };
+
+  // Won't compile because `person` is `mutable`
+  // person = Person { name: "Adam Bates" };
+}
+
+define PartiallyMutableExample = structure {
+  state {
+    public mutable first: string,
+    public second: string,
+  }
+}
+
+function test_partial_mutable_example() {
+  const example = mutable PartiallyMutableExample {
+    first: "Adam",
+    second: "Bates",
+  };
+
+  example.first = "ADAM";
+  
+  // Won't compile.
+  // Even though `example` is mutable, the underlying data is not marked `mutable`
+  // example.second = "BATES";  
+}
+
+define ForcedPartiallyMutableExample = mutable structure {
+  state {
+    public mutable first: string,
+    public second: string,
+  }
+}
+
+function test_forced_partially_mutable_example() {
+  const example = mutable ForcedPartiallyMutableExample {
+    first: "Adam",
+    second: "Bates",
+  };
+
+  example.first = "ADAM";
+  
+  // Won't compile.
+  // Even though `example` is mutable, and the structure is mutable, the underlying data is not marked `mutable`
+  // example.second = "BATES";
+
+  // Won't compile.
+  // `mutable structure` forces mutability on any use of the structure
+  // const example = ForcedPartiallyMutableExample { first: "Adam", second: "Bates" };
+}
+
+define MutableExample = mutable structure {
+  state {
+    public mutable first: string,
+    public mutable second: string,
+  }
+}
+
+function test_mutable_example() {
+  const example = mutable MutableExample {
+    first: "Adam",
+    second: "Bates",
+  };
+
+  example.first = "ADAM";
+  example.second = "BATES";
+
+  const example = MutableExample { first: "Adam", second: "Bates" };
+}
+
+define ForcedMutableExample = mutable structure {
+  state {
+    public mutable first: string,
+    public mutable second: string,
+  }
+}
+
+function test_forced_mutable_example() {
+  const example = mutable ForcedMutableExample {
+    first: "Adam",
+    second: "Bates",
+  };
+
+  example.first = "ADAM";
+  example.second = "BATES";
+
+  // Won't compile.
+  // `mutable structure` forces mutability on any use of the structure
+  // const example = ForcedMutableExample { first: "Adam", second: "Bates" };
+}
+
+define ImmutableExample = immutable structure {
+  state {
+    public first: string, // `mutable` is not allowed here because of `immutable structure`
+    public second: string,
+  }
+}
+
+function test_immutable_example() {
+  const example = ImmutableExample {
+    first: "Adam",
+    second: "Bates",
+  }
+
+  // Won't compile because not `mutable`
+  // example.first = "ADAM";
+
+  // Won't compile because `immutable structure`
+  // const example = mutable ImmutableExample { ... };
+}
+
+function main() {
+  test_person();
+  test_partial_mutable_example();
+  test_forced_partially_mutable_example();
+  test_mutable_example();
+  test_forced_mutable_example();
+  test_immutable_example();
+}

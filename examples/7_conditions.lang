@@ -1,0 +1,37 @@
+import { Console } from "std";
+
+function main() {
+  if true {
+    Console::write_line("true");
+  } else if false {
+    Console::write_line("false");
+  } else {
+    Console::write_line("else");
+  }
+
+  const x = 1;
+  const y = 2;
+  const z = "Adam";
+
+  if (x == 0 || y == 0) && z.length > 0 {
+    Console::write_line(1);
+  }
+
+  const x = some(123);
+
+  if some(y) matches x {
+    Console::write_line(y);
+  }
+
+  match x {
+    none => Console::write_line(2),
+    _ => Console::write_line(3),
+  }
+
+  match "Adam" {
+    "Bates" => Console::write_line(4),
+    "" => Console::write_line(5),
+    x if x.length > 3 => Console::write_line("{x}: 6"),
+    _ => Console::write_line(7),
+  }
+}

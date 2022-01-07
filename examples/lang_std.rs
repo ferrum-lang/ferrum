@@ -1,63 +1,85 @@
+use lang_prelude::*;
+
+#[allow(dead_code)]
+pub type Void = ();
+
+#[allow(dead_code)]
 pub struct Console {}
 impl Console {
-  pub fn write_line<T: std::fmt::Display>(text: T) {
-    println!("{}", text);
+  #[allow(dead_code)]
+  pub fn write_line(text: LangString) {
+    println!("{}", text.as_slice());
   }
 }
 
-pub struct StringBuilder {
+#[allow(dead_code)]
+pub struct LangStringBuilder {
   state: String,
 }
-impl StringBuilder {
+impl LangStringBuilder {
+  #[allow(dead_code)]
   pub fn new() -> Self {
     Self { state: String::new() }
   }
 
-  pub fn from(string: &str) -> Self {
-    Self { state: string.to_string() }
+  #[allow(dead_code)]
+  pub fn from(string: LangString) -> Self {
+    Self { state: string.as_owned() }
   }
 
-  pub fn append(mut self, string: &str) -> Self {
-    self.state.push_str(string);
+  #[allow(dead_code)]
+  pub fn with_prepend(mut self, string: LangString) -> Self {
+    self.state.insert_str(0, string.as_slice());
     return self;
   }
 
-  pub fn build(self) -> String {
-    self.state
+  #[allow(dead_code)]
+  pub fn with_append(mut self, string: LangString) -> Self {
+    self.state.push_str(string.as_slice());
+    return self;
+  }
+
+  #[allow(dead_code)]
+  pub fn prepend(&mut self, string: LangString) {
+    self.state.insert_str(0, string.as_slice());
+  }
+
+  #[allow(dead_code)]
+  pub fn append(&mut self, string: LangString) {
+    self.state.push_str(string.as_slice());
+  }
+
+  #[allow(dead_code)]
+  pub fn build(self) -> LangString {
+    LangString::from_owned(self.state)
   }
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
-pub struct Error<'a> {
-  message: Option<&'a str>
+pub struct Error {
+  message: Option<LangString>
 }
-impl<'a> Error<'a> {
-  pub fn new(message: &'a str) -> Self {
+impl Error {
+  #[allow(dead_code)]
+  pub fn new(message: LangString) -> Self {
     Self { message: Some(message) }
   }
+
+  #[allow(dead_code)]
   pub fn empty() -> Self {
     Self { message: None }
   }
 }
-impl<'a> std::fmt::Display for Error<'a> {
+impl std::fmt::Display for Error {
   fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
     todo!()
   }
 }
-impl<'a> std::error::Error for Error<'a> {}
+impl std::error::Error for Error {}
 
-// Placeholder for real BigInt lib
-pub struct BigInt {}
-impl BigInt {
-  pub fn new(_: i64) -> Self {
-    Self {}
-  }
-}
+#[allow(dead_code)]
+pub type Map<K, V> = std::collections::HashMap<K, V>;
 
-// Placeholder for real BigUint lib
-pub struct BigUint {}
-impl BigUint {
-  pub fn new(_: u64) -> Self {
-    Self {}
-  }
-}
+#[allow(dead_code)]
+pub type Set<K> = std::collections::HashSet<K>;

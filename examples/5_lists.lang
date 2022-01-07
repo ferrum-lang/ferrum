@@ -1,0 +1,28 @@
+import { Console } from "std";
+
+function main() {
+  const x = [1, 2, 3];
+  const x = [i + 1 for i in 0..3];
+
+  const x = [1, 1, ..x, 4];
+
+  // Won't compile because different types
+  // const x = ["abc", 123];
+
+  // lists are always dynamic in size / capacity
+  const x = [
+    [0],
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9],
+    [10],
+  ];
+
+  const x = [1, 2];
+
+  Console::write_line("{x[0]}, {x[1]}"); // "1, 2"
+
+  Console::write_line([1, 2, 3]); // "1, 2, 3"
+
+  Console::write_line([1, 2, 3].join("_")); // "1_2_3"
+}
