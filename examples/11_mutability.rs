@@ -34,15 +34,29 @@ fn test_person() {
 struct PartiallyMutableExample {
   pub first: LangString,
   pub second: LangString,
+  pub third: Person,
 }
 
 fn test_partial_mutable_example() {
+  let mut person = Person { name: LangString::from_slice("Person"), };
+
   let mut example = PartiallyMutableExample {
     first: LangString::from_slice("Adam"),
     second: LangString::from_slice("Bates"),
+    third: person,
   };
 
   example.first = LangString::from_slice("ADAM");
+
+  example.third.name = LangString::from_slice("Other");
+
+  let person = Person { name: LangString::from_slice("Person"), };
+
+  let example = PartiallyMutableExample {
+    first: LangString::from_slice("Adam"),
+    second: LangString::from_slice("Bates"),
+    third: person,
+  };
 }
 
 struct ForcedPartiallyMutableExample {

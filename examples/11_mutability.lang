@@ -1,7 +1,9 @@
 
 define Person = structure {
   state {
-    public mutable name: string,
+    // Note: `string` can be stored under `let`,
+    // but `string` cannot be marked `mutable` as it is an immutable structure
+    public let name: string,
   }
 }
 
@@ -18,7 +20,7 @@ function test_person() {
 
   let person = Person { name: "Adam" };
 
-  // Won't compile because immutable
+  // Won't compile because immutable Person
   // person.name = "Adam Bates";
 
   // Compiles ok because `let`
@@ -31,17 +33,17 @@ function test_person() {
 
   const person = mutable Person { name: "Adam" };
 
-  // Compiles ok because `mutable`
+  // Compiles ok because `mutable` and `person.name` is stored under `let`
   person.name = "Adam Bates";
 
-  // Won't compile because `const`
+  // Won't compile because `const person`
   // person = Person { name: "Adam Bates", };
 
   // --- //
 
   let person = mutable Person { name: "Adam" };
 
-  // Compiles ok because `mutable`
+  // Compiles ok because `mutable` and `person.name` is stored under `let`
   person.name = "Adam Bates";
 
   // Compiles ok because `let`
@@ -53,28 +55,50 @@ function test_person() {
 
 define PartiallyMutableExample = structure {
   state {
-    public mutable first: string,
-    public second: string,
+    public let first: string,
+    public const second: string,
+
+    // Note: `const` but still `mutable`
+    // This means `third` cannot be reassigned, but can still be mutated
+    public const third: mutable Person,
   }
 }
 
 function test_partial_mutable_example() {
+  const person = mutable Person { name: "Person" };
+
   const example = mutable PartiallyMutableExample {
     first: "Adam",
     second: "Bates",
+    third: person, // Note: `person` MUST be `mutable` because `PartiallyMutableExample` is mutable here
   };
 
   example.first = "ADAM";
   
   // Won't compile.
-  // Even though `example` is mutable, the underlying data is not marked `mutable`
-  // example.second = "BATES";  
+  // Even though `example` is mutable, the underlying data is stored as `const`
+  // example.second = "BATES";
+
+  // Won't compile.
+  // Even though `example` is mutable, the underlying data is stored as `const`
+  // example.third = Person { name: "Other" };
+
+  // Compiles ok because example.person is mutable.
+  example.third.name = "Other";
+
+  const person = Person { name: "Person" };
+
+  const example = PartiallyMutableExample {
+    first: "Adam",
+    second: "Bates",
+    third: person,
+  }
 }
 
 define ForcedPartiallyMutableExample = mutable structure {
   state {
-    public mutable first: string,
-    public second: string,
+    public let first: string,
+    public const second: string,
   }
 }
 
@@ -87,7 +111,7 @@ function test_forced_partially_mutable_example() {
   example.first = "ADAM";
   
   // Won't compile.
-  // Even though `example` is mutable, and the structure is mutable, the underlying data is not marked `mutable`
+  // Even though `example` is mutable, the underlying data is stored as `const`
   // example.second = "BATES";
 
   // Won't compile.
@@ -97,8 +121,8 @@ function test_forced_partially_mutable_example() {
 
 define MutableExample = mutable structure {
   state {
-    public mutable first: string,
-    public mutable second: string,
+    public let first: string,
+    public let second: string,
   }
 }
 
@@ -116,8 +140,8 @@ function test_mutable_example() {
 
 define ForcedMutableExample = mutable structure {
   state {
-    public mutable first: string,
-    public mutable second: string,
+    public let first: string,
+    public let second: string,
   }
 }
 
@@ -137,8 +161,8 @@ function test_forced_mutable_example() {
 
 define ImmutableExample = immutable structure {
   state {
-    public first: string, // `mutable` is not allowed here because of `immutable structure`
-    public second: string,
+    public const first: string, // `let` and `mutable` are not allowed here because of `immutable structure`
+    public const second: string,
   }
 }
 
