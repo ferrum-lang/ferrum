@@ -68,9 +68,9 @@ define LocalPersonRepository = structure {
 
 define PersonServiceError = structure {};
 
-define FindOrAdd = enum {
-  Found(Person),
-  Added(Person),
+define FindOrAdd<T> = enum {
+  Found(T),
+  Added(T),
 }
 
 define PersonService = contract {
