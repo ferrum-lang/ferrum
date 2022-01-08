@@ -13,13 +13,13 @@ pub struct LangString {
 
 impl LangString {
   #[allow(dead_code)]
-  pub fn from_slice(slice: &'static str) -> Self {
-    Self { value: LangStringValue::Slice(slice) }
+  pub const fn from_slice(slice: &'static str) -> Self {
+    Self { value: LangStringValue::Slice(slice), }
   }
 
   #[allow(dead_code)]
-  pub fn from_owned(string: String) -> Self {
-    Self { value: LangStringValue::Owned(string) }
+  pub const fn from_owned(string: String) -> Self {
+    Self { value: LangStringValue::Owned(string), }
   }
 
   #[allow(dead_code)]
@@ -81,34 +81,43 @@ impl BigUint {
   }
 }
 
+#[allow(dead_code)]
 type Mut<T> = std::cell::RefCell<T>;
+
+#[allow(dead_code)]
 type MutRc<T> = std::rc::Rc<Mut<T>>;
 
+#[allow(dead_code)]
 pub struct Shareable<T> {
   value: MutRc<T>,
 }
 
 impl<T> Shareable<T> {
+  #[allow(dead_code)]
   pub fn new(value: T) -> Self {
     return Self {
       value: MutRc::new(Mut::new(value)),
     };
   }
 
+  #[allow(dead_code)]
   pub fn share(&self) -> Self {
     return Self {
       value: MutRc::clone(&self.value),
     };
   }
 
+  #[allow(dead_code)]
   pub fn borrow(&self) -> std::cell::Ref<T> {
     return self.value.borrow();
   }
 
+  #[allow(dead_code)]
   pub fn borrow_mut(&mut self) -> std::cell::RefMut<T> {
     return self.value.borrow_mut();
   }
 
+  #[allow(dead_code)]
   pub fn try_unique(self) -> Result<T, Self> {
     let res = std::rc::Rc::try_unwrap(self.value);
 
