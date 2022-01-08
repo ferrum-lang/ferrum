@@ -4,6 +4,24 @@ mod lang_std;
 use lang_prelude::*;
 use lang_std::{ Console, Map };
 
+#[allow(non_upper_case_globals)]
+const STR_SLICE_0: LangString = LangString::from_slice("123");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_1: LangString = LangString::from_slice("Adam");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_2: LangString = LangString::from_slice("Bates");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_3: LangString = LangString::from_slice("124");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_4: LangString = LangString::from_slice("Madison");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_5: LangString = LangString::from_slice("Colletti");
+
 #[derive(PartialEq, Eq, Hash)]
 struct PersonId {
   pub value: LangString,
@@ -175,16 +193,16 @@ fn main() -> Result<lang_std::Void, PersonServiceError> {
   let mut person_service = StoredPersonService::new(Box::new(person_repository));
 
   let mut person1 = Shareable::new(Person::new(
-    Shareable::new(PersonId { value: LangString::from_slice("123") }),
-    LangString::from_slice("Adam"),
-    LangString::from_slice("Bates"),
+    Shareable::new(PersonId { value: STR_SLICE_0 }),
+    STR_SLICE_1,
+    STR_SLICE_2,
     24,
   ));
 
   let mut person2 = Shareable::new(Person::new(
-    Shareable::new(PersonId { value: LangString::from_slice("124") }),
-    LangString::from_slice("Madison"),
-    LangString::from_slice("Colletti"),
+    Shareable::new(PersonId { value: STR_SLICE_3 }),
+    STR_SLICE_4,
+    STR_SLICE_5,
     23,
   ));
 

@@ -4,6 +4,30 @@ mod lang_std;
 use lang_prelude::*;
 use lang_std::{ Console };
 
+#[allow(non_upper_case_globals)]
+const STR_SLICE_0: LangString = LangString::from_slice("Madison");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_1: LangString = LangString::from_slice("Adam");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_2: LangString = LangString::from_slice("four");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_3: LangString = LangString::from_slice("three");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_4: LangString = LangString::from_slice("two");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_5: LangString = LangString::from_slice("five");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_6: LangString = LangString::from_slice("one");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_7: LangString = LangString::from_slice("After drops");
+
 struct Person {
   pub name: LangString,
   pub age: usize,
@@ -43,25 +67,25 @@ fn test_lifetimes<'ac, 'b>(
 
 fn main() {
   {
-    let person1 = Person { name: LangString::from_slice("Madison"), age: 23, };
-    let person2 = Person { name: LangString::from_slice("Adam"), age: 25, };
+    let person1 = Person { name: STR_SLICE_0, age: 23, };
+    let person2 = Person { name: STR_SLICE_1, age: 25, };
 
     let oldest = get_oldest_person(&person1, &person2).unwrap();
 
     Console::write_line(LangString::from_owned(format!("Oldest person is {} at age {}", oldest.name, oldest.age)));
   }
 
-  let person4 = Person { name: LangString::from_slice("four"), age: 4 };
-  let person3 = Person { name: LangString::from_slice("three"), age: 3 };
+  let person4 = Person { name: STR_SLICE_2, age: 4 };
+  let person3 = Person { name: STR_SLICE_3, age: 3 };
 
   let res;
 
   {
-    let person2 = Person { name: LangString::from_slice("two"), age: 2 };
-    let person5 = Person { name: LangString::from_slice("five"), age: 5 };
+    let person2 = Person { name: STR_SLICE_4, age: 2 };
+    let person5 = Person { name: STR_SLICE_5, age: 5 };
 
     {
-      let person1 = Person { name: LangString::from_slice("one"), age: 1 };
+      let person1 = Person { name: STR_SLICE_6, age: 1 };
 
       res = test_lifetimes(
         person1,
@@ -75,5 +99,5 @@ fn main() {
     Console::write_line(LangString::from_owned(format!("Res: {}", res.name)));
   }
 
-  Console::write_line(LangString::from_slice("After drops"));
+  Console::write_line(STR_SLICE_7);
 }

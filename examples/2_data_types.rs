@@ -3,6 +3,12 @@ mod lang_std;
 
 use lang_prelude::*;
 
+#[allow(non_upper_case_globals)]
+const STR_SLICE_0: LangString = LangString::from_slice("Adam");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_1: LangString = LangString::from_slice("uh oh!");
+
 fn main() {
   let x: bool = true;
   let x: bool = false;
@@ -34,11 +40,11 @@ fn main() {
 
   let x: char = 'a';
 
-  let x: LangString = LangString::from_slice("Adam");
+  let x: LangString = STR_SLICE_0;
   let x: LangString = LangString::from_owned(format!("Adam {}", x));
 
   let x: (usize, usize, usize) = (1, 2, 3);
-  let x: (isize, LangString, char) = (42, LangString::from_slice("Adam"), 'F');
+  let x: (isize, LangString, char) = (42, STR_SLICE_0, 'F');
 
   let y: isize = x.0;
   let y: LangString = x.1;
@@ -61,14 +67,14 @@ fn main() {
   let x: isize = None.unwrap_or(0);
   let x: isize = None.unwrap_or_else(|| 0);
 
-  let x: Result<isize, lang_std::Error> = None.ok_or(lang_std::Error::new(LangString::from_slice("uh oh!")));
-  let x: Result<isize, LangString> = None.ok_or(LangString::from_slice("uh oh!"));
+  let x: Result<isize, lang_std::Error> = None.ok_or(lang_std::Error::new(STR_SLICE_1));
+  let x: Result<isize, LangString> = None.ok_or(STR_SLICE_1);
   let x: Result<isize, LangString> = {
     let x: Option<isize> = None;
     if let Some(x) = x {
       Ok(x)
     } else {
-      let f = || LangString::from_slice("uh oh");
+      let f = || STR_SLICE_1;
       Err(f())
     }
   };
@@ -78,7 +84,7 @@ fn main() {
   let x: Result<(), lang_std::Error> = Ok(());
   let x: Result<(), lang_std::Error> = Err(lang_std::Error::empty());
 
-  let x: Result<isize, LangString> = Err(LangString::from_slice("uh oh!"));
+  let x: Result<isize, LangString> = Err(STR_SLICE_1);
   let x: Result<isize, LangString> = Ok(123);
 
   let x: bool = {

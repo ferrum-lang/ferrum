@@ -8,7 +8,7 @@ pub struct Console {}
 impl Console {
   #[allow(dead_code)]
   pub fn write_line(text: LangString) {
-    println!("{}", text.as_slice());
+    println!("{}", text);
   }
 }
 

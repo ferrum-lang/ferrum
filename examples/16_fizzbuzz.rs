@@ -5,10 +5,10 @@ use lang_prelude::*;
 use lang_std::{ Console, LangStringBuilder, };
 
 #[allow(non_upper_case_globals)]
-const SLICE_Fizz: LangString = LangString::from_slice("Fizz");
+const STR_SLICE_0: LangString = LangString::from_slice("Fizz");
 
 #[allow(non_upper_case_globals)]
-const SLICE_Buzz: LangString = LangString::from_slice("Buzz");
+const STR_SLICE_1: LangString = LangString::from_slice("Buzz");
 
 fn fizzbuzz(n: usize) -> LangString {
   let is_fizz = n % 3 == 0;
@@ -21,11 +21,11 @@ fn fizzbuzz(n: usize) -> LangString {
   let mut builder = LangStringBuilder::new();
 
   if is_fizz {
-    builder.append(SLICE_Fizz);
+    builder.append(STR_SLICE_0);
   }
 
   if is_buzz {
-    builder.append(SLICE_Buzz);
+    builder.append(STR_SLICE_1);
   }
 
   return builder.build();

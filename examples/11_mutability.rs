@@ -3,32 +3,53 @@ mod lang_std;
 
 use lang_prelude::*;
 
+#[allow(non_upper_case_globals)]
+const STR_SLICE_0: LangString = LangString::from_slice("Adam");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_1: LangString = LangString::from_slice("Adam Bates");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_2: LangString = LangString::from_slice("Person");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_3: LangString = LangString::from_slice("Bates");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_4: LangString = LangString::from_slice("ADAM");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_5: LangString = LangString::from_slice("Other");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_6: LangString = LangString::from_slice("BATES");
+
 struct Person {
   pub name: LangString,
 }
 
 fn test_person() {
-  let person = Person { name: LangString::from_slice("Adam"), };
+  let person = Person { name: STR_SLICE_0, };
 
   // --- //
 
-  let person = Person { name: LangString::from_slice("Adam"), };
+  let person = Person { name: STR_SLICE_0, };
 
-  let person = Person { name: LangString::from_slice("Adam Bates"), };
-
-  // --- //
-
-  let mut person = Person { name: LangString::from_slice("Adam"), };
-
-  person.name = LangString::from_slice("Adam Bates");
+  let person = Person { name: STR_SLICE_1, };
 
   // --- //
 
-  let mut person = Person { name: LangString::from_slice("Adam"), };
+  let mut person = Person { name: STR_SLICE_0, };
 
-  person.name = LangString::from_slice("Adam Bates");
+  person.name = STR_SLICE_1;
 
-  let mut person = Person { name: LangString::from_slice("Adam Bates") };
+  // --- //
+
+  let mut person = Person { name: STR_SLICE_0, };
+
+  person.name = STR_SLICE_1;
+
+  let mut person = Person { name: STR_SLICE_1 };
 }
 
 struct PartiallyMutableExample {
@@ -38,23 +59,23 @@ struct PartiallyMutableExample {
 }
 
 fn test_partial_mutable_example() {
-  let mut person = Person { name: LangString::from_slice("Person"), };
+  let mut person = Person { name: STR_SLICE_2, };
 
   let mut example = PartiallyMutableExample {
-    first: LangString::from_slice("Adam"),
-    second: LangString::from_slice("Bates"),
+    first: STR_SLICE_0,
+    second: STR_SLICE_3,
     third: person,
   };
 
-  example.first = LangString::from_slice("ADAM");
+  example.first = STR_SLICE_4;
 
-  example.third.name = LangString::from_slice("Other");
+  example.third.name = STR_SLICE_5;
 
-  let person = Person { name: LangString::from_slice("Person"), };
+  let person = Person { name: STR_SLICE_2, };
 
   let example = PartiallyMutableExample {
-    first: LangString::from_slice("Adam"),
-    second: LangString::from_slice("Bates"),
+    first: STR_SLICE_0,
+    second: STR_SLICE_3,
     third: person,
   };
 }
@@ -66,11 +87,11 @@ struct ForcedPartiallyMutableExample {
 
 fn test_forced_partially_mutable_example() {
   let mut example = ForcedPartiallyMutableExample {
-    first: LangString::from_slice("Adam"),
-    second: LangString::from_slice("Bates"),
+    first: STR_SLICE_0,
+    second: STR_SLICE_3,
   };
 
-  example.first = LangString::from_slice("ADAM");
+  example.first = STR_SLICE_4;
 }
 
 struct MutableExample {
@@ -80,14 +101,14 @@ struct MutableExample {
 
 fn test_mutable_example() {
   let mut example = MutableExample {
-    first: LangString::from_slice("Adam"),
-    second: LangString::from_slice("Bates"),
+    first: STR_SLICE_0,
+    second: STR_SLICE_3,
   };
 
-  example.first = LangString::from_slice("ADAM");
-  example.second = LangString::from_slice("BATES");
+  example.first = STR_SLICE_4;
+  example.second = STR_SLICE_6;
 
-  let example = MutableExample { first: LangString::from_slice("Adam"), second: LangString::from_slice("Bates") };
+  let example = MutableExample { first: STR_SLICE_0, second: STR_SLICE_3, };
 }
 
 struct ForcedMutableExample {
@@ -97,12 +118,12 @@ struct ForcedMutableExample {
 
 fn test_forced_mutable_example() {
   let mut example = ForcedMutableExample {
-    first: LangString::from_slice("Adam"),
-    second: LangString::from_slice("Bates"),
+    first: STR_SLICE_0,
+    second: STR_SLICE_3,
   };
 
-  example.first = LangString::from_slice("ADAM");
-  example.second = LangString::from_slice("BATES");
+  example.first = STR_SLICE_4;
+  example.second = STR_SLICE_6;
 }
 
 struct ImmutableExample {
@@ -112,8 +133,8 @@ struct ImmutableExample {
 
 fn test_immutable_example() {
   let example = ImmutableExample {
-    first: LangString::from_slice("Adam"),
-    second: LangString::from_slice("Bates"),
+    first: STR_SLICE_0,
+    second: STR_SLICE_3,
   };
 }
 

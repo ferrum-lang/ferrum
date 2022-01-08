@@ -4,9 +4,18 @@ mod lang_std;
 use lang_prelude::*;
 use lang_std::{ Console, LangStringBuilder, };
 
+#[allow(non_upper_case_globals)]
+const STR_SLICE_0: LangString = LangString::from_slice("abc");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_1: LangString = LangString::from_slice("abc {y}");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_2: LangString = LangString::from_slice(" ");
+
 fn main() {
 
-  let x = LangString::from_slice("abc");
+  let x = STR_SLICE_0;
   Console::write_line(x);
 
   let y = 123;
@@ -14,20 +23,20 @@ fn main() {
   let x = LangString::from_owned(format!("abc {}", y));
   Console::write_line(x);
 
-  let x = LangString::from_slice("abc {y}");
+  let x = STR_SLICE_1;
   Console::write_line(x);
 
   let x = LangString::from_owned(format!("abc \\{}", y));
   Console::write_line(x);
 
   let mut x = LangStringBuilder::new();
-  x.append(LangString::from_slice(" "));
-  x.prepend(LangString::from_slice("abc"));
+  x.append(STR_SLICE_2);
+  x.prepend(STR_SLICE_0);
   x.append(LangString::from_owned(y.to_string()));
   let x = x.build();
 
-  let x = LangStringBuilder::from(LangString::from_slice(" "))
-    .with_prepend(LangString::from_slice("abc"))
+  let x = LangStringBuilder::from(STR_SLICE_2)
+    .with_prepend(STR_SLICE_0)
     .with_append(LangString::from_owned(y.to_string()))
     .build();
 
