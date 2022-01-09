@@ -57,6 +57,12 @@ const x = 123;
 
 - `structure`
 
+- `contract`
+
+- `enum`
+
+- `alias`
+
 - `state`
 
 - `function`
@@ -94,3 +100,75 @@ function main() {
   update_device_name(mutable device, "DEF456");
 }
 ```
+
+- `immutable`
+
+- `unique`
+
+- `shared`
+
+- `share`
+
+- `some`
+
+- `none`
+
+- `ok`
+
+- `error`
+
+### Built-in types
+
+- `boolean`
+
+- `uint`
+
+- `bit`
+
+- `uint8`
+
+- `byte`
+
+- `uint16`
+
+- `uint32`
+
+- `uint64`
+
+- `uint128`
+
+- `uint`
+
+- `biguint`
+
+- `int8`
+
+- `int16`
+
+- `int32`
+
+- `int64`
+
+- `int128`
+
+- `int`
+
+- `bigint`
+
+- `float32`
+
+- `float64`
+
+- `float`
+
+- `bigfloat`
+
+- `char`
+
+- `string`
+
+- `list`
+
+- `option`
+
+- `result`
