@@ -1,5 +1,22 @@
 *
 !.gitignore
 !README.md
+
 !examples
 !examples/*
+
+!src
+!src/*
+
+!resources
+!resources/*
+
+!out
+!out/*
+
+!Cargo.toml
+!Cargo.lock
+
+# Added by cargo
+
+/target
