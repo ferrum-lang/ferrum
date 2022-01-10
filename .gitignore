@@ -3,16 +3,16 @@
 !README.md
 
 !examples
-!examples/*
+!examples/**/*
 
 !src
-!src/*
+!src/**/*
 
 !resources
 !resources/*
 
 !out
-!out/*
+!out/**/*
 
 !Cargo.toml
 !Cargo.lock
