@@ -1,3 +1,5 @@
+mod utils;
+
 use super::types::*;
 use std::fmt::{Display, Error, Formatter};
 
@@ -73,16 +75,7 @@ impl Display for Visibility {
 
 impl Display for FunctionParams {
   fn fmt(&self, formatter: &mut Formatter) -> Result<(), Error> {
-    write!(
-      formatter,
-      "{}",
-      self
-        .0
-        .iter()
-        .map(|param| format!("{}", param))
-        .collect::<Vec<String>>()
-        .join(", ")
-    )
+    write!(formatter, "{}", utils::format_and_join(&self.0, ", "))
   }
 }
 
@@ -103,16 +96,7 @@ impl Display for FunctionReturnType {
 
 impl Display for FullFunctionExpressions {
   fn fmt(&self, formatter: &mut Formatter) -> Result<(), Error> {
-    write!(
-      formatter,
-      "{}",
-      self
-        .0
-        .iter()
-        .map(|expression| format!("{}", expression))
-        .collect::<Vec<String>>()
-        .join(";\n")
-    )
+    write!(formatter, "{}", utils::format_and_join(&self.0, ";\n"))
   }
 }
 
@@ -150,16 +134,7 @@ impl Display for TypeAccess {
 
 impl Display for FunctionArgs {
   fn fmt(&self, formatter: &mut Formatter) -> Result<(), Error> {
-    write!(
-      formatter,
-      "{}",
-      self
-        .0
-        .iter()
-        .map(|arg| format!("{}", arg))
-        .collect::<Vec<String>>()
-        .join(", ")
-    )
+    write!(formatter, "{}", utils::format_and_join(&self.0, ", "))
   }
 }
 
