@@ -28,7 +28,7 @@ impl Display for Definition {
         match imported_data {
           ImportedData::Destructured { parts } => write!(
             formatter,
-            "mod {source};\nuse {source}::{{ {parts} }};\n",
+            "mod {source};\nuse {source}::{{ {parts}, }};\n",
             source = source,
             parts = parts.join(", "),
           ),

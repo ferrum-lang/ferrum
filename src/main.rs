@@ -6,8 +6,8 @@ use encoder::build_rust_from_definitions;
 use parser::parse_definitions_from_lang;
 use std::fs;
 
-const IN_FILE: &'static str = "./resources/main.lang";
-const OUT_FILE: &'static str = "./out/main.rs";
+const IN_FILE: &'static str = "./resources/test1.lang";
+const OUT_FILE: &'static str = "./out/generated.rs";
 
 fn main() -> Result<(), String> {
     let in_contents = fs::read_to_string(IN_FILE).or_else(|e| Err(e.to_string()))?;
