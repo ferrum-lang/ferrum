@@ -2,6 +2,11 @@
 
 Meant as a "wrapper" or "layer" over-top of Rust. More accessible, faster development, just as safe (if not safer), but less powerful, and less performant.
 
+1. Create or modify the `.lang` files in `./resources/` (Note: The transpiler is **EXTREMELY** limited and broken, in a prototype proof-of-concept state)
+2. Updated the `OUT_FILE` constant in `./src/main.rs` to point to the file you want to transpile
+3. Run: `cargo run --release && rustc ./out/generated.rs && rustfmt ./out/generated.rs && ./generated`
+4. If successful, the output is printed to the console, and the generated Rust code can be found in `./out/generated.rs`
+
 Developed by Adam Bates.
 
 ---
