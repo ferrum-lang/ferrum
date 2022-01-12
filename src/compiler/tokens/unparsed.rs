@@ -8,6 +8,10 @@ impl UnparsedToken {
       literal: literal.into(),
     }
   }
+
+  pub fn get_literal(&self) -> &String {
+    return &self.literal;
+  }
 }
 
 impl std::fmt::Debug for UnparsedToken {

@@ -9,11 +9,11 @@ use error::Error;
 fn main() -> Result<(), Error> {
     let config = config::build_env_config()?;
 
-    let input_contents = io::read_file_contents(&config.input_filepath)?;
+    let input_contents = io::read_input_contents(&config)?;
 
-    let output_contents = compiler::compile_to_rust(input_contents)?;
+    let output_contents = compiler::compile(input_contents)?;
 
-    io::write_to_file(&config.output_filepath, output_contents)?;
+    io::write_to_build_dir(&config, output_contents)?;
 
-    return executor::build_and_run_rust(&config.output_filepath);
+    return executor::build_and_run(&config);
 }

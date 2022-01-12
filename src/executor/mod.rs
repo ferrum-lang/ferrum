@@ -1,6 +1,5 @@
-use super::error::Error;
-use std::path::Path;
+use super::{config::Config, error::Error};
 
-pub fn build_and_run_rust<P: AsRef<Path>>(filepath: P) -> Result<(), Error> {
+pub fn build_and_run(config: &Config) -> Result<(), Error> {
     todo!("build_and_run_rust");
 }

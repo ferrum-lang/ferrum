@@ -36,7 +36,7 @@ function main() {
 
   // Strings
   const x: string = "Adam";
-  const x: string = `Adam {x}`;
+  const x: string = "Adam {x}";
 
   // Tuples
   const x: (uint; 3) = (1, 2, 3);

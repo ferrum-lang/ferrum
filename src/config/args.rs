@@ -9,12 +9,21 @@ use structopt::StructOpt;
 )]
 pub struct ConfigArgs {
   /// Input filepath, or ./resources/main.lang by default
-  #[structopt(short, long = "input", parse(from_os_str))]
-  pub input_filepath: Option<PathBuf>,
+  #[structopt(
+    short,
+    long = "input",
+    parse(from_os_str),
+    default_value = "./resources/main.lang"
+  )]
+  pub input_filepath: PathBuf,
 
-  /// Output filepath, or ./out/main by default
-  #[structopt(short, long = "output", parse(from_os_str))]
-  pub output_filepath: Option<PathBuf>,
+  /// Output directory, or ./out by default
+  #[structopt(short = "d", long = "dir", parse(from_os_str), default_value = "./out")]
+  pub output_directory: PathBuf,
+
+  /// Output name, or main by default
+  #[structopt(short, long, default_value = "main")]
+  pub name: String,
 }
 
 pub fn parse_env_args() -> Result<ConfigArgs, Error> {

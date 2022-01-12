@@ -83,7 +83,5 @@ pub fn lex_into_tokens(contents: String) -> Result<Vec<UnparsedToken>, Error> {
     }
   }
 
-  println!("Unparsed tokens: {:?}", tokens);
-
   return Ok(tokens);
 }
