@@ -1,22 +1,19 @@
-mod encoder;
-mod parser;
-mod types;
+mod compiler;
+mod config;
+mod error;
+mod executor;
+mod io;
 
-use encoder::build_rust_from_definitions;
-use parser::parse_definitions_from_lang;
-use std::fs;
+use error::Error;
 
-const IN_FILE: &'static str = "./resources/test1.lang";
-const OUT_FILE: &'static str = "./out/generated.rs";
+fn main() -> Result<(), Error> {
+    let config = config::build_env_config()?;
 
-fn main() -> Result<(), String> {
-    let in_contents = fs::read_to_string(IN_FILE).or_else(|e| Err(e.to_string()))?;
+    let input_contents = io::read_file_contents(&config.input_filepath)?;
 
-    let definitions = parse_definitions_from_lang(in_contents)?;
+    let output_contents = compiler::compile_to_rust(input_contents)?;
 
-    let out_contents = build_rust_from_definitions(definitions)?;
+    io::write_to_file(&config.output_filepath, output_contents)?;
 
-    fs::write(OUT_FILE, out_contents).or_else(|e| Err(e.to_string()))?;
-
-    Ok(())
+    return executor::build_and_run_rust(&config.output_filepath);
 }
