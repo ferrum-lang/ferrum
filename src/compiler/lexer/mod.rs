@@ -33,14 +33,16 @@ pub fn lex_into_tokens(contents: String) -> Result<Vec<UnparsedToken>, Error> {
         }
         TokenMatcher::BufferedChar(c2) => {
           if c != *c2 {
+            // check next matcher
             continue;
           }
+
+          is_matched = true;
 
           let mut buffer = String::from(c);
 
           while let Some(&peek) = iter.peek() {
             if c != peek {
-              // check next matcher
               break;
             }
 
@@ -49,7 +51,6 @@ pub fn lex_into_tokens(contents: String) -> Result<Vec<UnparsedToken>, Error> {
           }
 
           tokens.push(UnparsedToken::new(buffer));
-          is_matched = true;
         }
         TokenMatcher::BufferedPredicate(predicate) => {
           let mut buffer = String::new();
@@ -58,6 +59,8 @@ pub fn lex_into_tokens(contents: String) -> Result<Vec<UnparsedToken>, Error> {
             // check next matcher
             continue;
           }
+
+          is_matched = true;
 
           buffer.push(c);
 
@@ -71,7 +74,6 @@ pub fn lex_into_tokens(contents: String) -> Result<Vec<UnparsedToken>, Error> {
           }
 
           tokens.push(UnparsedToken::new(buffer));
-          is_matched = true;
         }
       }
     }
