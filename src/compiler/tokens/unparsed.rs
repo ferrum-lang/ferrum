@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct UnparsedToken {
   literal: String,
 }
@@ -16,6 +17,6 @@ impl UnparsedToken {
 
 impl std::fmt::Debug for UnparsedToken {
   fn fmt(&self, fmt: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-    write!(fmt, "Unparsed(\"{}\")", self.literal)
+    write!(fmt, "Unparsed(\"{}\")", self.literal.replace("\n", "\\n"))
   }
 }

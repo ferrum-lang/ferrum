@@ -1,4 +1,3 @@
-use super::Error;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -26,6 +25,6 @@ pub struct ConfigArgs {
   pub name: String,
 }
 
-pub fn parse_env_args() -> Result<ConfigArgs, Error> {
-  return ConfigArgs::from_args_safe().or_else(|e| Err(Error::new(e.to_string())));
+pub fn parse_env_args() -> ConfigArgs {
+  return ConfigArgs::from_args();
 }

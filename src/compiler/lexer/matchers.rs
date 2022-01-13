@@ -18,13 +18,13 @@ impl std::fmt::Debug for TokenMatcher {
 
 pub fn get_token_matchers() -> Vec<TokenMatcher> {
   vec![
-    TokenMatcher::BufferedPredicate(Box::new(|_, c| c.is_whitespace())),
+    TokenMatcher::BufferedPredicate(Box::new(|_, c| c.is_whitespace() && c != '\n')),
+    TokenMatcher::SingleChar('\n'),
     TokenMatcher::BufferedPredicate(Box::new(|_, c| c.is_numeric())),
     TokenMatcher::BufferedPredicate(Box::new(|buffer, c| match buffer.as_str() {
-      "" => c.is_alphabetic(), // tokens and identifiers must start with a letter
+      "" => c.is_alphabetic() || c == '_', // tokens and identifiers must start with a letter or underscore
       _ => c.is_alphanumeric() || c == '_', // then can contain letters, numbers, and underscores
     })),
-    TokenMatcher::BufferedChar('_'),
     TokenMatcher::SingleChar('{'),
     TokenMatcher::SingleChar('}'),
     TokenMatcher::SingleChar(';'),
@@ -32,7 +32,11 @@ pub fn get_token_matchers() -> Vec<TokenMatcher> {
     TokenMatcher::SingleChar('?'),
     TokenMatcher::SingleChar('~'),
     TokenMatcher::SingleChar('\''),
-    TokenMatcher::SingleChar('\\'),
+    TokenMatcher::BufferedPredicate(Box::new(|buffer, c| match buffer.as_str() {
+      "" => c == '\\', // matches "\"
+      "\\" => true,    // matches "\*" where * is any char
+      _ => false,
+    })),
     TokenMatcher::SingleChar('('),
     TokenMatcher::SingleChar(')'),
     TokenMatcher::SingleChar('['),
