@@ -1,5 +1,5 @@
 mod parsed;
 mod unparsed;
 
-pub use parsed::ParsedToken;
+pub use parsed::Token;
 pub use unparsed::UnparsedToken;

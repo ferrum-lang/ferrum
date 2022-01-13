@@ -15,7 +15,7 @@ pub struct Config {
 }
 
 pub fn build_env_config<'a>() -> Result<Config, Error> {
-  let args = parse_env_args()?;
+  let args = parse_env_args();
   let config = build_config_from_args(args);
 
   return Ok(config);
