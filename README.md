@@ -1,8 +1,10 @@
-# New Custom Language
+# The Ferrum Programming Language
 
 Meant as a "wrapper" or "layer" over-top of Rust. More accessible, faster development, just as safe (if not safer), but less powerful, and less performant.
 
-Developed by Adam Bates.
+## The Oxidize Build Tool
+
+This project is the build tool called `oxidize`, designed to build and run the Ferrum programming language. Under-the-hood, the input code written in Ferrum gets transpiled to Rust code, then the Rust code is built and run.
 
 ---
 
@@ -172,3 +174,5 @@ function main() {
 - `option`
 
 - `result`
+
+###### Created by Adam Bates

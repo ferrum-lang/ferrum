@@ -4,24 +4,24 @@ use structopt::StructOpt;
 
 #[derive(StructOpt)]
 #[structopt(
-  name = "Custom Lang Compiler",
-  about = "Transpiles Lang code into Rust, then builds and executes the generated Rust code."
+  name = "Oxidize",
+  about = "Compiler for the Ferrum programming language. Transpiles Ferrum code into Rust code; then builds and executes the generated Rust code."
 )]
 pub struct ConfigArgs {
-  /// Input filepath, or ./resources/main.lang by default
+  /// Input filepath
   #[structopt(
     short,
     long = "input",
     parse(from_os_str),
-    default_value = "./resources/main.lang"
+    default_value = "./resources/main.fe"
   )]
   pub input_filepath: PathBuf,
 
-  /// Output directory, or ./out by default
+  /// Output directory
   #[structopt(short = "d", long = "dir", parse(from_os_str), default_value = "./out")]
   pub output_directory: PathBuf,
 
-  /// Output name, or main by default
+  /// Output name
   #[structopt(short, long, default_value = "main")]
   pub name: String,
 }
