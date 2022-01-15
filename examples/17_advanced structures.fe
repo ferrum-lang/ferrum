@@ -20,25 +20,23 @@ structure Device {
   set { is_active }
 
   // Predefined functions to subscribe to
+  // These functions never return anything, as they act as "listeners" to events
   subscribe {
 
     // `on_create` will be called just after an instance of Device is created
-    // Argument is borrowed self, and can be either mutable or immutable
-    // No return type is allowed
+    // Argument is mutable borrowed self
     on_create: (created: mutable &Device) => {
       Console::write_line("Created device {created.instance_id}");
     },
 
     // `on_drop` will be called just before an instance of Device is dropped
-    // Argument is borrowed self, and can be either mutable or immutable
-    // No return type is allowed
+    // Argument is mutable borrowed self
     on_drop: (dropped: mutable &Device) => {
       Console::write_line("Dropping device {dropped.instance_id}");
     },
 
     // `on_clone` will be called just after the instance is cloned using the `clone` keyword
     // Arguments are immutable borrowed source, and mutable borrowed clone
-    // No return type is allowed
     on_clone: (source: &Device, cloned: mutable &Device) => {
       cloned.instance_id = std::UUID::from_seed(cloned.instance_id.to_string());
       Console::write_line("Cloned device {source.instance_id} into device {cloned.instance_id}");
@@ -46,7 +44,6 @@ structure Device {
 
     // `on_share` will be called just after the instance is shared using the `share` keyword
     // Argument is immutable borrowed self
-    // No return type is allowed
     on_share: (shared: &Device) => {
       Console::write_line("Shared device {shared.instance_id}")
     }
