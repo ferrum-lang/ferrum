@@ -1,5 +1,7 @@
 use lang_prelude::*;
 
+fn main() {}
+
 #[allow(dead_code)]
 pub type Void = ();
 
@@ -89,3 +91,28 @@ pub type Map<K, V> = std::collections::HashMap<K, V>;
 
 #[allow(dead_code)]
 pub type Set<K> = std::collections::HashSet<K>;
+
+pub struct UUID {
+    value: String,
+}
+impl UUID {
+    pub fn from_seed(seed: &LangString) -> Self {
+        let memory_address = seed.clone().as_owned().as_ptr() as usize;
+        return Self {
+            value: format!("{}", memory_address),
+        };
+    }
+}
+impl std::clone::Clone for UUID {
+    fn clone(&self) -> Self {
+        let memory_address = self.value.as_ptr() as usize;
+        return Self {
+            value: format!("{}", memory_address),
+        };
+    }
+}
+impl std::fmt::Display for UUID {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        write!(fmt, "{}", self.value)
+    }
+}

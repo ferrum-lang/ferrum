@@ -1,5 +1,5 @@
 
-define Person = structure {
+structure Person {
   state {
     // Note: `string` can be stored under `let`,
     // but `string` cannot be marked `mutable` as it is an immutable structure
@@ -53,7 +53,7 @@ function test_person() {
   // person = Person { name: "Adam Bates" };
 }
 
-define PartiallyMutableExample = structure {
+structure PartiallyMutableExample {
   state {
     public let first: string,
     public const second: string,
@@ -95,31 +95,7 @@ function test_partial_mutable_example() {
   }
 }
 
-define ForcedPartiallyMutableExample = mutable structure {
-  state {
-    public let first: string,
-    public const second: string,
-  }
-}
-
-function test_forced_partially_mutable_example() {
-  const example = mutable ForcedPartiallyMutableExample {
-    first: "Adam",
-    second: "Bates",
-  };
-
-  example.first = "ADAM";
-  
-  // Won't compile.
-  // Even though `example` is mutable, the underlying data is stored as `const`
-  // example.second = "BATES";
-
-  // Won't compile.
-  // `mutable structure` forces mutability on any use of the structure
-  // const example = ForcedPartiallyMutableExample { first: "Adam", second: "Bates" };
-}
-
-define MutableExample = mutable structure {
+structure MutableExample {
   state {
     public let first: string,
     public let second: string,
@@ -138,28 +114,7 @@ function test_mutable_example() {
   const example = MutableExample { first: "Adam", second: "Bates" };
 }
 
-define ForcedMutableExample = mutable structure {
-  state {
-    public let first: string,
-    public let second: string,
-  }
-}
-
-function test_forced_mutable_example() {
-  const example = mutable ForcedMutableExample {
-    first: "Adam",
-    second: "Bates",
-  };
-
-  example.first = "ADAM";
-  example.second = "BATES";
-
-  // Won't compile.
-  // `mutable structure` forces mutability on any use of the structure
-  // const example = ForcedMutableExample { first: "Adam", second: "Bates" };
-}
-
-define ImmutableExample = immutable structure {
+immutable structure ImmutableExample {
   state {
     public const first: string, // `let` and `mutable` are not allowed here because of `immutable structure`
     public const second: string,
@@ -182,8 +137,6 @@ function test_immutable_example() {
 function main() {
   test_person();
   test_partial_mutable_example();
-  test_forced_partially_mutable_example();
   test_mutable_example();
-  test_forced_mutable_example();
   test_immutable_example();
 }

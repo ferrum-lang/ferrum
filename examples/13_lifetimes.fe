@@ -1,13 +1,15 @@
 import { Console } from "std";
 
-define Person = structure {
-  state(init) {
+structure Person {
+  state {
     public const name: string,
     public const age: uint,
   }
 
-  deinit(mutable &self) {
-    Console::write_line("Dropping {self.name}");
+  subscribe {
+    drop: (mutable &self) => {
+      Console::write_line("Dropping {self.name}");
+    }
   }
 }
 

@@ -1,33 +1,33 @@
 import { Console } from "std";
 
-define Person = structure {
+structure Person {
   state(init) {
     public let name: string,
     public let age: uint,
   }
 
-  public function requires_borrow(&self) {}
+  public &self.requires_borrow() {}
 
-  public function requires_borrow_mut(mutable &self) {}
+  public mutable &self.requires_borrow_mut() {}
 
   // Note: methods that don't borrow data must be unique
   // It is impossible to have shared + owned requirements on a method
-  public function requires_own(unique self) -> Self {
+  public unique self.requires_own() -> Self {
     return self;
   }
   
-  public function requires_own_mut(unique mutable self) -> Self {
+  public unique mutable self.requires_own_mut() -> Self {
     return self;
   }
 }
 
-define House = structure {
+structure House {
   state(init) {
     public let owner = shared mutable Person,
   }
 }
 
-define Child = structure {
+structure Child {
   state(init) {
     const parents: (Person; 2),
   }

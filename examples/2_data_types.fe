@@ -53,12 +53,13 @@ function main() {
   // Optionals
   const x: optional<int> = none;
   const x: optional<int> = some(123);
+  const x: optional<int> = 123; // automagically wrapped in `some()`
 
   const x: boolean = none.is_some();
   const x: boolean = none.is_none();
 
   const x: int = some(123).get_or_panic();
-  const x: int = none.get_or_default(0);
+  const x: int = none.get_or(0);
   const x: int = none.get_or_else(() => 0);
 
   const x: result<int> = none.ok_or(error("uh oh!"));
@@ -67,13 +68,14 @@ function main() {
   const x = none.ok_or_else(() => "uh oh!");
 
   // Results
-  const x: result<type = void, error = std::Error> = ok();
+  const x: result<std::void, std::Error> = ok();
   const x: result<_, std::Error> = ok(); // `_` here just means use the default for that position, in this case `std::void`
   const x: result = ok;
   const x: result = error;
 
-  const x: result<error = string, type = int> = error("uh oh!");
+  const x: result<int, string> = error("uh oh!");
   const x: result<int, string> = ok(123);
+  const x: result<int, string> = 123; // automagically wrapped in `ok()`
 
   const x: boolean = ok(123).is_ok();
   const x: boolean = ok(123).is_error();

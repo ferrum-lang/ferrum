@@ -33,8 +33,14 @@ struct Person {
     pub age: usize,
 }
 impl Person {
+    pub fn created(&mut self) {
+        Console::write_line(LangString::from_owned(format!("Created {}", self.name)));
+    }
+
     pub fn new(name: LangString, age: usize) -> Self {
-        Self { name, age }
+        let mut s = Self { name, age };
+        s.created();
+        return s;
     }
 }
 impl std::ops::Drop for Person {

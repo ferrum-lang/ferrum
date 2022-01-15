@@ -1,3 +1,5 @@
+fn main() {}
+
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 enum LangStringValue {
@@ -91,12 +93,32 @@ type Mut<T> = std::cell::RefCell<T>;
 #[allow(dead_code)]
 type MutRc<T> = std::rc::Rc<Mut<T>>;
 
+pub enum Instance<'a, T> {
+    Immutable(&'a T),
+    Mutable(&'a mut T),
+}
+impl<'a, T> Instance<'a, T> {
+    pub fn try_mutable(self) -> Result<&'a mut T, &'a T> {
+        match self {
+            Self::Mutable(mutable) => Ok(mutable),
+            Self::Immutable(immutable) => Err(immutable),
+        }
+    }
+}
+
+pub trait Share<T> {
+    fn on_share(instance: Instance<T>) {}
+}
+
 #[allow(dead_code)]
 pub struct Shareable<T> {
     value: MutRc<T>,
 }
 
-impl<T> Shareable<T> {
+impl<T> Shareable<T>
+where
+    T: Share<T>,
+{
     #[allow(dead_code)]
     pub fn new(value: T) -> Self {
         return Self {
@@ -106,9 +128,24 @@ impl<T> Shareable<T> {
 
     #[allow(dead_code)]
     pub fn share(&self) -> Self {
-        return Self {
+        let shared = Self {
             value: MutRc::clone(&self.value),
         };
+
+        {
+            match shared.value.try_borrow_mut() {
+                Ok(mut mutable) => {
+                    let value: &mut T = &mut mutable;
+                    T::on_share(Instance::Mutable(value));
+                }
+                _ => {
+                    let value: &T = &shared.value.borrow();
+                    T::on_share(Instance::Immutable(value));
+                }
+            }
+        }
+
+        return shared;
     }
 
     #[allow(dead_code)]

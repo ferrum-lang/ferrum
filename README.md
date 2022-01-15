@@ -51,8 +51,6 @@ const x = 123;
 
 - `for`
 
-- `define`
-
 - `structure`
 
 - `contract`
@@ -65,41 +63,7 @@ const x = 123;
 
 - `function`
 
-- `mutable` - Marks data as mutable, allowing mutation. Also can be used to force structures to always be mutable.
-
-```
-define DeviceModel = mutable structure {
-  state {
-    public const name: string,
-  }
-}
-
-define Device = mutable structure {
-  state {
-    public const serial: string,
-    public let model: mutable DeviceModel,
-  }
-}
-
-function update_device_serial(device: mutable Device, serial: string) {
-  device.serial = serial;
-}
-
-function main() {
-  const model = mutable DeviceModel {
-    name: "MODEL_1",
-  };
-
-  const device = mutable Device {
-    serial: "ABC123",
-    model,
-  }
-
-  update_device_name(mutable device, "DEF456");
-}
-```
-
-- `immutable`
+- `mutable`
 
 - `unique`
 
