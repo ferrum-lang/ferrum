@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Token {
   Whitespace,
   Semicolon,
@@ -6,6 +6,8 @@ pub enum Token {
   ReferenceAmpersand,
   DestructureOpenBrace,
   DestructureField(String),
+  DestructureAliasColon,
+  DestructureAliasName(String),
   DestructureComma,
   DestructureCloseBrace,
   Import,
