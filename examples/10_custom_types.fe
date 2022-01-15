@@ -30,13 +30,15 @@ contract PersonRepository {
 }
 
 structure LocalPersonRepository {
-  // `(init)` allows private fields to be initialized like public fields
-  state(init) {
+  state {
     // `const` prevents re-assignment after construction
     // `mutable` allows Map to be mutated as long as `Self` is mutable
     // `= Map::new()` is a default value if no initial value given
     const map: mutable Map<shared PersonId, shared Person> = Map::new(),
   }
+
+  // `..` includes all fields, even private ones, in the constructor
+  constructor { .. }
 
   implements PersonRepository {
     public mutable &self.create_person(person: shared Person): result<_, PersonRepositoryError> {
@@ -94,9 +96,11 @@ contract PersonService {
 }
 
 structure StoredPersonService {
-  state(init) {
+  state {
     const person_repository: mutable ~PersonRepository,
   }
+
+  constructor { person_repository, }
 
   &self.get_person_by_id(id: shared PersonId): result<shared Person, PersonServiceError> {
     return self.person_repository
@@ -158,60 +162,6 @@ structure StoredPersonService {
   }
 }
 
-structure Device {
-  state {
-    let instance_id: std::UUID = std::UUID::from_seed(serial),
-    const serial: string,
-    let is_active: bool = true,
-    let is_legacy: bool = false,
-  }
-
-  // `instance_id` can be excluded from `constructor` because it has a default
-  constructor { serial, is_active, is_legacy }
-
-  // anything can be included or excluded from `get`
-  get { serial, is_active, is_legacy }
-
-  // `set` requires `let`, but `let` doesn't require `set`
-  set { is_active }
-
-  // Predefined functions to subscribe to
-  subscribe {
-
-    // `on_create` will be called just after an instance of Device is created
-    // Argument is borrowed self, and can be either mutable or immutable
-    // No return type is allowed
-    on_create: (created: mutable &Device) => {
-      Console::write_line("Created device {created.instance_id}");
-    },
-
-    // `on_drop` will be called just before an instance of Device is dropped
-    // Argument is borrowed self, and can be either mutable or immutable
-    // No return type is allowed
-    on_drop: (dropped: mutable &Device) => {
-      Console::write_line("Dropping device {dropped.instance_id}");
-    },
-
-    // `on_clone` will be called just after the instance is cloned using the `clone` keyword
-    // Arguments are immutable borrowed source, and mutable borrowed clone
-    // No return type is allowed
-    on_clone: (source: &Device, cloned: mutable &Device) => {
-      cloned.instance_id = std::UUID::from_seed(cloned.instance_id.to_string());
-      Console::write_line("Cloned device {source.instance_id} into device {cloned.instance_id}");
-    }
-
-    // `on_share` will be called just after the instance is shared using the `share` keyword
-    // Argument is std::Instance enum of shared self
-    // No return type is allowed
-    on_share: (instance: Instance<Device>) => {
-      match instance {
-        Instance::Mutable(mutable this) => Console::write_line("Mutably shared device {this.instance_id}"),
-        Instance::Immutable(this) => Console::write_line("Immutably shared device {this.instance_id}"),
-      }
-    }
-  }
-}
-
 function main(): result<_, PersonServiceError> {
   const person_repository = mutable LocalPersonRepository {};
   
@@ -252,41 +202,4 @@ function main(): result<_, PersonServiceError> {
 
   person_service.delete_person_by_id(share person2.id)?;
   Console::write_line("Deleted person id {person2.id.value}");
-
-  // --- //
-
-  const inactive_legacy_device = Device {
-    serial: "1",
-    is_active: false,
-    is_legacy: true,
-  };
-
-  const legacy_device = Device {
-    serial: "2",
-    is_legacy: true,
-  };
-
-  const inactive_device = Device {
-    serial: "3",
-    is_active: false,
-  };
-
-  const device = Device {
-    serial: "4",
-  };
-
-  let x = clone device;
-
-  {
-      let share1 = share x; // calls on_share(Mutable), because no borrows exist
-      let borrow1 = &share1;
-
-      let share2 = share x; // calls on_share(Immutable), because a borrow still exists
-      let borrow2 = &share2;
-  }
-
-  {
-      let share1 = x.share(); // calls on_share(Mutable), because no borrows exist
-      let share2 = x.share(); // calls on_share(Mutable), because still no borrows exist
-  }
 }

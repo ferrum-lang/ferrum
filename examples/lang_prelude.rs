@@ -107,7 +107,7 @@ impl<'a, T> Instance<'a, T> {
 }
 
 pub trait Share<T> {
-    fn on_share(instance: Instance<T>) {}
+    fn on_share(&self) {}
 }
 
 #[allow(dead_code)]
@@ -128,22 +128,12 @@ where
 
     #[allow(dead_code)]
     pub fn share(&self) -> Self {
-        let shared = Self {
+        let shared: Shareable<T> = Self {
             value: MutRc::clone(&self.value),
         };
 
-        {
-            match shared.value.try_borrow_mut() {
-                Ok(mut mutable) => {
-                    let value: &mut T = &mut mutable;
-                    T::on_share(Instance::Mutable(value));
-                }
-                _ => {
-                    let value: &T = &shared.value.borrow();
-                    T::on_share(Instance::Immutable(value));
-                }
-            }
-        }
+        let borrow: &T = &self.borrow();
+        borrow.on_share();
 
         return shared;
     }

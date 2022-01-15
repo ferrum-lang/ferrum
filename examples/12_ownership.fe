@@ -1,7 +1,7 @@
 import { Console } from "std";
 
 structure Person {
-  state(init) {
+  state {
     public let name: string,
     public let age: uint,
   }
@@ -22,15 +22,17 @@ structure Person {
 }
 
 structure House {
-  state(init) {
+  state {
     public let owner = shared mutable Person,
   }
 }
 
 structure Child {
-  state(init) {
+  state {
     const parents: (Person; 2),
   }
+
+  constructor { parents, }
 }
 
 function main() {

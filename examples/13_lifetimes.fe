@@ -7,8 +7,8 @@ structure Person {
   }
 
   subscribe {
-    drop: (mutable &self) => {
-      Console::write_line("Dropping {self.name}");
+    on_drop: (dropped: mutable &Person) => {
+      Console::write_line("Dropping {dropped.name}");
     }
   }
 }

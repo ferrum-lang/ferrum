@@ -42,10 +42,14 @@ impl Person {
         s.created();
         return s;
     }
+
+    fn on_drop(dropped: &mut Person) {
+        Console::write_line(LangString::from_owned(format!("Dropping {}", dropped.name)));
+    }
 }
 impl std::ops::Drop for Person {
     fn drop(&mut self) {
-        Console::write_line(LangString::from_owned(format!("Dropping {}", self.name)));
+        Self::on_drop(self);
     }
 }
 
