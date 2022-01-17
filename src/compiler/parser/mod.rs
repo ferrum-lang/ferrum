@@ -6,8 +6,6 @@ use super::{
 pub fn parse_tokens(mut unparsed_tokens: Vec<UnparsedToken>) -> Result<Vec<Token>, Error> {
   let mut tokens = vec![];
 
-  println!("{:?}", unparsed_tokens);
-
   unparsed_tokens.reverse();
 
   while let Some(unparsed) = unparsed_tokens.pop() {
@@ -28,7 +26,7 @@ pub fn parse_tokens(mut unparsed_tokens: Vec<UnparsedToken>) -> Result<Vec<Token
     }
   }
 
-  todo!("parse_tokens\n\nParsed Tokens: {:?}", tokens);
+  return Ok(tokens);
 }
 
 fn parse_string(
@@ -331,7 +329,13 @@ fn parse_function(
       name if is_identifier_name(name) => {
         tokens.push(Token::FunctionName(name.to_string()));
 
-        // TODO
+        expect_next(&mut unparsed_tokens, &mut tokens, &|l| l == "(", true)?;
+        parse_function_params(&mut unparsed_tokens, &mut tokens, "(")?;
+
+        expect_next(&mut unparsed_tokens, &mut tokens, &|l| l == "{", true)?;
+        parse_function_body(&mut unparsed_tokens, &mut tokens, "{")?;
+
+        break;
       }
       _ if is_whitespace(literal) => parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?,
       _ => todo!(
@@ -342,7 +346,200 @@ fn parse_function(
     }
   }
 
-  todo!("TODO: parse functions\n\nParsed Tokens: {:?}", tokens);
+  return Ok(());
+}
+
+fn parse_function_params(
+  mut unparsed_tokens: &mut Vec<UnparsedToken>,
+  mut tokens: &mut Vec<Token>,
+  _literal: &str,
+) -> Result<(), Error> {
+  tokens.push(Token::FunctionParamsOpenParenthesis);
+
+  loop {
+    let unparsed = unparsed_tokens.pop().expect(&format!(
+      "Unfinished function!\n\nParsed Tokens: {:?}",
+      tokens
+    ));
+    let literal = unparsed.get_literal().as_str();
+
+    match literal {
+      name if is_identifier_name(name) => {
+        tokens.push(Token::FunctionParamsParamName(name.to_string()));
+
+        expect_next(&mut unparsed_tokens, &mut tokens, &|l| l == ":", true)?;
+        tokens.push(Token::FunctionParamsParamTypeColon);
+
+        loop {
+          let unparsed = unparsed_tokens.pop().expect(&format!(
+            "Unfinished function!\n\nParsed Tokens: {:?}",
+            tokens
+          ));
+          let literal = unparsed.get_literal().as_str();
+
+          match literal {
+            name if is_identifier_name(name) => {
+              tokens.push(Token::FunctionParamsParamTypeName(name.to_string()))
+            }
+            "mutable" => tokens.push(Token::FunctionParamsParamTypeMutable),
+            "shared" => tokens.push(Token::FunctionParamsParamTypeShared),
+            "&" => tokens.push(Token::FunctionParamsParamTypeBorrowed),
+            "," => {
+              tokens.push(Token::FunctionParamsComma);
+              break;
+            }
+            _ if is_whitespace(literal) => {
+              parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?
+            }
+            _ => todo!(
+              "Unexpected token: {}\n\nParsed Tokens: {:?}",
+              literal,
+              tokens
+            ),
+          }
+        }
+      }
+      ")" => {
+        tokens.push(Token::FunctionParamsCloseParenthesis);
+
+        loop {
+          let unparsed = unparsed_tokens.pop().expect(&format!(
+            "Unfinished function!\n\nParsed Tokens: {:?}",
+            tokens
+          ));
+          let literal = unparsed.get_literal().as_str();
+
+          match literal {
+            ":" => {
+              tokens.push(Token::FunctionReturnTypeColon);
+
+              loop {
+                let unparsed = unparsed_tokens.pop().expect(&format!(
+                  "Unfinished function!\n\nParsed Tokens: {:?}",
+                  tokens
+                ));
+                let literal = unparsed.get_literal().as_str();
+
+                match literal {
+                  name if is_identifier_name(name) => {
+                    tokens.push(Token::FunctionParamsParamTypeName(name.to_string()))
+                  }
+                  "mutable" => tokens.push(Token::FunctionParamsParamTypeMutable),
+                  "shared" => tokens.push(Token::FunctionParamsParamTypeShared),
+                  "&" => tokens.push(Token::FunctionParamsParamTypeBorrowed),
+                  "{" => {
+                    unparsed_tokens.push(unparsed);
+                    break;
+                  }
+                  _ if is_whitespace(literal) => {
+                    parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?
+                  }
+                  _ => todo!(
+                    "Unexpected token: {}\n\nParsed Tokens: {:?}",
+                    literal,
+                    tokens
+                  ),
+                }
+              }
+            }
+            "{" => {
+              unparsed_tokens.push(unparsed);
+              break;
+            }
+            _ if is_whitespace(literal) => {
+              parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?
+            }
+            _ => todo!(
+              "Unexpected token: {}\n\nParsed Tokens: {:?}",
+              literal,
+              tokens
+            ),
+          }
+        }
+
+        break;
+      }
+      _ if is_whitespace(literal) => parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?,
+      _ => todo!(
+        "Unexpected token: {}\n\nParsed Tokens: {:?}",
+        literal,
+        tokens
+      ),
+    }
+  }
+
+  return Ok(());
+}
+
+fn parse_function_body(
+  mut unparsed_tokens: &mut Vec<UnparsedToken>,
+  mut tokens: &mut Vec<Token>,
+  _literal: &str,
+) -> Result<(), Error> {
+  tokens.push(Token::FunctionExpressionsOpenBrace);
+
+  loop {
+    let unparsed = unparsed_tokens.pop().expect(&format!(
+      "Unfinished function!\n\nParsed Tokens: {:?}",
+      tokens
+    ));
+    let literal = unparsed.get_literal().as_str();
+
+    match literal {
+      "\"" => parse_string(&mut unparsed_tokens, &mut tokens, literal)?,
+      name if is_identifier_name(name) => {
+        let peek = unparsed_tokens.last().expect(&format!(
+          "Unfinished function!\n\nParsed Tokens: {:?}",
+          tokens
+        ));
+        let peek = peek.get_literal().as_str();
+
+        match peek {
+          "::" => {
+            tokens.push(Token::TypeAccessName(name.to_string()));
+
+            tokens.push(Token::TypeAccessDoubleSemicolon);
+            unparsed_tokens.pop();
+          }
+          "." => {
+            tokens.push(Token::InstanceAccessName(name.to_string()));
+
+            tokens.push(Token::InstanceAccessPeriod);
+            unparsed_tokens.pop();
+          }
+          "(" => {
+            tokens.push(Token::FunctionCallName(name.to_string()));
+
+            tokens.push(Token::FunctionCallOpenParenthesis);
+            unparsed_tokens.pop();
+          }
+          _ => tokens.push(Token::InstanceReferenceName(String::from(name))),
+        }
+      }
+      "let" => {
+        tokens.push(Token::Let);
+        todo!();
+      }
+      "const" => {
+        tokens.push(Token::Const);
+        todo!();
+      }
+      ")" => tokens.push(Token::FunctionCallCloseParenthesis),
+      ";" => tokens.push(Token::Semicolon),
+      "}" => {
+        tokens.push(Token::FunctionExpressionsCloseBrace);
+        break;
+      }
+      _ if is_whitespace(literal) => parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?,
+      _ => todo!(
+        "Unexpected token: {}\n\nParsed Tokens: {:?}",
+        literal,
+        tokens
+      ),
+    }
+  }
+
+  return Ok(());
 }
 
 fn parse_whitespace(
@@ -360,6 +557,39 @@ fn parse_whitespace(
     }
 
     unparsed_tokens.pop();
+  }
+
+  return Ok(());
+}
+
+fn expect_next(
+  mut unparsed_tokens: &mut Vec<UnparsedToken>,
+  mut tokens: &mut Vec<Token>,
+  expected: &dyn Fn(&str) -> bool,
+  allow_whitespace: bool,
+) -> Result<(), Error> {
+  let mut unparsed = unparsed_tokens.pop().expect(&format!(
+    "Unfinished function!\n\nParsed Tokens: {:?}",
+    tokens
+  ));
+  let mut literal = unparsed.get_literal().as_str();
+
+  if allow_whitespace && is_whitespace(literal) {
+    parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?;
+
+    unparsed = unparsed_tokens.pop().expect(&format!(
+      "Unfinished function!\n\nParsed Tokens: {:?}",
+      tokens
+    ));
+    literal = unparsed.get_literal().as_str();
+  }
+
+  if !expected(literal) {
+    todo!(
+      "Unexpected token: {}\n\nParsed Tokens: {:?}",
+      literal,
+      tokens
+    );
   }
 
   return Ok(());
