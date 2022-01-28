@@ -1,7 +1,7 @@
 use super::{tokens::Token, Error};
 
 pub fn build_from_tokens(mut tokens: Vec<Token>) -> Result<Ast, Error> {
-  println!("{:?}\n", tokens);
+  // println!("{:?}\n", tokens);
 
   tokens.reverse();
 
@@ -76,8 +76,8 @@ fn build_from_import(tokens: &mut Vec<Token>, ast: &mut Ast, _: Token) -> Result
         Token::ImportFrom => match tokens.pop().expect("Unfinished import!") {
           Token::ImportSource(source) => {
             ast.imports.push(ImportNode {
-              import_assignment: assignment,
-              import_source_token: source,
+              assignment,
+              source_token: source,
             });
           }
           token => todo!("Unexpected token: {:?}", token),
@@ -186,7 +186,7 @@ fn build_from_function(
                 match token {
                   Token::PlainString(value) => {
                     args.push(ExpressionCallArgNode::Literal(
-                      LiteralDataNode::PlainString(PlainStringDataNode { value }),
+                      LiteralDataNode::PlainString(value),
                     ));
                   }
                   Token::FunctionCallCloseParenthesis => {
@@ -232,8 +232,8 @@ fn build_from_function(
 
 #[derive(Debug)]
 pub struct Ast {
-  imports: Vec<ImportNode>,
-  items: Vec<ItemNode>,
+  pub imports: Vec<ImportNode>,
+  pub items: Vec<ItemNode>,
 }
 
 impl Ast {
@@ -246,100 +246,95 @@ impl Ast {
 }
 
 #[derive(Debug)]
-struct ImportNode {
-  import_assignment: ImportAssignmentNode,
-  import_source_token: String,
+pub struct ImportNode {
+  pub assignment: ImportAssignmentNode,
+  pub source_token: String,
 }
 
 #[derive(Debug)]
-enum ImportAssignmentNode {
+pub enum ImportAssignmentNode {
   Destructured(DestructureAssignmentNode),
 }
 
 #[derive(Debug)]
-struct DestructureAssignmentNode {
-  fields: Vec<DestructureAssignmentFieldNode>,
+pub struct DestructureAssignmentNode {
+  pub fields: Vec<DestructureAssignmentFieldNode>,
 }
 
 #[derive(Debug)]
-struct DestructureAssignmentFieldNode {
-  field_token: String,
-  alias: Option<DestructureAssignmentFieldAliasNode>,
+pub struct DestructureAssignmentFieldNode {
+  pub field_token: String,
+  pub alias: Option<DestructureAssignmentFieldAliasNode>,
 }
 
 #[derive(Debug)]
-struct DestructureAssignmentFieldAliasNode {
-  name_token: String,
+pub struct DestructureAssignmentFieldAliasNode {
+  pub name_token: String,
 }
 
 #[derive(Debug)]
-enum ItemNode {
+pub enum ItemNode {
   Function(FunctionNode),
 }
 
 #[derive(Debug)]
-struct FunctionNode {
-  signature: FunctionSignatureNode,
-  body: FunctionBodyNode,
+pub struct FunctionNode {
+  pub signature: FunctionSignatureNode,
+  pub body: FunctionBodyNode,
 }
 
 #[derive(Debug)]
-struct FunctionSignatureNode {
-  is_public: bool,
-  name_token: String,
-  params: Vec<FunctionParamNode>,
-  return_type: Option<ReturnTypeNode>,
+pub struct FunctionSignatureNode {
+  pub is_public: bool,
+  pub name_token: String,
+  pub params: Vec<FunctionParamNode>,
+  pub return_type: Option<ReturnTypeNode>,
 }
 
 #[derive(Debug)]
-struct FunctionParamNode {}
+pub struct FunctionParamNode {}
 
 #[derive(Debug)]
-struct ReturnTypeNode {}
+pub struct ReturnTypeNode {}
 
 #[derive(Debug)]
-struct FunctionBodyNode {
-  statements: Vec<StatementNode>,
+pub struct FunctionBodyNode {
+  pub statements: Vec<StatementNode>,
 }
 
 #[derive(Debug)]
-enum StatementNode {
+pub enum StatementNode {
   Expression(ExpressionNode),
 }
 
 #[derive(Debug)]
-enum ExpressionNode {
+pub enum ExpressionNode {
   Call(ExpressionCallNode),
 }
 
 #[derive(Debug)]
-struct ExpressionCallNode {
-  subject: ExpressionCallPathNode,
-  args: Vec<ExpressionCallArgNode>,
+pub struct ExpressionCallNode {
+  pub subject: ExpressionCallPathNode,
+  pub args: Vec<ExpressionCallArgNode>,
 }
 
 #[derive(Debug)]
-struct ExpressionCallPathNode {
-  segments: Vec<ExpressionCallPathSegmentNode>,
+pub struct ExpressionCallPathNode {
+  pub segments: Vec<ExpressionCallPathSegmentNode>,
 }
 
 #[derive(Debug)]
-enum ExpressionCallPathSegmentNode {
+pub enum ExpressionCallPathSegmentNode {
   TypeIdentity(String),
   FunctionIdentity(String),
 }
 
 #[derive(Debug)]
-enum ExpressionCallArgNode {
+pub enum ExpressionCallArgNode {
   Literal(LiteralDataNode),
 }
 
 #[derive(Debug)]
-enum LiteralDataNode {
-  PlainString(PlainStringDataNode),
-}
-
-#[derive(Debug)]
-struct PlainStringDataNode {
-  value: String,
+pub enum LiteralDataNode {
+  PlainString(String),
 }
