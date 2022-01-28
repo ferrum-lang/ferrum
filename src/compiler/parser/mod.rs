@@ -215,11 +215,21 @@ fn parse_import(
             ":" => {
               tokens.push(Token::DestructureAliasColon);
 
-              let unparsed = unparsed_tokens.pop().expect(&format!(
+              let mut unparsed = unparsed_tokens.pop().expect(&format!(
                 "Unfinished import!\n\nParsed Tokens: {:?}",
                 tokens
               ));
-              let literal = unparsed.get_literal().as_str();
+              let mut literal = unparsed.get_literal().as_str();
+
+              if is_whitespace(literal) {
+                parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?;
+
+                unparsed = unparsed_tokens.pop().expect(&format!(
+                  "Unfinished import!\n\nParsed Tokens: {:?}",
+                  tokens
+                ));
+                literal = unparsed.get_literal().as_str();
+              }
 
               if !is_identifier_name(literal) {
                 todo!("Unfinished import!\n\nParsed Tokens: {:?}", tokens);
@@ -547,7 +557,7 @@ fn parse_whitespace(
   tokens: &mut Vec<Token>,
   _literal: &str,
 ) -> Result<(), Error> {
-  tokens.push(Token::Whitespace);
+  // tokens.push(Token::Whitespace);
 
   while let Some(unparsed) = unparsed_tokens.last() {
     let literal = unparsed.get_literal().as_str();
