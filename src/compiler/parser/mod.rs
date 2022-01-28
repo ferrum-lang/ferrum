@@ -498,11 +498,21 @@ fn parse_function_body(
     match literal {
       "\"" => parse_string(&mut unparsed_tokens, &mut tokens, literal)?,
       name if is_identifier_name(name) => {
-        let peek = unparsed_tokens.last().expect(&format!(
+        let mut unparsed_peek = unparsed_tokens.last().expect(&format!(
           "Unfinished function!\n\nParsed Tokens: {:?}",
           tokens
         ));
-        let peek = peek.get_literal().as_str();
+        let mut peek = unparsed_peek.get_literal().as_str();
+
+        while is_whitespace(peek) {
+          unparsed_tokens.pop();
+
+          unparsed_peek = unparsed_tokens.last().expect(&format!(
+            "Unfinished function!\n\nParsed Tokens: {:?}",
+            tokens
+          ));
+          peek = unparsed_peek.get_literal().as_str();
+        }
 
         match peek {
           "::" => {
@@ -522,6 +532,9 @@ fn parse_function_body(
 
             tokens.push(Token::FunctionCallOpenParenthesis);
             unparsed_tokens.pop();
+          }
+          _ if is_whitespace(literal) => {
+            parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?
           }
           _ => tokens.push(Token::InstanceReferenceName(String::from(name))),
         }

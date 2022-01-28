@@ -32,14 +32,14 @@ pub fn generate_import(_ast: &mut Ast, import: ImportNode) -> Result<String, Err
 
   match import.assignment {
     ImportAssignmentNode::Destructured(mut destructure) => {
-      import_rs.push_str("{ ");
+      import_rs.push_str("{\n");
 
       destructure.fields.reverse();
       while let Some(field) = destructure.fields.pop() {
         if let Some(alias) = field.alias {
-          import_rs.push_str(&format!("{}: {}, ", field.field_token, alias.name_token));
+          import_rs.push_str(&format!("{}: {},\n", field.field_token, alias.name_token));
         } else {
-          import_rs.push_str(&format!("{}, ", field.field_token));
+          import_rs.push_str(&format!("{},\n", field.field_token));
         }
       }
 
@@ -58,9 +58,9 @@ pub fn generate_function(mut ast: &mut Ast, mut function: FunctionNode) -> Resul
     function_rs.push_str("pub ");
   }
 
-  function_rs.push_str(&format!("fn {}(", function.signature.name_token));
-  function_rs.push_str(") ");
-  function_rs.push_str("{ ");
+  function_rs.push_str(&format!("fn {}(\n", function.signature.name_token));
+  function_rs.push_str(")\n");
+  function_rs.push_str("{\n");
 
   function.body.statements.reverse();
   while let Some(statement) = function.body.statements.pop() {
@@ -98,7 +98,7 @@ pub fn generate_statement(_ast: &mut Ast, statement: StatementNode) -> Result<St
           match arg {
             ExpressionCallArgNode::Literal(literal) => match literal {
               LiteralDataNode::PlainString(value) => {
-                statement_rs.push_str(&format!("\"{}\"", value));
+                statement_rs.push_str(&format!("LangString::from_slice(\"{}\")", value));
               }
               node => todo!("Unexpected node: {:?}", node),
             },
