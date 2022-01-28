@@ -1,0 +1,18 @@
+
+
+
+import {
+  Console,
+} from "std";
+
+
+
+public   function  main (   )   {
+
+
+  Console::write_line("Why, hello there. Isn't this cool?");
+
+
+}
+
+

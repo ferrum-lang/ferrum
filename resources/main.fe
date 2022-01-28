@@ -2,4 +2,5 @@ import { Console } from "std";
 
 function main() {
   Console::write_line("Hello world!");
+  Console::write_line("1 + 2 = {3}");
 }

@@ -97,8 +97,8 @@ fn build_from_import(tokens: &mut Vec<Token>, ast: &mut Ast, _: Token) -> Result
 }
 
 fn build_from_function(
-  tokens: &mut Vec<Token>,
-  ast: &mut Ast,
+  mut tokens: &mut Vec<Token>,
+  mut ast: &mut Ast,
   _: Token,
   is_public: bool,
 ) -> Result<(), Error> {
@@ -184,15 +184,10 @@ fn build_from_function(
                 let token = tokens.pop().expect("Unfinished function!");
 
                 match token {
-                  Token::PlainString(value) => {
-                    args.push(ExpressionCallArgNode::Literal(
-                      LiteralDataNode::PlainString(value),
-                    ));
-                  }
                   Token::FunctionCallCloseParenthesis => {
                     break;
                   }
-                  token => todo!("Unexpected token: {:?}", token),
+                  token => args.push(build_expression_node(&mut tokens, &mut ast, token)?),
                 }
               }
 
@@ -228,6 +223,58 @@ fn build_from_function(
     .push(ItemNode::Function(FunctionNode { signature, body }));
 
   return Ok(());
+}
+
+fn build_expression_node(
+  mut tokens: &mut Vec<Token>,
+  mut ast: &mut Ast,
+  token: Token,
+) -> Result<ExpressionNode, Error> {
+  match token {
+    Token::Int(value) => {
+      return Ok(ExpressionNode::Literal(LiteralDataNode::Integer(value)));
+    }
+    Token::PlainString(value) => {
+      return Ok(ExpressionNode::Literal(LiteralDataNode::PlainString(value)));
+    }
+    Token::TemplateStringStart(start) => {
+      let mut middle_tokens = vec![];
+      let mut expressions = vec![];
+
+      loop {
+        let token = tokens.pop().expect("Unfinished expression!");
+
+        match token {
+          Token::TemplateStringMiddle(middle) => {
+            middle_tokens.push(middle);
+          }
+          Token::TemplateStringEnd(end) => {
+            return Ok(ExpressionNode::Literal(LiteralDataNode::TemplateString(
+              TemplateStringNode {
+                start_token: start,
+                middle_tokens,
+                expressions,
+                end_token: end,
+              },
+            )))
+          }
+          Token::TemplateStringTemplateOpenBrace => {
+            let token = tokens.pop().expect("Unfinished expression!");
+            let expression = build_expression_node(&mut tokens, &mut ast, token)?;
+
+            expressions.push(expression);
+
+            match tokens.pop().expect("Unfinished expression!") {
+              Token::TemplateStringTemplateCloseBrace => {}
+              token => todo!("Unexpected token: {:?}", token),
+            }
+          }
+          token => todo!("Unexpected token: {:?}", token),
+        }
+      }
+    }
+    token => todo!("Unexpected token: {:?}", token),
+  }
 }
 
 #[derive(Debug)]
@@ -310,12 +357,13 @@ pub enum StatementNode {
 #[derive(Debug)]
 pub enum ExpressionNode {
   Call(ExpressionCallNode),
+  Literal(LiteralDataNode),
 }
 
 #[derive(Debug)]
 pub struct ExpressionCallNode {
   pub subject: ExpressionCallPathNode,
-  pub args: Vec<ExpressionCallArgNode>,
+  pub args: Vec<ExpressionNode>,
 }
 
 #[derive(Debug)]
@@ -330,11 +378,16 @@ pub enum ExpressionCallPathSegmentNode {
 }
 
 #[derive(Debug)]
-pub enum ExpressionCallArgNode {
-  Literal(LiteralDataNode),
+pub enum LiteralDataNode {
+  PlainString(String),
+  TemplateString(TemplateStringNode),
+  Integer(String),
 }
 
 #[derive(Debug)]
-pub enum LiteralDataNode {
-  PlainString(String),
+pub struct TemplateStringNode {
+  pub start_token: String,
+  pub middle_tokens: Vec<String>,
+  pub expressions: Vec<ExpressionNode>,
+  pub end_token: String,
 }

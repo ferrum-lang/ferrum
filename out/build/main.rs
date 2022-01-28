@@ -8,4 +8,5 @@ fn main(
 )
 {
 Console::write_line(LangString::from_slice("Hello world!"));
+Console::write_line(LangString::from_owned(format!("1 + 2 = {}", 3)));
 }
