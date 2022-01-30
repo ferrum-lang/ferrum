@@ -567,7 +567,7 @@ fn parse_function_body(
 
 fn parse_whitespace(
   unparsed_tokens: &mut Vec<UnparsedToken>,
-  tokens: &mut Vec<Token>,
+  _tokens: &mut Vec<Token>,
   _literal: &str,
 ) -> Result<(), Error> {
   // tokens.push(Token::Whitespace);

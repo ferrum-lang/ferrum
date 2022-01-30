@@ -6,10 +6,6 @@ pub struct Error {
 }
 
 impl Error {
-    pub fn empty() -> Self {
-        Self::default()
-    }
-
     pub fn new<S: Into<String>>(message: S) -> Self {
         Self {
             message: Some(message.into()),
