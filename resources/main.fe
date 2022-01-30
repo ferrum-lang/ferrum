@@ -1,6 +1,11 @@
 import { Console } from "std";
 
+function math() {
+  Console::write_line("1 + 2 = {3}");
+}
+
 function main() {
   Console::write_line("Hello world!");
-  Console::write_line("1 + 2 = {3}");
+
+  math();
 }

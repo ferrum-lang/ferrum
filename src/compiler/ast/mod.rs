@@ -152,62 +152,19 @@ fn build_from_function(
     let token = tokens.pop().expect("Unfinished function!");
 
     match token {
-      Token::TypeAccessName(type_access_name) => {
-        let mut segments = vec![ExpressionCallPathSegmentNode::TypeIdentity(
-          type_access_name,
-        )];
-
-        match tokens.pop().expect("Unfinished function!") {
-          Token::TypeAccessDoubleSemicolon => {}
-          token => todo!("Unexpected token: {:?}", token),
-        }
-
-        loop {
-          let token = tokens.pop().expect("Unfinished function!");
-
-          match token {
-            Token::FunctionCallName(function_call_name) => {
-              segments.push(ExpressionCallPathSegmentNode::FunctionIdentity(
-                function_call_name,
-              ));
-
-              let call_path = ExpressionCallPathNode { segments };
-
-              let mut args = vec![];
-
-              match tokens.pop().expect("Unfinished function!") {
-                Token::FunctionCallOpenParenthesis => {}
-                token => todo!("Unexpected token: {:?}", token),
-              }
-
-              loop {
-                let token = tokens.pop().expect("Unfinished function!");
-
-                match token {
-                  Token::FunctionCallCloseParenthesis => {
-                    break;
-                  }
-                  token => args.push(build_expression_node(&mut tokens, &mut ast, token)?),
-                }
-              }
-
-              match tokens.pop().expect("Unfinished function!") {
-                Token::Semicolon => {}
-                token => todo!("Unexpected token: {:?}", token),
-              }
-
-              statements.push(StatementNode::Expression(ExpressionNode::Call(
-                ExpressionCallNode {
-                  subject: call_path,
-                  args,
-                },
-              )));
-
-              break;
-            }
-            token => todo!("Unexpected token: {:?}", token),
-          }
-        }
+      Token::TypeAccessName(_) => {
+        statements.push(StatementNode::Expression(build_expression_node(
+          &mut tokens,
+          &mut ast,
+          token,
+        )?));
+      }
+      Token::FunctionCallName(_) => {
+        statements.push(StatementNode::Expression(build_expression_node(
+          &mut tokens,
+          &mut ast,
+          token,
+        )?));
       }
       Token::FunctionExpressionsCloseBrace => {
         break;
@@ -272,6 +229,89 @@ fn build_expression_node(
           token => todo!("Unexpected token: {:?}", token),
         }
       }
+    }
+    Token::TypeAccessName(_) => {
+      return Ok(ExpressionNode::Call(build_expression_call_node(
+        &mut tokens,
+        &mut ast,
+        token,
+        vec![],
+      )?));
+    }
+    Token::FunctionCallName(_) => {
+      return Ok(ExpressionNode::Call(build_expression_call_node(
+        &mut tokens,
+        &mut ast,
+        token,
+        vec![],
+      )?));
+    }
+    token => todo!("Unexpected token: {:?}", token),
+  }
+}
+
+fn build_expression_call_node(
+  mut tokens: &mut Vec<Token>,
+  mut ast: &mut Ast,
+  token: Token,
+  mut segments: Vec<ExpressionCallPathSegmentNode>,
+) -> Result<ExpressionCallNode, Error> {
+  match token {
+    Token::TypeAccessName(type_access_name) => {
+      segments.push(ExpressionCallPathSegmentNode::TypeIdentity(
+        type_access_name,
+      ));
+
+      match tokens.pop().expect("Unfinished function!") {
+        Token::TypeAccessDoubleSemicolon => {}
+        token => todo!("Unexpected token: {:?}", token),
+      }
+
+      loop {
+        let token = tokens.pop().expect("Unfinished function!");
+
+        match token {
+          Token::FunctionCallName(_) => {
+            return build_expression_call_node(&mut tokens, &mut ast, token, segments);
+          }
+          token => todo!("Unexpected token: {:?}", token),
+        }
+      }
+    }
+    Token::FunctionCallName(function_call_name) => {
+      segments.push(ExpressionCallPathSegmentNode::FunctionIdentity(
+        function_call_name,
+      ));
+
+      let call_path = ExpressionCallPathNode { segments };
+
+      let mut args = vec![];
+
+      match tokens.pop().expect("Unfinished function!") {
+        Token::FunctionCallOpenParenthesis => {}
+        token => todo!("Unexpected token: {:?}", token),
+      }
+
+      loop {
+        let token = tokens.pop().expect("Unfinished function!");
+
+        match token {
+          Token::FunctionCallCloseParenthesis => {
+            break;
+          }
+          token => args.push(build_expression_node(&mut tokens, &mut ast, token)?),
+        }
+      }
+
+      match tokens.pop().expect("Unfinished function!") {
+        Token::Semicolon => {}
+        token => todo!("Unexpected token: {:?}", token),
+      }
+
+      return Ok(ExpressionCallNode {
+        subject: call_path,
+        args,
+      });
     }
     token => todo!("Unexpected token: {:?}", token),
   }
