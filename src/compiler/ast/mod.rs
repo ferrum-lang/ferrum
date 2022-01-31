@@ -1,7 +1,7 @@
 use super::{tokens::Token, Error};
 
 pub fn build_from_tokens(mut tokens: Vec<Token>) -> Result<Ast, Error> {
-  // println!("{:?}\n", tokens);
+  // println!("Building AST From:\n{:?}\n", tokens);
 
   tokens.reverse();
 
@@ -127,6 +127,9 @@ fn build_from_function(
     let token = tokens.pop().expect("Unfinished function!");
 
     match token {
+      Token::FunctionParamsParamName(_) => {
+        params.push(build_function_param_node(&mut tokens, &mut ast, token)?);
+      }
       Token::FunctionParamsCloseParenthesis => {
         break;
       }
@@ -152,24 +155,10 @@ fn build_from_function(
     let token = tokens.pop().expect("Unfinished function!");
 
     match token {
-      Token::TypeAccessName(_) => {
-        statements.push(StatementNode::Expression(build_expression_node(
-          &mut tokens,
-          &mut ast,
-          token,
-        )?));
-      }
-      Token::FunctionCallName(_) => {
-        statements.push(StatementNode::Expression(build_expression_node(
-          &mut tokens,
-          &mut ast,
-          token,
-        )?));
-      }
       Token::FunctionExpressionsCloseBrace => {
         break;
       }
-      token => todo!("Unexpected token: {:?}", token),
+      token => statements.push(build_statement_node(&mut tokens, &mut ast, token)?),
     }
   }
 
@@ -180,6 +169,96 @@ fn build_from_function(
     .push(ItemNode::Function(FunctionNode { signature, body }));
 
   return Ok(());
+}
+
+fn build_function_param_node(
+  mut tokens: &mut Vec<Token>,
+  mut ast: &mut Ast,
+  token: Token,
+) -> Result<FunctionParamNode, Error> {
+  match token {
+    Token::FunctionParamsParamName(param_name) => {
+      match tokens.pop().expect("Unfinished function param!") {
+        Token::FunctionParamsParamTypeColon => {}
+        token => todo!("Unexpected token: {:?}", token),
+      };
+
+      let is_mutable = match tokens.last().expect("Unfinished function param!") {
+        Token::FunctionParamsParamTypeMutable => {
+          tokens.pop();
+          true
+        }
+        _ => false,
+      };
+
+      let is_borrowed = match tokens.last().expect("Unfinished function param!") {
+        Token::FunctionParamsParamTypeBorrowed => {
+          tokens.pop();
+          true
+        }
+        _ => false,
+      };
+
+      let type_name = match tokens.pop().expect("Unfinished function param!") {
+        Token::FunctionParamsParamTypeName(name) => name,
+        token => todo!("Unexpected token: {:?}", token),
+      };
+
+      return Ok(FunctionParamNode {
+        name_token: param_name,
+        is_mutable,
+        is_borrowed,
+        type_token: type_name,
+      });
+    }
+    token => todo!("Unexpected token: {:?}", token),
+  }
+}
+
+fn build_statement_node(
+  mut tokens: &mut Vec<Token>,
+  mut ast: &mut Ast,
+  token: Token,
+) -> Result<StatementNode, Error> {
+  match token {
+    Token::TypeAccessName(_) | Token::FunctionCallName(_) => {
+      let node = StatementNode::Expression(build_expression_node(&mut tokens, &mut ast, token)?);
+
+      match tokens.pop().expect("Unfinished expression!") {
+        Token::Semicolon => {}
+        token => todo!("Unexpected token: {:?}", token),
+      }
+
+      return Ok(node);
+    }
+    Token::Const => match tokens.pop().expect("Unfinished expression!") {
+      Token::VariableName(variable_name) => {
+        match tokens.pop().expect("Unfinished expression!") {
+          Token::Assignment => {}
+          token => todo!("Unexpected token: {:?}", token),
+        }
+
+        let token = tokens.pop().expect("Unfinised expression!");
+
+        let node = StatementNode::Assignment(AssignmentNode {
+          left: AssignmentLeftNode {
+            reassignable: false,
+            name_token: variable_name,
+          },
+          right: build_expression_node(&mut tokens, &mut ast, token)?,
+        });
+
+        match tokens.pop().expect("Unfinished expression!") {
+          Token::Semicolon => {}
+          token => todo!("Unexpected token: {:?}", token),
+        }
+
+        return Ok(node);
+      }
+      token => todo!("Unexpected token: {:?}", token),
+    },
+    token => todo!("Unexpected token: {:?}", token),
+  }
 }
 
 fn build_expression_node(
@@ -229,6 +308,21 @@ fn build_expression_node(
           token => todo!("Unexpected token: {:?}", token),
         }
       }
+    }
+    Token::InstanceBorrow => match tokens.pop().expect("Unfinished expression!") {
+      Token::InstanceReferenceName(instance_reference_name) => {
+        return Ok(ExpressionNode::InstanceReference(InstanceReferenceNode {
+          name_token: instance_reference_name,
+          is_borrowed: true,
+        }));
+      }
+      token => todo!("Unexpected token: {:?}", token),
+    },
+    Token::InstanceReferenceName(instance_reference_name) => {
+      return Ok(ExpressionNode::InstanceReference(InstanceReferenceNode {
+        name_token: instance_reference_name,
+        is_borrowed: false,
+      }));
     }
     Token::TypeAccessName(_) => {
       return Ok(ExpressionNode::Call(build_expression_call_node(
@@ -303,11 +397,6 @@ fn build_expression_call_node(
         }
       }
 
-      match tokens.pop().expect("Unfinished function!") {
-        Token::Semicolon => {}
-        token => todo!("Unexpected token: {:?}", token),
-      }
-
       return Ok(ExpressionCallNode {
         subject: call_path,
         args,
@@ -379,7 +468,12 @@ pub struct FunctionSignatureNode {
 }
 
 #[derive(Debug)]
-pub struct FunctionParamNode {}
+pub struct FunctionParamNode {
+  pub name_token: String,
+  pub is_mutable: bool,
+  pub is_borrowed: bool,
+  pub type_token: String,
+}
 
 #[derive(Debug)]
 pub struct ReturnTypeNode {}
@@ -391,12 +485,26 @@ pub struct FunctionBodyNode {
 
 #[derive(Debug)]
 pub enum StatementNode {
+  Assignment(AssignmentNode),
   Expression(ExpressionNode),
+}
+
+#[derive(Debug)]
+pub struct AssignmentNode {
+  pub left: AssignmentLeftNode,
+  pub right: ExpressionNode,
+}
+
+#[derive(Debug)]
+pub struct AssignmentLeftNode {
+  pub reassignable: bool,
+  pub name_token: String,
 }
 
 #[derive(Debug)]
 pub enum ExpressionNode {
   Call(ExpressionCallNode),
+  InstanceReference(InstanceReferenceNode),
   Literal(LiteralDataNode),
 }
 
@@ -415,6 +523,12 @@ pub struct ExpressionCallPathNode {
 pub enum ExpressionCallPathSegmentNode {
   TypeIdentity(String),
   FunctionIdentity(String),
+}
+
+#[derive(Debug)]
+pub struct InstanceReferenceNode {
+  pub name_token: String,
+  pub is_borrowed: bool,
 }
 
 #[derive(Debug)]

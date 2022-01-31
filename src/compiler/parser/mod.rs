@@ -389,7 +389,8 @@ fn parse_function_params(
 
           match literal {
             name if is_identifier_name(name) => {
-              tokens.push(Token::FunctionParamsParamTypeName(name.to_string()))
+              tokens.push(Token::FunctionParamsParamTypeName(name.to_string()));
+              break;
             }
             "mutable" => tokens.push(Token::FunctionParamsParamTypeMutable),
             "shared" => tokens.push(Token::FunctionParamsParamTypeShared),
@@ -497,6 +498,66 @@ fn parse_function_body(
 
     match literal {
       "\"" => parse_string(&mut unparsed_tokens, &mut tokens, literal)?,
+      "&" => tokens.push(Token::InstanceBorrow),
+      "let" | "const" => {
+        match literal {
+          "let" => tokens.push(Token::Let),
+          _ => tokens.push(Token::Const),
+        };
+
+        let mut unparsed = unparsed_tokens.pop().expect(&format!(
+          "Unfinished function!\n\nParsed Tokens: {:?}",
+          tokens
+        ));
+        let mut literal = unparsed.get_literal().as_str();
+
+        if is_whitespace(literal) {
+          parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?;
+
+          unparsed = unparsed_tokens.pop().expect(&format!(
+            "Unfinished function!\n\nParsed Tokens: {:?}",
+            tokens
+          ));
+          literal = unparsed.get_literal().as_str();
+        }
+
+        match literal {
+          name if is_identifier_name(name) => tokens.push(Token::VariableName(name.to_string())),
+          _ => todo!(
+            "Unexpected token: {}\n\nParsed Tokens: {:?}",
+            literal,
+            tokens
+          ),
+        }
+
+        unparsed = unparsed_tokens.pop().expect(&format!(
+          "Unfinished function!\n\nParsed Tokens: {:?}",
+          tokens
+        ));
+        literal = unparsed.get_literal().as_str();
+
+        if is_whitespace(literal) {
+          parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?;
+
+          unparsed = unparsed_tokens.pop().expect(&format!(
+            "Unfinished function!\n\nParsed Tokens: {:?}",
+            tokens
+          ));
+          literal = unparsed.get_literal().as_str();
+        }
+
+        match literal {
+          "=" => tokens.push(Token::Assignment),
+          _ => todo!(
+            "Unexpected token: {}\n\nParsed Tokens: {:?}",
+            literal,
+            tokens
+          ),
+        }
+      }
+      ")" => tokens.push(Token::FunctionCallCloseParenthesis),
+      ";" => tokens.push(Token::Semicolon),
+      "=" => tokens.push(Token::Assignment),
       name if is_identifier_name(name) => {
         let mut unparsed_peek = unparsed_tokens.last().expect(&format!(
           "Unfinished function!\n\nParsed Tokens: {:?}",
@@ -539,16 +600,6 @@ fn parse_function_body(
           _ => tokens.push(Token::InstanceReferenceName(String::from(name))),
         }
       }
-      "let" => {
-        tokens.push(Token::Let);
-        todo!();
-      }
-      "const" => {
-        tokens.push(Token::Const);
-        todo!();
-      }
-      ")" => tokens.push(Token::FunctionCallCloseParenthesis),
-      ";" => tokens.push(Token::Semicolon),
       "}" => {
         tokens.push(Token::FunctionExpressionsCloseBrace);
         break;

@@ -4,14 +4,15 @@ mod lang_std;
 use lang_std::{
 Console,
 };
-fn math(
-)
+fn say_hello(
+name: LangString)
 {
-Console::write_line(LangString::from_owned(format!("1 + 2 = {}", 3)));
+Console::write_line(LangString::from_owned(format!("Hello, {}!", name)));
 }
-fn main(
+pub fn main(
 )
 {
-Console::write_line(LangString::from_slice("Hello world!"));
-math();
+let name = LangString::from_slice("Adam");
+say_hello(LangString::from_owned(format!("{} Bates", name)));
+say_hello(name);
 }

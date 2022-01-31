@@ -59,6 +59,18 @@ pub fn generate_function(mut ast: &mut Ast, mut function: FunctionNode) -> Resul
   }
 
   function_rs.push_str(&format!("fn {}(\n", function.signature.name_token));
+
+  function.signature.params.reverse();
+  while let Some(param) = function.signature.params.pop() {
+    function_rs.push_str(&format!(
+      "{}: {}{}{}",
+      param.name_token,
+      if param.is_mutable { "mutable " } else { "" },
+      if param.is_borrowed { "&" } else { "" },
+      fix_type_token(param.type_token),
+    ));
+  }
+
   function_rs.push_str(")\n");
   function_rs.push_str("{\n");
 
@@ -76,13 +88,34 @@ pub fn generate_statement(mut ast: &mut Ast, statement: StatementNode) -> Result
   let mut statement_rs;
 
   match statement {
+    StatementNode::Assignment(assignment) => {
+      statement_rs = generate_assignment(&mut ast, assignment)?;
+    }
     StatementNode::Expression(expression) => {
-      statement_rs = generate_expression(&mut ast, expression)?
+      statement_rs = generate_expression(&mut ast, expression)?;
     }
     node => todo!("Unexpected node: {:?}", node),
   }
 
   return Ok(statement_rs);
+}
+
+pub fn generate_assignment(mut ast: &mut Ast, assignment: AssignmentNode) -> Result<String, Error> {
+  let mut assignment_rs = String::from("let ");
+
+  assignment_rs.push_str(if assignment.left.reassignable {
+    "mut "
+  } else {
+    ""
+  });
+
+  assignment_rs.push_str(&format!("{} = ", assignment.left.name_token));
+
+  assignment_rs.push_str(&generate_expression(&mut ast, assignment.right)?);
+
+  assignment_rs.push_str(";\n");
+
+  return Ok(assignment_rs);
 }
 
 pub fn generate_expression(mut ast: &mut Ast, expression: ExpressionNode) -> Result<String, Error> {
@@ -115,6 +148,9 @@ pub fn generate_expression(mut ast: &mut Ast, expression: ExpressionNode) -> Res
       }
 
       expression_rs.push_str(");\n");
+    }
+    ExpressionNode::InstanceReference(instance) => {
+      expression_rs.push_str(&instance.name_token);
     }
     ExpressionNode::Literal(literal) => match literal {
       LiteralDataNode::PlainString(value) => {
@@ -157,4 +193,11 @@ pub fn generate_expression(mut ast: &mut Ast, expression: ExpressionNode) -> Res
   }
 
   return Ok(expression_rs);
+}
+
+fn fix_type_token(type_token: String) -> String {
+  match type_token.as_str() {
+    "string" => "LangString".to_string(),
+    _ => type_token,
+  }
 }

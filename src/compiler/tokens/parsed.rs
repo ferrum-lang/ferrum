@@ -34,6 +34,7 @@ pub enum Token {
   FunctionExpressionsCloseBrace,
   TypeAccessDoubleSemicolon,
   TypeAccessName(String),
+  InstanceBorrow,
   InstanceReferenceName(String),
   InstanceAccessName(String),
   FunctionCallName(String),

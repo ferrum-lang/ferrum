@@ -1,11 +1,12 @@
 import { Console } from "std";
 
-function math() {
-  Console::write_line("1 + 2 = {3}");
+function say_hello(name: string) {
+  Console::write_line("Hello, {name}!");
 }
 
-function main() {
-  Console::write_line("Hello world!");
+public function main() {
+  const name = "Adam";
 
-  math();
+  say_hello("{name} Bates");
+  say_hello(name);
 }
