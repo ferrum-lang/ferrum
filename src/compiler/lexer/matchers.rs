@@ -1,7 +1,5 @@
 pub enum TokenMatcher {
   SingleChar(char),
-  SinglePredicate(Box<dyn Fn(char) -> bool>),
-  BufferedChar(char),
   BufferedPredicate(Box<dyn Fn(&String, char) -> bool>),
 }
 
@@ -9,8 +7,6 @@ impl std::fmt::Debug for TokenMatcher {
   fn fmt(&self, fmt: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
     match self {
       Self::SingleChar(c) => write!(fmt, "SingleChar(\"{}\")", c),
-      Self::SinglePredicate(_) => write!(fmt, "SinglePredicate(< Fn(char) -> bool >)"),
-      Self::BufferedChar(c) => write!(fmt, "BufferedChar(\"{}\")", c),
       Self::BufferedPredicate(_) => write!(fmt, "BufferedPredicate(< Fn(&String, char) -> bool >)"),
     }
   }
