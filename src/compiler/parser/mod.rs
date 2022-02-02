@@ -1,714 +1,420 @@
-use super::{
-  tokens::{Token, UnparsedToken},
-  Error,
-};
+use super::{symbols::Symbol, syntax::*, Error};
 
-pub fn parse_tokens(mut unparsed_tokens: Vec<UnparsedToken>) -> Result<Vec<Token>, Error> {
-  let mut tokens = vec![];
+pub fn parse_symbols(mut tokens: Vec<Symbol>) -> Result<SyntaxTree, Error> {
+  // println!("Building Syntax Tree From:\n{:?}\n", tokens);
 
-  unparsed_tokens.reverse();
+  tokens.reverse();
 
-  while let Some(unparsed) = unparsed_tokens.pop() {
-    let literal = unparsed.get_literal().as_str();
+  let mut syntax_tree = SyntaxTree::new();
 
-    match literal {
-      ";" => tokens.push(Token::Semicolon),
-      "public" => tokens.push(Token::Public),
-      "\"" => parse_string(&mut unparsed_tokens, &mut tokens, literal)?,
-      "import" => parse_import(&mut unparsed_tokens, &mut tokens, literal)?,
-      "function" => parse_function(&mut unparsed_tokens, &mut tokens, literal)?,
-      _ if is_whitespace(literal) => parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?,
+  let mut is_public = false;
+
+  while let Some(token) = tokens.pop() {
+    match token {
+      Symbol::Import => parse_import(&mut tokens, &mut syntax_tree, token)?,
+      Symbol::Function => parse_function(&mut tokens, &mut syntax_tree, token, is_public)?,
+      Symbol::Public => {
+        is_public = true;
+        continue;
+      }
       _ => todo!(
-        "Unexpected token: {}\n\nParsed Tokens: {:?}",
-        literal,
-        tokens
+        "Unexpected token: {:?}\n\nSyntax Tree: {:?}",
+        token,
+        syntax_tree
       ),
     }
+
+    is_public = false;
   }
 
-  return Ok(tokens);
-}
-
-fn parse_string(
-  mut unparsed_tokens: &mut Vec<UnparsedToken>,
-  mut tokens: &mut Vec<Token>,
-  _literal: &str,
-) -> Result<(), Error> {
-  let mut buffer = String::new();
-
-  let mut is_template_string = false;
-
-  while let Some(peek) = unparsed_tokens.last() {
-    let peek = peek.get_literal().as_str();
-
-    let mut break_loop = false;
-
-    match peek {
-      // End of string
-      "\"" => {
-        unparsed_tokens.pop();
-
-        let token = if is_template_string {
-          Token::TemplateStringEnd(buffer.clone())
-        } else {
-          Token::PlainString(buffer.clone())
-        };
-
-        tokens.push(token);
-
-        break_loop = true;
-      }
-      // Template string
-      "{" => {
-        let token = if is_template_string {
-          Token::TemplateStringMiddle(buffer)
-        } else {
-          Token::TemplateStringStart(buffer)
-        };
-
-        tokens.push(token);
-
-        is_template_string = true;
-
-        tokens.push(Token::TemplateStringTemplateOpenBrace);
-        unparsed_tokens.pop();
-
-        // Handle limited expressions within template string
-        while let Some(unparsed) = unparsed_tokens.pop() {
-          let literal = unparsed.get_literal().as_str();
-
-          match literal {
-            name if is_identifier_name(name) => {
-              let peek = unparsed_tokens.last().expect("Incomplete template string!");
-              let peek = peek.get_literal().as_str();
-
-              match peek {
-                "::" => {
-                  tokens.push(Token::TypeAccessName(String::from(name)));
-
-                  tokens.push(Token::TypeAccessColons);
-                  unparsed_tokens.pop();
-                }
-                "." => {
-                  tokens.push(Token::InstanceAccessName(String::from(name)));
-
-                  tokens.push(Token::InstanceAccessPeriod);
-                  unparsed_tokens.pop();
-                }
-                "(" => {
-                  tokens.push(Token::FunctionCallName(String::from(name)));
-
-                  tokens.push(Token::FunctionCallOpenParenthesis);
-                  unparsed_tokens.pop();
-                }
-                _ => {
-                  tokens.push(Token::InstanceReferenceName(String::from(name)));
-                }
-              }
-            }
-            number if is_numeric(number) => {
-              let peek = unparsed_tokens.last().expect("Incomplete template string!");
-              let peek = peek.get_literal().as_str();
-
-              if peek == "." {
-                unparsed_tokens.pop();
-
-                let peek = unparsed_tokens.last().expect("Incomplete template string!");
-                let peek = peek.get_literal().as_str();
-
-                if !is_numeric(peek) {
-                  todo!("Invalid float!");
-                }
-
-                tokens.push(Token::Float(format!("{}.{}", number, peek)));
-                unparsed_tokens.pop();
-              } else {
-                tokens.push(Token::Int(String::from(number)));
-              }
-            }
-            // Another string nested within current template string
-            "\"" => parse_string(&mut unparsed_tokens, &mut tokens, "\"")?,
-            "'" => {
-              let mut buffer = String::new();
-
-              loop {
-                let peek = unparsed_tokens.pop().expect(&*format!(
-                  "Incomplete template string!\n\nParsed Tokens: {:?}",
-                  tokens
-                ));
-                let peek = peek.get_literal().as_str();
-
-                match peek {
-                  "'" => {
-                    tokens.push(Token::Char(String::from(buffer)));
-                    break;
-                  }
-                  _ => {
-                    buffer.push_str(peek);
-                  }
-                }
-              }
-            }
-            "," => {
-              tokens.push(Token::FunctionCallComma);
-            }
-            ")" => tokens.push(Token::FunctionCallCloseParenthesis),
-            // End of template string
-            "}" => {
-              tokens.push(Token::TemplateStringTemplateCloseBrace);
-              break;
-            }
-            _ if is_whitespace(literal) => {
-              parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?
-            }
-            _ => todo!(
-              "Unexpected token: {}\n\nParsed Tokens: {:?}",
-              literal,
-              tokens
-            ),
-          }
-        }
-
-        buffer = String::new();
-      }
-      // Any non-special piece of the string
-      _ => {
-        buffer.push_str(peek);
-        unparsed_tokens.pop();
-      }
-    }
-
-    if break_loop {
-      break;
-    }
-  }
-
-  return Ok(());
+  return Ok(syntax_tree);
 }
 
 fn parse_import(
-  mut unparsed_tokens: &mut Vec<UnparsedToken>,
-  mut tokens: &mut Vec<Token>,
-  _literal: &str,
+  tokens: &mut Vec<Symbol>,
+  syntax_tree: &mut SyntaxTree,
+  _: Symbol,
 ) -> Result<(), Error> {
-  tokens.push(Token::Import);
+  let token = tokens.pop().expect("Unfinished import!");
 
-  loop {
-    let unparsed = unparsed_tokens.pop().expect(&format!(
-      "Unfinished import!\n\nParsed Tokens: {:?}",
-      tokens
-    ));
-    let literal = unparsed.get_literal().as_str();
+  match token {
+    Symbol::DestructureOpenBrace => {
+      let mut fields = vec![];
 
-    match literal {
-      // Destructured
-      "{" => {
-        tokens.push(Token::DestructureOpenBrace);
+      loop {
+        let token = tokens.pop().expect("Unfinished import!");
 
-        while let Some(unparsed) = unparsed_tokens.pop() {
-          let literal = unparsed.get_literal().as_str();
+        match token {
+          Symbol::DestructureField(field) => {
+            let token = tokens.last().expect("Unfinished import!");
 
-          match literal {
-            name if is_identifier_name(name) => {
-              tokens.push(Token::DestructureField(name.to_string()))
-            }
-            ":" => {
-              tokens.push(Token::DestructureAliasColon);
+            match token {
+              Symbol::DestructureAliasColon => {
+                tokens.pop();
 
-              let mut unparsed = unparsed_tokens.pop().expect(&format!(
-                "Unfinished import!\n\nParsed Tokens: {:?}",
-                tokens
-              ));
-              let mut literal = unparsed.get_literal().as_str();
-
-              if is_whitespace(literal) {
-                parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?;
-
-                unparsed = unparsed_tokens.pop().expect(&format!(
-                  "Unfinished import!\n\nParsed Tokens: {:?}",
-                  tokens
-                ));
-                literal = unparsed.get_literal().as_str();
+                match tokens.pop().expect("Unfinished import!") {
+                  Symbol::DestructureAliasName(alias) => {
+                    fields.push(DestructureAssignmentFieldNode {
+                      field_token: field,
+                      alias: Some(DestructureAssignmentFieldAliasNode { name_token: alias }),
+                    });
+                  }
+                  token => todo!("Unexpected token: {:?}", token),
+                }
               }
-
-              if !is_identifier_name(literal) {
-                todo!("Unfinished import!\n\nParsed Tokens: {:?}", tokens);
+              _ => {
+                fields.push(DestructureAssignmentFieldNode {
+                  field_token: field,
+                  alias: None,
+                });
               }
-
-              tokens.push(Token::DestructureAliasName(literal.to_string()));
             }
-            "," => tokens.push(Token::DestructureComma),
-            "}" => {
-              tokens.push(Token::DestructureCloseBrace);
-              break;
-            }
-            _ if is_whitespace(literal) => {
-              parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?
-            }
-            _ => todo!(
-              "Unexpected token: {}\n\nParsed Tokens: {:?}",
-              literal,
-              tokens
-            ),
           }
-        }
-
-        break;
-      }
-      _ if is_whitespace(literal) => parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?,
-      _ => todo!(
-        "Unexpected token: {}\n\nParsed Tokens: {:?}",
-        literal,
-        tokens
-      ),
-    }
-  }
-
-  loop {
-    let unparsed = unparsed_tokens.pop().expect(&format!(
-      "Unfinished import!\n\nParsed Tokens: {:?}",
-      tokens
-    ));
-    let literal = unparsed.get_literal().as_str();
-
-    match literal {
-      "from" => tokens.push(Token::ImportFrom),
-      "\"" => {
-        loop {
-          let unparsed = unparsed_tokens.pop().expect(&format!(
-            "Unfinished import!\n\nParsed Tokens: {:?}",
-            tokens
-          ));
-          let literal = unparsed.get_literal().as_str();
-          match literal {
-            _ if is_import_source(literal) => {
-              tokens.push(Token::ImportSource(literal.to_string()));
-
-              let unparsed = unparsed_tokens.pop().expect(&format!(
-                "Unfinished import!\n\nParsed Tokens: {:?}",
-                tokens
-              ));
-              let literal = unparsed.get_literal().as_str();
-
-              if literal != "\"" {
-                todo!("Unfinished import!\n\nParsed Tokens: {:?}", tokens);
-              }
-
-              break;
-            }
-            _ if is_whitespace(literal) => {
-              parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?
-            }
-            _ => todo!(
-              "Unexpected token: {}\n\nParsed Tokens: {:?}",
-              literal,
-              tokens
-            ),
+          Symbol::DestructureComma => {}
+          Symbol::DestructureCloseBrace => {
+            break;
           }
+          _ => todo!("Unexpected token: {:?}", token),
         }
-
-        break;
       }
-      _ if is_whitespace(literal) => parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?,
-      _ => todo!(
-        "Unexpected token: {}\n\nParsed Tokens: {:?}",
-        literal,
-        tokens
-      ),
+
+      let assignment = ImportAssignmentNode::Destructured(DestructureAssignmentNode { fields });
+
+      match tokens.pop().expect("Unfinished import!") {
+        Symbol::ImportFrom => match tokens.pop().expect("Unfinished import!") {
+          Symbol::ImportSource(source) => {
+            syntax_tree.imports.push(ImportNode {
+              assignment,
+              source_token: source,
+            });
+          }
+          token => todo!("Unexpected token: {:?}", token),
+        },
+        token => todo!("Unexpected token: {:?}", token),
+      }
+
+      match tokens.pop().expect("Unfinished import!") {
+        Symbol::Semicolon => {}
+        token => todo!("Unexpected token: {:?}", token),
+      }
     }
+    _ => todo!("Unexpected token: {:?}", token),
   }
 
   return Ok(());
 }
 
 fn parse_function(
-  mut unparsed_tokens: &mut Vec<UnparsedToken>,
-  mut tokens: &mut Vec<Token>,
-  _literal: &str,
+  mut tokens: &mut Vec<Symbol>,
+  mut syntax_tree: &mut SyntaxTree,
+  _: Symbol,
+  is_public: bool,
 ) -> Result<(), Error> {
-  tokens.push(Token::Function);
+  let function_name;
 
   loop {
-    let unparsed = unparsed_tokens.pop().expect(&format!(
-      "Unfinished function!\n\nParsed Tokens: {:?}",
-      tokens
-    ));
-    let literal = unparsed.get_literal().as_str();
+    let token = tokens.pop().expect("Unfinished function!");
 
-    match literal {
-      name if is_identifier_name(name) => {
-        tokens.push(Token::FunctionName(name.to_string()));
-
-        expect_next(&mut unparsed_tokens, &mut tokens, &|l| l == "(", true)?;
-        parse_function_params(&mut unparsed_tokens, &mut tokens, "(")?;
-
-        expect_next(&mut unparsed_tokens, &mut tokens, &|l| l == "{", true)?;
-        parse_function_body(&mut unparsed_tokens, &mut tokens, "{")?;
-
+    match token {
+      Symbol::FunctionName(name) => {
+        function_name = name;
         break;
       }
-      _ if is_whitespace(literal) => parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?,
-      _ => todo!(
-        "Unexpected token: {}\n\nParsed Tokens: {:?}",
-        literal,
-        tokens
-      ),
+      _ => todo!("Unexpected token: {:?}", token),
     }
   }
 
-  return Ok(());
-}
+  match tokens.pop().expect("Unfinished function!") {
+    Symbol::FunctionParamsOpenParenthesis => {}
+    token => todo!("Unexpected token: {:?}", token),
+  }
 
-fn parse_function_params(
-  mut unparsed_tokens: &mut Vec<UnparsedToken>,
-  mut tokens: &mut Vec<Token>,
-  _literal: &str,
-) -> Result<(), Error> {
-  tokens.push(Token::FunctionParamsOpenParenthesis);
+  let mut params = vec![];
 
   loop {
-    let unparsed = unparsed_tokens.pop().expect(&format!(
-      "Unfinished function!\n\nParsed Tokens: {:?}",
-      tokens
-    ));
-    let literal = unparsed.get_literal().as_str();
+    let token = tokens.pop().expect("Unfinished function!");
 
-    match literal {
-      name if is_identifier_name(name) => {
-        tokens.push(Token::FunctionParamsParamName(name.to_string()));
-
-        expect_next(&mut unparsed_tokens, &mut tokens, &|l| l == ":", true)?;
-        tokens.push(Token::FunctionParamsParamTypeColon);
-
-        loop {
-          let unparsed = unparsed_tokens.pop().expect(&format!(
-            "Unfinished function!\n\nParsed Tokens: {:?}",
-            tokens
-          ));
-          let literal = unparsed.get_literal().as_str();
-
-          match literal {
-            name if is_identifier_name(name) => {
-              tokens.push(Token::FunctionParamsParamTypeName(name.to_string()));
-              break;
-            }
-            "mutable" => tokens.push(Token::FunctionParamsParamTypeMutable),
-            "shared" => tokens.push(Token::FunctionParamsParamTypeShared),
-            "&" => tokens.push(Token::FunctionParamsParamTypeBorrowed),
-            "," => {
-              tokens.push(Token::FunctionParamsComma);
-              break;
-            }
-            _ if is_whitespace(literal) => {
-              parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?
-            }
-            _ => todo!(
-              "Unexpected token: {}\n\nParsed Tokens: {:?}",
-              literal,
-              tokens
-            ),
-          }
-        }
+    match token {
+      Symbol::FunctionParamsParamName(_) => {
+        params.push(build_function_param_node(
+          &mut tokens,
+          &mut syntax_tree,
+          token,
+        )?);
       }
-      ")" => {
-        tokens.push(Token::FunctionParamsCloseParenthesis);
-
-        loop {
-          let unparsed = unparsed_tokens.pop().expect(&format!(
-            "Unfinished function!\n\nParsed Tokens: {:?}",
-            tokens
-          ));
-          let literal = unparsed.get_literal().as_str();
-
-          match literal {
-            ":" => {
-              tokens.push(Token::FunctionReturnTypeColon);
-
-              loop {
-                let unparsed = unparsed_tokens.pop().expect(&format!(
-                  "Unfinished function!\n\nParsed Tokens: {:?}",
-                  tokens
-                ));
-                let literal = unparsed.get_literal().as_str();
-
-                match literal {
-                  name if is_identifier_name(name) => {
-                    tokens.push(Token::FunctionParamsParamTypeName(name.to_string()))
-                  }
-                  "mutable" => tokens.push(Token::FunctionParamsParamTypeMutable),
-                  "shared" => tokens.push(Token::FunctionParamsParamTypeShared),
-                  "&" => tokens.push(Token::FunctionParamsParamTypeBorrowed),
-                  "{" => {
-                    unparsed_tokens.push(unparsed);
-                    break;
-                  }
-                  _ if is_whitespace(literal) => {
-                    parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?
-                  }
-                  _ => todo!(
-                    "Unexpected token: {}\n\nParsed Tokens: {:?}",
-                    literal,
-                    tokens
-                  ),
-                }
-              }
-            }
-            "{" => {
-              unparsed_tokens.push(unparsed);
-              break;
-            }
-            _ if is_whitespace(literal) => {
-              parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?
-            }
-            _ => todo!(
-              "Unexpected token: {}\n\nParsed Tokens: {:?}",
-              literal,
-              tokens
-            ),
-          }
-        }
-
+      Symbol::FunctionParamsCloseParenthesis => {
         break;
       }
-      _ if is_whitespace(literal) => parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?,
-      _ => todo!(
-        "Unexpected token: {}\n\nParsed Tokens: {:?}",
-        literal,
-        tokens
-      ),
+      token => todo!("Unexpected token: {:?}", token),
     }
   }
 
-  return Ok(());
-}
+  let signature = FunctionSignatureNode {
+    is_public,
+    name_token: function_name,
+    params,
+    return_type: None,
+  };
 
-fn parse_function_body(
-  mut unparsed_tokens: &mut Vec<UnparsedToken>,
-  mut tokens: &mut Vec<Token>,
-  _literal: &str,
-) -> Result<(), Error> {
-  tokens.push(Token::FunctionExpressionsOpenBrace);
+  match tokens.pop().expect("Unfinished function!") {
+    Symbol::FunctionExpressionsOpenBrace => {}
+    token => todo!("Unexpected token: {:?}", token),
+  }
+
+  let mut statements = vec![];
 
   loop {
-    let unparsed = unparsed_tokens.pop().expect(&format!(
-      "Unfinished function!\n\nParsed Tokens: {:?}",
-      tokens
-    ));
-    let literal = unparsed.get_literal().as_str();
+    let token = tokens.pop().expect("Unfinished function!");
 
-    match literal {
-      "\"" => parse_string(&mut unparsed_tokens, &mut tokens, literal)?,
-      "&" => tokens.push(Token::InstanceBorrow),
-      "let" | "const" => {
-        match literal {
-          "let" => tokens.push(Token::Let),
-          _ => tokens.push(Token::Const),
-        };
-
-        let mut unparsed = unparsed_tokens.pop().expect(&format!(
-          "Unfinished function!\n\nParsed Tokens: {:?}",
-          tokens
-        ));
-        let mut literal = unparsed.get_literal().as_str();
-
-        if is_whitespace(literal) {
-          parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?;
-
-          unparsed = unparsed_tokens.pop().expect(&format!(
-            "Unfinished function!\n\nParsed Tokens: {:?}",
-            tokens
-          ));
-          literal = unparsed.get_literal().as_str();
-        }
-
-        match literal {
-          name if is_identifier_name(name) => tokens.push(Token::VariableName(name.to_string())),
-          _ => todo!(
-            "Unexpected token: {}\n\nParsed Tokens: {:?}",
-            literal,
-            tokens
-          ),
-        }
-
-        unparsed = unparsed_tokens.pop().expect(&format!(
-          "Unfinished function!\n\nParsed Tokens: {:?}",
-          tokens
-        ));
-        literal = unparsed.get_literal().as_str();
-
-        if is_whitespace(literal) {
-          parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?;
-
-          unparsed = unparsed_tokens.pop().expect(&format!(
-            "Unfinished function!\n\nParsed Tokens: {:?}",
-            tokens
-          ));
-          literal = unparsed.get_literal().as_str();
-        }
-
-        match literal {
-          "=" => tokens.push(Token::Assignment),
-          _ => todo!(
-            "Unexpected token: {}\n\nParsed Tokens: {:?}",
-            literal,
-            tokens
-          ),
-        }
-      }
-      ")" => tokens.push(Token::FunctionCallCloseParenthesis),
-      ";" => tokens.push(Token::Semicolon),
-      "=" => tokens.push(Token::Assignment),
-      name if is_identifier_name(name) => {
-        let mut unparsed_peek = unparsed_tokens.last().expect(&format!(
-          "Unfinished function!\n\nParsed Tokens: {:?}",
-          tokens
-        ));
-        let mut peek = unparsed_peek.get_literal().as_str();
-
-        while is_whitespace(peek) {
-          unparsed_tokens.pop();
-
-          unparsed_peek = unparsed_tokens.last().expect(&format!(
-            "Unfinished function!\n\nParsed Tokens: {:?}",
-            tokens
-          ));
-          peek = unparsed_peek.get_literal().as_str();
-        }
-
-        match peek {
-          "::" => {
-            tokens.push(Token::TypeAccessName(name.to_string()));
-
-            tokens.push(Token::TypeAccessDoubleSemicolon);
-            unparsed_tokens.pop();
-          }
-          "." => {
-            tokens.push(Token::InstanceAccessName(name.to_string()));
-
-            tokens.push(Token::InstanceAccessPeriod);
-            unparsed_tokens.pop();
-          }
-          "(" => {
-            tokens.push(Token::FunctionCallName(name.to_string()));
-
-            tokens.push(Token::FunctionCallOpenParenthesis);
-            unparsed_tokens.pop();
-          }
-          _ if is_whitespace(literal) => {
-            parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?
-          }
-          _ => tokens.push(Token::InstanceReferenceName(String::from(name))),
-        }
-      }
-      "}" => {
-        tokens.push(Token::FunctionExpressionsCloseBrace);
+    match token {
+      Symbol::FunctionExpressionsCloseBrace => {
         break;
       }
-      _ if is_whitespace(literal) => parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?,
-      _ => todo!(
-        "Unexpected token: {}\n\nParsed Tokens: {:?}",
-        literal,
-        tokens
-      ),
+      token => statements.push(build_statement_node(&mut tokens, &mut syntax_tree, token)?),
     }
   }
+
+  let body = FunctionBodyNode { statements };
+
+  syntax_tree
+    .items
+    .push(ItemNode::Function(FunctionNode { signature, body }));
 
   return Ok(());
 }
 
-fn parse_whitespace(
-  unparsed_tokens: &mut Vec<UnparsedToken>,
-  _tokens: &mut Vec<Token>,
-  _literal: &str,
-) -> Result<(), Error> {
-  // tokens.push(Token::Whitespace);
+fn build_function_param_node(
+  mut tokens: &mut Vec<Symbol>,
+  mut syntax_tree: &mut SyntaxTree,
+  token: Symbol,
+) -> Result<FunctionParamNode, Error> {
+  match token {
+    Symbol::FunctionParamsParamName(param_name) => {
+      match tokens.pop().expect("Unfinished function param!") {
+        Symbol::FunctionParamsParamTypeColon => {}
+        token => todo!("Unexpected token: {:?}", token),
+      };
 
-  while let Some(unparsed) = unparsed_tokens.last() {
-    let literal = unparsed.get_literal().as_str();
+      let is_mutable = match tokens.last().expect("Unfinished function param!") {
+        Symbol::FunctionParamsParamTypeMutable => {
+          tokens.pop();
+          true
+        }
+        _ => false,
+      };
 
-    if !is_whitespace(literal) {
-      break;
+      let is_borrowed = match tokens.last().expect("Unfinished function param!") {
+        Symbol::FunctionParamsParamTypeBorrowed => {
+          tokens.pop();
+          true
+        }
+        _ => false,
+      };
+
+      let type_name = match tokens.pop().expect("Unfinished function param!") {
+        Symbol::FunctionParamsParamTypeName(name) => name,
+        token => todo!("Unexpected token: {:?}", token),
+      };
+
+      return Ok(FunctionParamNode {
+        name_token: param_name,
+        is_mutable,
+        is_borrowed,
+        type_token: type_name,
+      });
     }
-
-    unparsed_tokens.pop();
+    token => todo!("Unexpected token: {:?}", token),
   }
-
-  return Ok(());
 }
 
-fn expect_next(
-  mut unparsed_tokens: &mut Vec<UnparsedToken>,
-  mut tokens: &mut Vec<Token>,
-  expected: &dyn Fn(&str) -> bool,
-  allow_whitespace: bool,
-) -> Result<(), Error> {
-  let mut unparsed = unparsed_tokens.pop().expect(&format!(
-    "Unfinished function!\n\nParsed Tokens: {:?}",
-    tokens
-  ));
-  let mut literal = unparsed.get_literal().as_str();
+fn build_statement_node(
+  mut tokens: &mut Vec<Symbol>,
+  mut syntax_tree: &mut SyntaxTree,
+  token: Symbol,
+) -> Result<StatementNode, Error> {
+  match token {
+    Symbol::TypeAccessName(_) | Symbol::FunctionCallName(_) => {
+      let node =
+        StatementNode::Expression(build_expression_node(&mut tokens, &mut syntax_tree, token)?);
 
-  if allow_whitespace && is_whitespace(literal) {
-    parse_whitespace(&mut unparsed_tokens, &mut tokens, literal)?;
+      match tokens.pop().expect("Unfinished expression!") {
+        Symbol::Semicolon => {}
+        token => todo!("Unexpected token: {:?}", token),
+      }
 
-    unparsed = unparsed_tokens.pop().expect(&format!(
-      "Unfinished function!\n\nParsed Tokens: {:?}",
-      tokens
-    ));
-    literal = unparsed.get_literal().as_str();
+      return Ok(node);
+    }
+    Symbol::Const => match tokens.pop().expect("Unfinished expression!") {
+      Symbol::VariableName(variable_name) => {
+        match tokens.pop().expect("Unfinished expression!") {
+          Symbol::Assignment => {}
+          token => todo!("Unexpected token: {:?}", token),
+        }
+
+        let token = tokens.pop().expect("Unfinised expression!");
+
+        let node = StatementNode::Assignment(AssignmentNode {
+          left: AssignmentLeftNode {
+            reassignable: false,
+            name_token: variable_name,
+          },
+          right: build_expression_node(&mut tokens, &mut syntax_tree, token)?,
+        });
+
+        match tokens.pop().expect("Unfinished expression!") {
+          Symbol::Semicolon => {}
+          token => todo!("Unexpected token: {:?}", token),
+        }
+
+        return Ok(node);
+      }
+      token => todo!("Unexpected token: {:?}", token),
+    },
+    token => todo!("Unexpected token: {:?}", token),
   }
-
-  if !expected(literal) {
-    todo!(
-      "Unexpected token: {}\n\nParsed Tokens: {:?}",
-      literal,
-      tokens
-    );
-  }
-
-  return Ok(());
 }
 
-fn is_whitespace(string: &str) -> bool {
-  string.trim().is_empty()
-}
-
-fn is_identifier_name(string: &str) -> bool {
-  let mut is_first = true;
-
-  for c in string.chars() {
-    if is_first && !c.is_alphabetic() && c != '_' {
-      return false;
+fn build_expression_node(
+  mut tokens: &mut Vec<Symbol>,
+  mut syntax_tree: &mut SyntaxTree,
+  token: Symbol,
+) -> Result<ExpressionNode, Error> {
+  match token {
+    Symbol::Int(value) => {
+      return Ok(ExpressionNode::Literal(LiteralDataNode::Integer(value)));
     }
-
-    if !is_first && !c.is_alphanumeric() && c != '_' {
-      return false;
+    Symbol::PlainString(value) => {
+      return Ok(ExpressionNode::Literal(LiteralDataNode::PlainString(value)));
     }
+    Symbol::TemplateStringStart(start) => {
+      let mut middle_tokens = vec![];
+      let mut expressions = vec![];
 
-    is_first = false;
+      loop {
+        let token = tokens.pop().expect("Unfinished expression!");
+
+        match token {
+          Symbol::TemplateStringMiddle(middle) => {
+            middle_tokens.push(middle);
+          }
+          Symbol::TemplateStringEnd(end) => {
+            return Ok(ExpressionNode::Literal(LiteralDataNode::TemplateString(
+              TemplateStringNode {
+                start_token: start,
+                middle_tokens,
+                expressions,
+                end_token: end,
+              },
+            )))
+          }
+          Symbol::TemplateStringTemplateOpenBrace => {
+            let token = tokens.pop().expect("Unfinished expression!");
+            let expression = build_expression_node(&mut tokens, &mut syntax_tree, token)?;
+
+            expressions.push(expression);
+
+            match tokens.pop().expect("Unfinished expression!") {
+              Symbol::TemplateStringTemplateCloseBrace => {}
+              token => todo!("Unexpected token: {:?}", token),
+            }
+          }
+          token => todo!("Unexpected token: {:?}", token),
+        }
+      }
+    }
+    Symbol::InstanceBorrow => match tokens.pop().expect("Unfinished expression!") {
+      Symbol::InstanceReferenceName(instance_reference_name) => {
+        return Ok(ExpressionNode::InstanceReference(InstanceReferenceNode {
+          name_token: instance_reference_name,
+          is_borrowed: true,
+        }));
+      }
+      token => todo!("Unexpected token: {:?}", token),
+    },
+    Symbol::InstanceReferenceName(instance_reference_name) => {
+      return Ok(ExpressionNode::InstanceReference(InstanceReferenceNode {
+        name_token: instance_reference_name,
+        is_borrowed: false,
+      }));
+    }
+    Symbol::TypeAccessName(_) => {
+      return Ok(ExpressionNode::Call(build_expression_call_node(
+        &mut tokens,
+        &mut syntax_tree,
+        token,
+        vec![],
+      )?));
+    }
+    Symbol::FunctionCallName(_) => {
+      return Ok(ExpressionNode::Call(build_expression_call_node(
+        &mut tokens,
+        &mut syntax_tree,
+        token,
+        vec![],
+      )?));
+    }
+    token => todo!("Unexpected token: {:?}", token),
   }
-
-  return true;
 }
 
-fn is_import_source(string: &str) -> bool {
-  let mut is_first = true;
+fn build_expression_call_node(
+  mut tokens: &mut Vec<Symbol>,
+  mut syntax_tree: &mut SyntaxTree,
+  token: Symbol,
+  mut segments: Vec<ExpressionCallPathSegmentNode>,
+) -> Result<ExpressionCallNode, Error> {
+  match token {
+    Symbol::TypeAccessName(type_access_name) => {
+      segments.push(ExpressionCallPathSegmentNode::TypeIdentity(
+        type_access_name,
+      ));
 
-  for c in string.chars() {
-    if is_first && !c.is_alphabetic() && c != '_' && c != '@' {
-      return false;
+      match tokens.pop().expect("Unfinished function!") {
+        Symbol::TypeAccessDoubleSemicolon => {}
+        token => todo!("Unexpected token: {:?}", token),
+      }
+
+      loop {
+        let token = tokens.pop().expect("Unfinished function!");
+
+        match token {
+          Symbol::FunctionCallName(_) => {
+            return build_expression_call_node(&mut tokens, &mut syntax_tree, token, segments);
+          }
+          token => todo!("Unexpected token: {:?}", token),
+        }
+      }
     }
+    Symbol::FunctionCallName(function_call_name) => {
+      segments.push(ExpressionCallPathSegmentNode::FunctionIdentity(
+        function_call_name,
+      ));
 
-    if !is_first && !c.is_alphanumeric() && c != '_' && c != '@' && c != '/' {
-      return false;
+      let call_path = ExpressionCallPathNode { segments };
+
+      let mut args = vec![];
+
+      match tokens.pop().expect("Unfinished function!") {
+        Symbol::FunctionCallOpenParenthesis => {}
+        token => todo!("Unexpected token: {:?}", token),
+      }
+
+      loop {
+        let token = tokens.pop().expect("Unfinished function!");
+
+        match token {
+          Symbol::FunctionCallCloseParenthesis => {
+            break;
+          }
+          token => args.push(build_expression_node(&mut tokens, &mut syntax_tree, token)?),
+        }
+      }
+
+      return Ok(ExpressionCallNode {
+        subject: call_path,
+        args,
+      });
     }
-
-    is_first = false;
+    token => todo!("Unexpected token: {:?}", token),
   }
-
-  return true;
-}
-
-fn is_numeric(string: &str) -> bool {
-  string.chars().all(char::is_numeric)
 }

@@ -1,22 +1,22 @@
-use super::{ast::*, Error};
+use super::{syntax::*, Error};
 
 const IMPORT_PREFIX: &'static str = "lang_";
 
 const INCLUDE_PRELUDE: &'static str = "mod lang_prelude;\nuse lang_prelude::*;\n";
 
-pub fn generate_rust(mut ast: Ast) -> Result<String, Error> {
+pub fn generate_rust(mut syntax_tree: SyntaxTree) -> Result<String, Error> {
   let mut rs = String::from(INCLUDE_PRELUDE);
 
-  ast.imports.reverse();
-  while let Some(import) = ast.imports.pop() {
-    rs.push_str(&generate_import(&mut ast, import)?);
+  syntax_tree.imports.reverse();
+  while let Some(import) = syntax_tree.imports.pop() {
+    rs.push_str(&generate_import(&mut syntax_tree, import)?);
   }
 
-  ast.items.reverse();
-  while let Some(item) = ast.items.pop() {
+  syntax_tree.items.reverse();
+  while let Some(item) = syntax_tree.items.pop() {
     match item {
       ItemNode::Function(function) => {
-        rs.push_str(&generate_function(&mut ast, function)?);
+        rs.push_str(&generate_function(&mut syntax_tree, function)?);
       }
     }
   }
@@ -24,7 +24,7 @@ pub fn generate_rust(mut ast: Ast) -> Result<String, Error> {
   return Ok(rs);
 }
 
-pub fn generate_import(_ast: &mut Ast, import: ImportNode) -> Result<String, Error> {
+pub fn generate_import(_syntax_tree: &mut SyntaxTree, import: ImportNode) -> Result<String, Error> {
   let mut import_rs = format!(
     "mod {}{};\nuse {}{}::",
     IMPORT_PREFIX, import.source_token, IMPORT_PREFIX, import.source_token
@@ -51,7 +51,10 @@ pub fn generate_import(_ast: &mut Ast, import: ImportNode) -> Result<String, Err
   return Ok(import_rs);
 }
 
-pub fn generate_function(mut ast: &mut Ast, mut function: FunctionNode) -> Result<String, Error> {
+pub fn generate_function(
+  mut syntax_tree: &mut SyntaxTree,
+  mut function: FunctionNode,
+) -> Result<String, Error> {
   let mut function_rs = String::new();
 
   if function.signature.is_public {
@@ -76,7 +79,7 @@ pub fn generate_function(mut ast: &mut Ast, mut function: FunctionNode) -> Resul
 
   function.body.statements.reverse();
   while let Some(statement) = function.body.statements.pop() {
-    function_rs.push_str(&generate_statement(&mut ast, statement)?);
+    function_rs.push_str(&generate_statement(&mut syntax_tree, statement)?);
   }
 
   function_rs.push_str("}\n");
@@ -84,15 +87,18 @@ pub fn generate_function(mut ast: &mut Ast, mut function: FunctionNode) -> Resul
   return Ok(function_rs);
 }
 
-pub fn generate_statement(mut ast: &mut Ast, statement: StatementNode) -> Result<String, Error> {
+pub fn generate_statement(
+  mut syntax_tree: &mut SyntaxTree,
+  statement: StatementNode,
+) -> Result<String, Error> {
   let mut statement_rs;
 
   match statement {
     StatementNode::Assignment(assignment) => {
-      statement_rs = generate_assignment(&mut ast, assignment)?;
+      statement_rs = generate_assignment(&mut syntax_tree, assignment)?;
     }
     StatementNode::Expression(expression) => {
-      statement_rs = generate_expression(&mut ast, expression)?;
+      statement_rs = generate_expression(&mut syntax_tree, expression)?;
     }
     node => todo!("Unexpected node: {:?}", node),
   }
@@ -100,7 +106,10 @@ pub fn generate_statement(mut ast: &mut Ast, statement: StatementNode) -> Result
   return Ok(statement_rs);
 }
 
-pub fn generate_assignment(mut ast: &mut Ast, assignment: AssignmentNode) -> Result<String, Error> {
+pub fn generate_assignment(
+  mut syntax_tree: &mut SyntaxTree,
+  assignment: AssignmentNode,
+) -> Result<String, Error> {
   let mut assignment_rs = String::from("let ");
 
   assignment_rs.push_str(if assignment.left.reassignable {
@@ -111,14 +120,17 @@ pub fn generate_assignment(mut ast: &mut Ast, assignment: AssignmentNode) -> Res
 
   assignment_rs.push_str(&format!("{} = ", assignment.left.name_token));
 
-  assignment_rs.push_str(&generate_expression(&mut ast, assignment.right)?);
+  assignment_rs.push_str(&generate_expression(&mut syntax_tree, assignment.right)?);
 
   assignment_rs.push_str(";\n");
 
   return Ok(assignment_rs);
 }
 
-pub fn generate_expression(mut ast: &mut Ast, expression: ExpressionNode) -> Result<String, Error> {
+pub fn generate_expression(
+  mut syntax_tree: &mut SyntaxTree,
+  expression: ExpressionNode,
+) -> Result<String, Error> {
   let mut expression_rs = String::new();
 
   match expression {
@@ -140,7 +152,7 @@ pub fn generate_expression(mut ast: &mut Ast, expression: ExpressionNode) -> Res
 
       call.args.reverse();
       while let Some(arg) = call.args.pop() {
-        expression_rs.push_str(&generate_expression(&mut ast, arg)?);
+        expression_rs.push_str(&generate_expression(&mut syntax_tree, arg)?);
 
         if call.args.len() > 0 {
           expression_rs.push_str(", ");
@@ -175,7 +187,7 @@ pub fn generate_expression(mut ast: &mut Ast, expression: ExpressionNode) -> Res
 
         template_string.expressions.reverse();
         while let Some(expression) = template_string.expressions.pop() {
-          args.push_str(&generate_expression(&mut ast, expression)?);
+          args.push_str(&generate_expression(&mut syntax_tree, expression)?);
 
           if template_string.expressions.len() > 0 {
             args.push_str(", ");

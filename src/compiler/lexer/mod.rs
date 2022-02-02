@@ -1,9 +1,9 @@
 mod matchers;
 
-use super::{tokens::UnparsedToken, Error};
+use super::{tokens::Token, Error};
 use matchers::{get_token_matchers, TokenMatcher};
 
-pub fn lex_into_tokens(contents: String) -> Result<Vec<UnparsedToken>, Error> {
+pub fn lex_into_tokens(contents: String) -> Result<Vec<Token>, Error> {
   let token_matchers = get_token_matchers();
 
   let mut tokens = vec![];
@@ -21,36 +21,9 @@ pub fn lex_into_tokens(contents: String) -> Result<Vec<UnparsedToken>, Error> {
       match token_matcher {
         TokenMatcher::SingleChar(c2) => {
           if c == *c2 {
-            tokens.push(UnparsedToken::new(c));
+            tokens.push(Token::new(c));
             is_matched = true;
           }
-        }
-        TokenMatcher::SinglePredicate(predicate) => {
-          if predicate(c) {
-            tokens.push(UnparsedToken::new(c));
-            is_matched = true;
-          }
-        }
-        TokenMatcher::BufferedChar(c2) => {
-          if c != *c2 {
-            // check next matcher
-            continue;
-          }
-
-          is_matched = true;
-
-          let mut buffer = String::from(c);
-
-          while let Some(&peek) = iter.peek() {
-            if c != peek {
-              break;
-            }
-
-            buffer.push(peek);
-            iter.next();
-          }
-
-          tokens.push(UnparsedToken::new(buffer));
         }
         TokenMatcher::BufferedPredicate(predicate) => {
           let mut buffer = String::new();
@@ -73,7 +46,7 @@ pub fn lex_into_tokens(contents: String) -> Result<Vec<UnparsedToken>, Error> {
             iter.next();
           }
 
-          tokens.push(UnparsedToken::new(buffer));
+          tokens.push(Token::new(buffer));
         }
       }
     }

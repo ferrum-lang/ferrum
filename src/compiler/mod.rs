@@ -1,17 +1,18 @@
-mod ast;
-mod interpreter;
+mod generator;
 mod lexer;
 mod parser;
+mod symbols;
+mod syntax;
 mod tokens;
 
 use super::error::Error;
 
 pub fn compile(contents: String) -> Result<String, Error> {
-    let unparsed_tokens = lexer::lex_into_tokens(contents)?;
+    let tokens = lexer::lex_into_tokens(contents)?;
 
-    let tokens = parser::parse_tokens(unparsed_tokens)?;
+    let symbols = symbols::symolize_tokens(tokens)?;
 
-    let ast = ast::build_from_tokens(tokens)?;
+    let syntax_tree = parser::parse_symbols(symbols)?;
 
-    return interpreter::generate_rust(ast);
+    return generator::generate_rust(syntax_tree);
 }
