@@ -22,7 +22,7 @@ contract PersonRepository {
   
   public &self.find_all_people(): result<list<shared Person>, PersonRepositoryError>;
   
-  public &self.find_person_by_id(id: shared PersonId): result<optional<shared Person>, PersonRepositoryError>;
+  public &self.find_person_by_id(id: shared PersonId): result<shared Person?, PersonRepositoryError>;
   
   public mutable &self.update_person_by_id(id: shared PersonId, person: shared Person): result<_, PersonRepositoryError>;
   
@@ -52,7 +52,7 @@ structure LocalPersonRepository {
       );
     }
 
-    public &self.find_person_by_id(id: shared PersonId): result<optional<shared Person>, PersonRepositoryError> {
+    public &self.find_person_by_id(id: shared PersonId): result<shared Person?>, PersonRepositoryError> {
       return ok(self.map.get(&id).shared());
     }
 
@@ -140,7 +140,7 @@ structure StoredPersonService {
         .map_err((e) => PersonServiceError {});
     }
 
-    public &self.find_person_by_id(id: shared PersonId): result<optional<shared Person>, PersonServiceError> {
+    public &self.find_person_by_id(id: shared PersonId): result<shared Person?>, PersonServiceError> {
       return self.person_repository
         .find_person_by_id(id)
         .map_err((e) => PersonServiceError {});

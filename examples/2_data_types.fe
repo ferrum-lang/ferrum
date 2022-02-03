@@ -51,9 +51,9 @@ function main() {
   const x: list<int> = [i + 1 for i in 0..3];
 
   // Optionals
-  const x: optional<int> = none;
-  const x: optional<int> = some(123);
-  const x: optional<int> = 123; // automagically wrapped in `some()`
+  const x: int? = none;
+  const x: int? = some(123);
+  const x: int? = 123; // automagically wrapped in `some()`
 
   const x: boolean = none.is_some();
   const x: boolean = none.is_none();
@@ -62,10 +62,19 @@ function main() {
   const x: int = none.get_or(0);
   const x: int = none.get_or_else(() => 0);
 
+  const x: int = none ?? 0;
+  const x: int = none ?? () => 0;
+
+  const x: string? = "abc";
+  const y: uint? = x?.length;
+  const y: uint = x?.length ?? 0;
+
   const x: result<int> = none.ok_or(error("uh oh!"));
   const x: result<int, string> = none.ok_or("uh oh!");
   const x: result<int, string> = none.ok_or_else(() => "uh oh!");
   const x = none.ok_or_else(() => "uh oh!");
+
+  const x: result<int> = none ?? error;
 
   // Results
   const x: result<std::void, std::Error> = ok();
@@ -80,6 +89,11 @@ function main() {
   const x: boolean = ok(123).is_ok();
   const x: boolean = ok(123).is_error();
 
-  const x: optional<int> = ok(123).get_ok();
-  const x: optional<std::Error> = ok(123).get_error();
+  const x: int? = ok(123).get_ok();
+  const x: std::Error? = ok(123).get_error();
+
+  (): std::Error => {
+    const x: result<int> = 123;
+    const x: int = x?;
+  }
 }

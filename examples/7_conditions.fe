@@ -34,4 +34,17 @@ function main() {
     x if x.length > 3 => Console::write_line("{x}: 6"),
     _ => Console::write_line(7),
   }
+
+  const x = true;
+  Console::write_line(x ? "yes" : "no");
+
+  const x: boolean? = true;
+  Console::write_line(x ?? "none"); // prints "true", "false", or "none"
+
+  // Won't compile as no clear way to print optional
+  // Console::write_line(x);
+
+  // Won't compile as too ambiguous without parenthesis
+  // Console::write_line(x ? x ? "true" : "false" : "none")
+  Console::write_line(x ? (x ? "true : "false") : "none")
 }

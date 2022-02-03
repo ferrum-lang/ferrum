@@ -15,6 +15,7 @@ pub fn symolize_tokens(mut tokens: Vec<Token>) -> Result<Vec<Symbol>, Error> {
       "import" => symbolize_import(&mut tokens, &mut symbols, literal)?,
       "function" => symbolize_function(&mut tokens, &mut symbols, literal)?,
       _ if is_whitespace(literal) => symbolize_whitespace(&mut tokens, &mut symbols, literal)?,
+      _ if is_comment(literal) => {}
       _ => todo!("Unexpected token: {}\n\nSymbols : {:?}", literal, symbols),
     }
   }
@@ -480,6 +481,31 @@ fn symbolize_function_body(
           literal = token.get_literal().as_str();
         }
 
+        if literal == ":" {
+          token = tokens
+            .pop()
+            .expect(&format!("Unfinished function!\n\nSymbols: {:?}", symbols));
+          literal = token.get_literal().as_str();
+
+          if is_whitespace(literal) {
+            symbolize_whitespace(&mut tokens, &mut symbols, literal)?;
+            token = tokens
+              .pop()
+              .expect(&format!("Unfinished function!\n\nSymbols: {:?}", symbols));
+            literal = token.get_literal().as_str();
+          }
+
+          symbolize_variable_type(&mut tokens, &mut symbols, literal)?;
+
+          if is_whitespace(literal) {
+            symbolize_whitespace(&mut tokens, &mut symbols, literal)?;
+            token = tokens
+              .pop()
+              .expect(&format!("Unfinished function!\n\nSymbols: {:?}", symbols));
+            literal = token.get_literal().as_str();
+          }
+        }
+
         match literal {
           "=" => symbols.push(Symbol::Assignment),
           _ => todo!("Unexpected token: {}\n\nSymbols: {:?}", literal, symbols),
@@ -531,11 +557,27 @@ fn symbolize_function_body(
         break;
       }
       _ if is_whitespace(literal) => symbolize_whitespace(&mut tokens, &mut symbols, literal)?,
+      _ if is_comment(literal) => {}
       _ => todo!("Unexpected token: {}\n\nSymbols: {:?}", literal, symbols),
     }
   }
 
   return Ok(());
+}
+
+fn symbolize_variable_type(
+  mut tokens: &mut Vec<Token>,
+  mut symbols: &mut Vec<Symbol>,
+  literal: &str,
+) -> Result<(), Error> {
+  match literal {
+    _ if is_identifier_name(literal) => {
+      // symbols.push(Symbol::)
+    }
+    _ => todo!("Unexpected token: {}\n\nSymbols: {:?}", literal, symbols),
+  }
+
+  todo!("Unexpected token: {}\n\nSymbols: {:?}", literal, symbols);
 }
 
 fn symbolize_whitespace(
@@ -587,6 +629,10 @@ fn expect_next(
 
 fn is_whitespace(string: &str) -> bool {
   string.trim().is_empty()
+}
+
+fn is_comment(string: &str) -> bool {
+  return string.starts_with("//") || string.starts_with("/*");
 }
 
 fn is_identifier_name(string: &str) -> bool {

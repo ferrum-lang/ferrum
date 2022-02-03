@@ -13,7 +13,7 @@ structure Person {
   }
 }
 
-function get_oldest_person(person1: &Person, person2: &Person): optional<&Person> {
+function get_oldest_person(person1: &Person, person2: &Person): &Person? {
   if person1.age > person2.age {
     return some(person1);
   }

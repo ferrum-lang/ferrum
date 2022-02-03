@@ -11,19 +11,22 @@ enum LangStringValue {
 #[derive(Debug, Clone)]
 pub struct LangString {
     value: LangStringValue,
+    pub length: usize,
 }
 
 impl LangString {
     #[allow(dead_code)]
     pub const fn from_slice(slice: &'static str) -> Self {
         Self {
+            length: slice.len(),
             value: LangStringValue::Slice(slice),
         }
     }
 
     #[allow(dead_code)]
-    pub const fn from_owned(string: String) -> Self {
+    pub fn from_owned(string: String) -> Self {
         Self {
+            length: string.len(),
             value: LangStringValue::Owned(string),
         }
     }

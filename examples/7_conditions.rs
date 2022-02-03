@@ -34,6 +34,21 @@ const STR_SLICE_8: LangString = LangString::from_slice("5");
 #[allow(non_upper_case_globals)]
 const STR_SLICE_9: LangString = LangString::from_slice("7");
 
+#[allow(non_upper_case_globals)]
+const STR_SLICE_10: LangString = LangString::from_slice("yes");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_11: LangString = LangString::from_slice("no");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_12: LangString = LangString::from_slice("none");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_13: LangString = LangString::from_slice("true");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_14: LangString = LangString::from_slice("false");
+
 fn main() {
     if true {
         Console::write_line(STR_SLICE_0);
@@ -68,4 +83,23 @@ fn main() {
         x if x.len() > 3 => Console::write_line(LangString::from_owned(format!("{}: 6", x))),
         _ => Console::write_line(STR_SLICE_9),
     }
+
+    let x = true;
+    Console::write_line(if x { STR_SLICE_10 } else { STR_SLICE_11 });
+
+    let x: Option<bool> = Some(true);
+    Console::write_line(
+        x.map(|x| LangString::from_owned(x.to_string()))
+            .unwrap_or(STR_SLICE_12),
+    );
+
+    Console::write_line(if let Some(x) = x {
+        if x {
+            STR_SLICE_13
+        } else {
+            STR_SLICE_14
+        }
+    } else {
+        STR_SLICE_12
+    });
 }

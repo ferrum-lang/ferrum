@@ -7,7 +7,10 @@ use lang_prelude::*;
 const STR_SLICE_0: LangString = LangString::from_slice("Adam");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_1: LangString = LangString::from_slice("uh oh!");
+const STR_SLICE_1: LangString = LangString::from_slice("abc");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_2: LangString = LangString::from_slice("uh oh!");
 
 fn main() {
     let x: bool = true;
@@ -61,6 +64,7 @@ fn main() {
 
     let x: Option<isize> = None;
     let x: Option<isize> = Some(123);
+    let x: Option<isize> = Some(123);
 
     let x: bool = (None as Option<()>).is_some();
     let x: bool = (None as Option<()>).is_none();
@@ -69,24 +73,42 @@ fn main() {
     let x: isize = None.unwrap_or(0);
     let x: isize = None.unwrap_or_else(|| 0);
 
-    let x: Result<isize, lang_std::Error> = None.ok_or(lang_std::Error::new(STR_SLICE_1));
-    let x: Result<isize, LangString> = None.ok_or(STR_SLICE_1);
+    let x: isize = None.unwrap_or(0);
+    let x: isize = None.unwrap_or_else(|| 0);
+
+    let x: Option<LangString> = Some(STR_SLICE_1);
+    let y: Option<usize> = x.map(|x| x.length);
+    let y: usize = x.map(|x| x.length).unwrap_or(0);
+
+    let x: Result<isize, lang_std::Error> = None.ok_or(lang_std::Error::new(STR_SLICE_2));
+    let x: Result<isize, LangString> = None.ok_or(STR_SLICE_2);
     let x: Result<isize, LangString> = {
         let x: Option<isize> = None;
         if let Some(x) = x {
             Ok(x)
         } else {
-            let f = || STR_SLICE_1;
+            let f = || STR_SLICE_2;
             Err(f())
         }
     };
+    let x = {
+        let x: Option<isize> = None;
+        if let Some(x) = x {
+            Ok(x)
+        } else {
+            let f = || STR_SLICE_2;
+            Err(f())
+        }
+    };
+
+    let x: Result<isize, lang_std::Error> = None.ok_or(lang_std::Error::empty());
 
     let x: Result<(), lang_std::Error> = Ok(());
     let x: Result<(), lang_std::Error> = Ok(());
     let x: Result<(), lang_std::Error> = Ok(());
     let x: Result<(), lang_std::Error> = Err(lang_std::Error::empty());
 
-    let x: Result<isize, LangString> = Err(STR_SLICE_1);
+    let x: Result<isize, LangString> = Err(STR_SLICE_2);
     let x: Result<isize, LangString> = Ok(123);
 
     let x: bool = {
