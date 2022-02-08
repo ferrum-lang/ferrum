@@ -13,6 +13,10 @@ impl Token {
   pub fn get_literal(&self) -> &String {
     return &self.literal;
   }
+
+  pub fn take_literal(self) -> String {
+    return self.literal;
+  }
 }
 
 impl std::fmt::Debug for Token {

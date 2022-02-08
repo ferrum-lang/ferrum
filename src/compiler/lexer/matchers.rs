@@ -25,9 +25,13 @@ pub fn get_token_matchers() -> Vec<TokenMatcher> {
     TokenMatcher::SingleChar('}'),
     TokenMatcher::SingleChar(';'),
     TokenMatcher::SingleChar('"'),
-    TokenMatcher::SingleChar('?'),
     TokenMatcher::SingleChar('~'),
     TokenMatcher::SingleChar('\''),
+    TokenMatcher::BufferedPredicate(Box::new(|buffer, c| match buffer.as_str() {
+      "" => c == '?',  // matches "?"
+      "?" => c == '?', // matches "??"
+      _ => false,
+    })),
     TokenMatcher::BufferedPredicate(Box::new(|buffer, c| match buffer.as_str() {
       "" => c == '\\', // matches "\"
       "\\" => true,    // matches "\*" where * is any char
