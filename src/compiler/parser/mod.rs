@@ -184,8 +184,8 @@ fn parse_function(
 }
 
 fn build_function_param_node(
-  mut tokens: &mut Vec<Symbol>,
-  mut syntax_tree: &mut SyntaxTree,
+  tokens: &mut Vec<Symbol>,
+  syntax_tree: &mut SyntaxTree,
   token: Symbol,
 ) -> Result<FunctionParamNode, Error> {
   match token {

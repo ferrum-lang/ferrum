@@ -450,30 +450,6 @@ fn symbolize_function_return(
 
         symbolize_type(&mut tokens, &mut symbols, literal)?;
 
-        // loop {
-        //   let token = tokens
-        //     .pop()
-        //     .expect(&format!("Unfinished function!\n\nSymbols: {:?}", symbols));
-        //   let literal = token.get_literal().as_str();
-
-        //   match literal {
-        //     name if is_identifier_name(name) => {
-        //       symbols.push(Symbol::FunctionParamsParamTypeName(name.to_string()))
-        //     }
-        //     "mutable" => symbols.push(Symbol::FunctionParamsParamTypeMutable),
-        //     "shared" => symbols.push(Symbol::FunctionParamsParamTypeShared),
-        //     "&" => symbols.push(Symbol::FunctionParamsParamTypeBorrowed),
-        //     "{" => {
-        //       tokens.push(token);
-        //       break;
-        //     }
-        //     _ if is_whitespace(literal) => {
-        //       symbolize_whitespace(&mut tokens, &mut symbols, literal)?
-        //     }
-        //     _ => todo!("Unexpected token: {}\n\nSymbols: {:?}", literal, symbols),
-        //   }
-        // }
-
         break;
       }
       _ if is_whitespace(literal) => symbolize_whitespace(&mut tokens, &mut symbols, literal)?,
