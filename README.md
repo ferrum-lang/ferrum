@@ -1,5 +1,7 @@
 # The Ferrum Programming Language
 
+## Important! This language is a prototype-in-progress. The ideas & repos are very much in early conception, and not yet finished or fleshed out.
+
 Meant as a "wrapper" or "layer" over-top of Rust. More accessible, faster development, just as safe (if not safer), but less powerful, and less performant.
 
 ## The Oxidize Build Tool
