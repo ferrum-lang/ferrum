@@ -1,25 +1,25 @@
 use super::{symbols::Symbol, syntax::*, Error};
 
-pub fn parse_symbols(mut tokens: Vec<Symbol>) -> Result<SyntaxTree, Error> {
-  // println!("Building Syntax Tree From:\n{:?}\n", tokens);
+pub fn parse_symbols(mut symbols: Vec<Symbol>) -> Result<SyntaxTree, Error> {
+  // println!("Building Syntax Tree From:\n{:?}\n", symbols);
 
-  tokens.reverse();
+  symbols.reverse();
 
   let mut syntax_tree = SyntaxTree::new();
 
   let mut is_public = false;
 
-  while let Some(token) = tokens.pop() {
-    match token {
-      Symbol::Import => parse_import(&mut tokens, &mut syntax_tree, token)?,
-      Symbol::Function => parse_function(&mut tokens, &mut syntax_tree, token, is_public)?,
+  while let Some(symbol) = symbols.pop() {
+    match symbol {
+      Symbol::Import => parse_import(&mut symbols, &mut syntax_tree, symbol)?,
+      Symbol::Function => parse_function(&mut symbols, &mut syntax_tree, symbol, is_public)?,
       Symbol::Public => {
         is_public = true;
         continue;
       }
       _ => todo!(
-        "Unexpected token: {:?}\n\nSyntax Tree: {:?}",
-        token,
+        "Unexpected symbol: {:?}\n\nSyntax Tree: {:?}",
+        symbol,
         syntax_tree
       ),
     }
@@ -31,35 +31,35 @@ pub fn parse_symbols(mut tokens: Vec<Symbol>) -> Result<SyntaxTree, Error> {
 }
 
 fn parse_import(
-  tokens: &mut Vec<Symbol>,
+  symbols: &mut Vec<Symbol>,
   syntax_tree: &mut SyntaxTree,
   _: Symbol,
 ) -> Result<(), Error> {
-  let token = tokens.pop().expect("Unfinished import!");
+  let symbol = symbols.pop().expect("Unfinished import!");
 
-  match token {
+  match symbol {
     Symbol::DestructureOpenBrace => {
       let mut fields = vec![];
 
       loop {
-        let token = tokens.pop().expect("Unfinished import!");
+        let symbol = symbols.pop().expect("Unfinished import!");
 
-        match token {
+        match symbol {
           Symbol::DestructureField(field) => {
-            let token = tokens.last().expect("Unfinished import!");
+            let symbol = symbols.last().expect("Unfinished import!");
 
-            match token {
+            match symbol {
               Symbol::DestructureAliasColon => {
-                tokens.pop();
+                symbols.pop();
 
-                match tokens.pop().expect("Unfinished import!") {
+                match symbols.pop().expect("Unfinished import!") {
                   Symbol::DestructureAliasName(alias) => {
                     fields.push(DestructureAssignmentFieldNode {
                       field_token: field,
                       alias: Some(DestructureAssignmentFieldAliasNode { name_token: alias }),
                     });
                   }
-                  token => todo!("Unexpected token: {:?}", token),
+                  symbol => todo!("Unexpected symbol: {:?}", symbol),
                 }
               }
               _ => {
@@ -74,38 +74,38 @@ fn parse_import(
           Symbol::DestructureCloseBrace => {
             break;
           }
-          _ => todo!("Unexpected token: {:?}", token),
+          _ => todo!("Unexpected symbol: {:?}", symbol),
         }
       }
 
       let assignment = ImportAssignmentNode::Destructured(DestructureAssignmentNode { fields });
 
-      match tokens.pop().expect("Unfinished import!") {
-        Symbol::ImportFrom => match tokens.pop().expect("Unfinished import!") {
+      match symbols.pop().expect("Unfinished import!") {
+        Symbol::ImportFrom => match symbols.pop().expect("Unfinished import!") {
           Symbol::ImportSource(source) => {
             syntax_tree.imports.push(ImportNode {
               assignment,
               source_token: source,
             });
           }
-          token => todo!("Unexpected token: {:?}", token),
+          symbol => todo!("Unexpected symbol: {:?}", symbol),
         },
-        token => todo!("Unexpected token: {:?}", token),
+        symbol => todo!("Unexpected symbol: {:?}", symbol),
       }
 
-      match tokens.pop().expect("Unfinished import!") {
+      match symbols.pop().expect("Unfinished import!") {
         Symbol::Semicolon => {}
-        token => todo!("Unexpected token: {:?}", token),
+        symbol => todo!("Unexpected symbol: {:?}", symbol),
       }
     }
-    _ => todo!("Unexpected token: {:?}", token),
+    _ => todo!("Unexpected symbol: {:?}", symbol),
   }
 
   return Ok(());
 }
 
 fn parse_function(
-  mut tokens: &mut Vec<Symbol>,
+  mut symbols: &mut Vec<Symbol>,
   mut syntax_tree: &mut SyntaxTree,
   _: Symbol,
   is_public: bool,
@@ -113,39 +113,39 @@ fn parse_function(
   let function_name;
 
   loop {
-    let token = tokens.pop().expect("Unfinished function!");
+    let symbol = symbols.pop().expect("Unfinished function!");
 
-    match token {
+    match symbol {
       Symbol::FunctionName(name) => {
         function_name = name;
         break;
       }
-      _ => todo!("Unexpected token: {:?}", token),
+      _ => todo!("Unexpected symbol: {:?}", symbol),
     }
   }
 
-  match tokens.pop().expect("Unfinished function!") {
+  match symbols.pop().expect("Unfinished function!") {
     Symbol::FunctionParamsOpenParenthesis => {}
-    token => todo!("Unexpected token: {:?}", token),
+    symbol => todo!("Unexpected symbol: {:?}", symbol),
   }
 
   let mut params = vec![];
 
   loop {
-    let token = tokens.pop().expect("Unfinished function!");
+    let symbol = symbols.pop().expect("Unfinished function!");
 
-    match token {
+    match symbol {
       Symbol::FunctionParamsParamName(_) => {
         params.push(build_function_param_node(
-          &mut tokens,
+          &mut symbols,
           &mut syntax_tree,
-          token,
+          symbol,
         )?);
       }
       Symbol::FunctionParamsCloseParenthesis => {
         break;
       }
-      token => todo!("Unexpected token: {:?}", token),
+      symbol => todo!("Unexpected symbol: {:?}", symbol),
     }
   }
 
@@ -156,21 +156,21 @@ fn parse_function(
     return_type: None,
   };
 
-  match tokens.pop().expect("Unfinished function!") {
+  match symbols.pop().expect("Unfinished function!") {
     Symbol::FunctionExpressionsOpenBrace => {}
-    token => todo!("Unexpected token: {:?}", token),
+    symbol => todo!("Unexpected symbol: {:?}", symbol),
   }
 
   let mut statements = vec![];
 
   loop {
-    let token = tokens.pop().expect("Unfinished function!");
+    let symbol = symbols.pop().expect("Unfinished function!");
 
-    match token {
+    match symbol {
       Symbol::FunctionExpressionsCloseBrace => {
         break;
       }
-      token => statements.push(build_statement_node(&mut tokens, &mut syntax_tree, token)?),
+      symbol => statements.push(build_statement_node(&mut symbols, &mut syntax_tree, symbol)?),
     }
   }
 
@@ -184,36 +184,36 @@ fn parse_function(
 }
 
 fn build_function_param_node(
-  tokens: &mut Vec<Symbol>,
+  symbols: &mut Vec<Symbol>,
   syntax_tree: &mut SyntaxTree,
-  token: Symbol,
+  symbol: Symbol,
 ) -> Result<FunctionParamNode, Error> {
-  match token {
+  match symbol {
     Symbol::FunctionParamsParamName(param_name) => {
-      match tokens.pop().expect("Unfinished function param!") {
+      match symbols.pop().expect("Unfinished function param!") {
         Symbol::FunctionParamsParamTypeColon => {}
-        token => todo!("Unexpected token: {:?}", token),
+        symbol => todo!("Unexpected symbol: {:?}", symbol),
       };
 
-      let is_mutable = match tokens.last().expect("Unfinished function param!") {
+      let is_mutable = match symbols.last().expect("Unfinished function param!") {
         Symbol::FunctionParamsParamTypeMutable => {
-          tokens.pop();
+          symbols.pop();
           true
         }
         _ => false,
       };
 
-      let is_borrowed = match tokens.last().expect("Unfinished function param!") {
+      let is_borrowed = match symbols.last().expect("Unfinished function param!") {
         Symbol::FunctionParamsParamTypeBorrowed => {
-          tokens.pop();
+          symbols.pop();
           true
         }
         _ => false,
       };
 
-      let type_name = match tokens.pop().expect("Unfinished function param!") {
+      let type_name = match symbols.pop().expect("Unfinished function param!") {
         Symbol::FunctionParamsParamTypeName(name) => name,
-        token => todo!("Unexpected token: {:?}", token),
+        symbol => todo!("Unexpected symbol: {:?}", symbol),
       };
 
       return Ok(FunctionParamNode {
@@ -223,63 +223,63 @@ fn build_function_param_node(
         type_token: type_name,
       });
     }
-    token => todo!("Unexpected token: {:?}", token),
+    symbol => todo!("Unexpected symbol: {:?}", symbol),
   }
 }
 
 fn build_statement_node(
-  mut tokens: &mut Vec<Symbol>,
+  mut symbols: &mut Vec<Symbol>,
   mut syntax_tree: &mut SyntaxTree,
-  token: Symbol,
+  symbol: Symbol,
 ) -> Result<StatementNode, Error> {
-  match token {
+  match symbol {
     Symbol::TypeAccessName(_) | Symbol::FunctionCallName(_) => {
       let node =
-        StatementNode::Expression(build_expression_node(&mut tokens, &mut syntax_tree, token)?);
+        StatementNode::Expression(build_expression_node(&mut symbols, &mut syntax_tree, symbol)?);
 
-      match tokens.pop().expect("Unfinished expression!") {
+      match symbols.pop().expect("Unfinished expression!") {
         Symbol::Semicolon => {}
-        token => todo!("Unexpected token: {:?}", token),
+        symbol => todo!("Unexpected symbol: {:?}", symbol),
       }
 
       return Ok(node);
     }
-    Symbol::Const => match tokens.pop().expect("Unfinished expression!") {
+    Symbol::Const => match symbols.pop().expect("Unfinished expression!") {
       Symbol::VariableName(variable_name) => {
-        match tokens.pop().expect("Unfinished expression!") {
+        match symbols.pop().expect("Unfinished expression!") {
           Symbol::Assignment => {}
-          token => todo!("Unexpected token: {:?}", token),
+          symbol => todo!("Unexpected symbol: {:?}", symbol),
         }
 
-        let token = tokens.pop().expect("Unfinised expression!");
+        let symbol = symbols.pop().expect("Unfinised expression!");
 
         let node = StatementNode::Assignment(AssignmentNode {
           left: AssignmentLeftNode {
             reassignable: false,
             name_token: variable_name,
           },
-          right: build_expression_node(&mut tokens, &mut syntax_tree, token)?,
+          right: build_expression_node(&mut symbols, &mut syntax_tree, symbol)?,
         });
 
-        match tokens.pop().expect("Unfinished expression!") {
+        match symbols.pop().expect("Unfinished expression!") {
           Symbol::Semicolon => {}
-          token => todo!("Unexpected token: {:?}", token),
+          symbol => todo!("Unexpected symbol: {:?}", symbol),
         }
 
         return Ok(node);
       }
-      token => todo!("Unexpected token: {:?}", token),
+      symbol => todo!("Unexpected symbol: {:?}", symbol),
     },
-    token => todo!("Unexpected token: {:?}", token),
+    symbol => todo!("Unexpected symbol: {:?}", symbol),
   }
 }
 
 fn build_expression_node(
-  mut tokens: &mut Vec<Symbol>,
+  mut symbols: &mut Vec<Symbol>,
   mut syntax_tree: &mut SyntaxTree,
-  token: Symbol,
+  symbol: Symbol,
 ) -> Result<ExpressionNode, Error> {
-  match token {
+  match symbol {
     Symbol::Int(value) => {
       return Ok(ExpressionNode::Literal(LiteralDataNode::Integer(value)));
     }
@@ -291,9 +291,9 @@ fn build_expression_node(
       let mut expressions = vec![];
 
       loop {
-        let token = tokens.pop().expect("Unfinished expression!");
+        let symbol = symbols.pop().expect("Unfinished expression!");
 
-        match token {
+        match symbol {
           Symbol::TemplateStringMiddle(middle) => {
             middle_tokens.push(middle);
           }
@@ -308,28 +308,28 @@ fn build_expression_node(
             )))
           }
           Symbol::TemplateStringTemplateOpenBrace => {
-            let token = tokens.pop().expect("Unfinished expression!");
-            let expression = build_expression_node(&mut tokens, &mut syntax_tree, token)?;
+            let symbol = symbols.pop().expect("Unfinished expression!");
+            let expression = build_expression_node(&mut symbols, &mut syntax_tree, symbol)?;
 
             expressions.push(expression);
 
-            match tokens.pop().expect("Unfinished expression!") {
+            match symbols.pop().expect("Unfinished expression!") {
               Symbol::TemplateStringTemplateCloseBrace => {}
-              token => todo!("Unexpected token: {:?}", token),
+              symbol => todo!("Unexpected symbol: {:?}", symbol),
             }
           }
-          token => todo!("Unexpected token: {:?}", token),
+          symbol => todo!("Unexpected symbol: {:?}", symbol),
         }
       }
     }
-    Symbol::InstanceBorrow => match tokens.pop().expect("Unfinished expression!") {
+    Symbol::InstanceBorrow => match symbols.pop().expect("Unfinished expression!") {
       Symbol::InstanceReferenceName(instance_reference_name) => {
         return Ok(ExpressionNode::InstanceReference(InstanceReferenceNode {
           name_token: instance_reference_name,
           is_borrowed: true,
         }));
       }
-      token => todo!("Unexpected token: {:?}", token),
+      symbol => todo!("Unexpected symbol: {:?}", symbol),
     },
     Symbol::InstanceReferenceName(instance_reference_name) => {
       return Ok(ExpressionNode::InstanceReference(InstanceReferenceNode {
@@ -339,49 +339,49 @@ fn build_expression_node(
     }
     Symbol::TypeAccessName(_) => {
       return Ok(ExpressionNode::Call(build_expression_call_node(
-        &mut tokens,
+        &mut symbols,
         &mut syntax_tree,
-        token,
+        symbol,
         vec![],
       )?));
     }
     Symbol::FunctionCallName(_) => {
       return Ok(ExpressionNode::Call(build_expression_call_node(
-        &mut tokens,
+        &mut symbols,
         &mut syntax_tree,
-        token,
+        symbol,
         vec![],
       )?));
     }
-    token => todo!("Unexpected token: {:?}", token),
+    symbol => todo!("Unexpected symbol: {:?}", symbol),
   }
 }
 
 fn build_expression_call_node(
-  mut tokens: &mut Vec<Symbol>,
+  mut symbols: &mut Vec<Symbol>,
   mut syntax_tree: &mut SyntaxTree,
-  token: Symbol,
+  symbol: Symbol,
   mut segments: Vec<ExpressionCallPathSegmentNode>,
 ) -> Result<ExpressionCallNode, Error> {
-  match token {
+  match symbol {
     Symbol::TypeAccessName(type_access_name) => {
       segments.push(ExpressionCallPathSegmentNode::TypeIdentity(
         type_access_name,
       ));
 
-      match tokens.pop().expect("Unfinished function!") {
+      match symbols.pop().expect("Unfinished function!") {
         Symbol::TypeAccessDoubleSemicolon => {}
-        token => todo!("Unexpected token: {:?}", token),
+        symbol => todo!("Unexpected symbol: {:?}", symbol),
       }
 
       loop {
-        let token = tokens.pop().expect("Unfinished function!");
+        let symbol = symbols.pop().expect("Unfinished function!");
 
-        match token {
+        match symbol {
           Symbol::FunctionCallName(_) => {
-            return build_expression_call_node(&mut tokens, &mut syntax_tree, token, segments);
+            return build_expression_call_node(&mut symbols, &mut syntax_tree, symbol, segments);
           }
-          token => todo!("Unexpected token: {:?}", token),
+          symbol => todo!("Unexpected symbol: {:?}", symbol),
         }
       }
     }
@@ -394,19 +394,19 @@ fn build_expression_call_node(
 
       let mut args = vec![];
 
-      match tokens.pop().expect("Unfinished function!") {
+      match symbols.pop().expect("Unfinished function!") {
         Symbol::FunctionCallOpenParenthesis => {}
-        token => todo!("Unexpected token: {:?}", token),
+        symbol => todo!("Unexpected symbol: {:?}", symbol),
       }
 
       loop {
-        let token = tokens.pop().expect("Unfinished function!");
+        let symbol = symbols.pop().expect("Unfinished function!");
 
-        match token {
+        match symbol {
           Symbol::FunctionCallCloseParenthesis => {
             break;
           }
-          token => args.push(build_expression_node(&mut tokens, &mut syntax_tree, token)?),
+          symbol => args.push(build_expression_node(&mut symbols, &mut syntax_tree, symbol)?),
         }
       }
 
@@ -415,6 +415,6 @@ fn build_expression_call_node(
         args,
       });
     }
-    token => todo!("Unexpected token: {:?}", token),
+    symbol => todo!("Unexpected symbol: {:?}", symbol),
   }
 }
