@@ -125,6 +125,8 @@ pub struct InstanceReferenceNode {
 
 #[derive(Debug)]
 pub enum LiteralDataNode {
+  True,
+  False,
   PlainString(String),
   TemplateString(TemplateStringNode),
   Integer(String),

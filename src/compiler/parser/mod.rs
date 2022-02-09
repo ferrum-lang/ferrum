@@ -1,7 +1,7 @@
 use super::{symbols::Symbol, syntax::*, Error};
 
 pub fn parse_symbols(mut symbols: Vec<Symbol>) -> Result<SyntaxTree, Error> {
-  // println!("Building Syntax Tree From:\n{:?}\n", symbols);
+  println!("Building Syntax Tree From:\n{:?}\n", symbols);
 
   symbols.reverse();
 
@@ -59,7 +59,7 @@ fn parse_import(
                       alias: Some(DestructureAssignmentFieldAliasNode { name_token: alias }),
                     });
                   }
-                  symbol => todo!("Unexpected symbol: {:?}", symbol),
+                  symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
                 }
               }
               _ => {
@@ -88,14 +88,14 @@ fn parse_import(
               source_token: source,
             });
           }
-          symbol => todo!("Unexpected symbol: {:?}", symbol),
+          symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
         },
-        symbol => todo!("Unexpected symbol: {:?}", symbol),
+        symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
       }
 
       match symbols.pop().expect("Unfinished import!") {
         Symbol::Semicolon => {}
-        symbol => todo!("Unexpected symbol: {:?}", symbol),
+        symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
       }
     }
     _ => todo!("Unexpected symbol: {:?}", symbol),
@@ -126,7 +126,7 @@ fn parse_function(
 
   match symbols.pop().expect("Unfinished function!") {
     Symbol::FunctionParamsOpenParenthesis => {}
-    symbol => todo!("Unexpected symbol: {:?}", symbol),
+    symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
   }
 
   let mut params = vec![];
@@ -145,7 +145,7 @@ fn parse_function(
       Symbol::FunctionParamsCloseParenthesis => {
         break;
       }
-      symbol => todo!("Unexpected symbol: {:?}", symbol),
+      symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
     }
   }
 
@@ -158,7 +158,7 @@ fn parse_function(
 
   match symbols.pop().expect("Unfinished function!") {
     Symbol::FunctionExpressionsOpenBrace => {}
-    symbol => todo!("Unexpected symbol: {:?}", symbol),
+    symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
   }
 
   let mut statements = vec![];
@@ -170,7 +170,11 @@ fn parse_function(
       Symbol::FunctionExpressionsCloseBrace => {
         break;
       }
-      symbol => statements.push(build_statement_node(&mut symbols, &mut syntax_tree, symbol)?),
+      symbol => statements.push(build_statement_node(
+        &mut symbols,
+        &mut syntax_tree,
+        symbol,
+      )?),
     }
   }
 
@@ -192,7 +196,7 @@ fn build_function_param_node(
     Symbol::FunctionParamsParamName(param_name) => {
       match symbols.pop().expect("Unfinished function param!") {
         Symbol::FunctionParamsParamTypeColon => {}
-        symbol => todo!("Unexpected symbol: {:?}", symbol),
+        symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
       };
 
       let is_mutable = match symbols.last().expect("Unfinished function param!") {
@@ -213,7 +217,7 @@ fn build_function_param_node(
 
       let type_name = match symbols.pop().expect("Unfinished function param!") {
         Symbol::FunctionParamsParamTypeName(name) => name,
-        symbol => todo!("Unexpected symbol: {:?}", symbol),
+        symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
       };
 
       return Ok(FunctionParamNode {
@@ -223,7 +227,7 @@ fn build_function_param_node(
         type_token: type_name,
       });
     }
-    symbol => todo!("Unexpected symbol: {:?}", symbol),
+    symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
   }
 }
 
@@ -234,21 +238,31 @@ fn build_statement_node(
 ) -> Result<StatementNode, Error> {
   match symbol {
     Symbol::TypeAccessName(_) | Symbol::FunctionCallName(_) => {
-      let node =
-        StatementNode::Expression(build_expression_node(&mut symbols, &mut syntax_tree, symbol)?);
+      let node = StatementNode::Expression(build_expression_node(
+        &mut symbols,
+        &mut syntax_tree,
+        symbol,
+      )?);
 
       match symbols.pop().expect("Unfinished expression!") {
         Symbol::Semicolon => {}
-        symbol => todo!("Unexpected symbol: {:?}", symbol),
+        symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
       }
 
       return Ok(node);
     }
     Symbol::Const => match symbols.pop().expect("Unfinished expression!") {
       Symbol::VariableName(variable_name) => {
+        if symbols.last() == Some(&Symbol::VariableTypeColon) {
+          symbols.pop();
+
+          // TODO: call fn to build type node
+          symbols.pop(); // remove this
+        }
+
         match symbols.pop().expect("Unfinished expression!") {
           Symbol::Assignment => {}
-          symbol => todo!("Unexpected symbol: {:?}", symbol),
+          symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
         }
 
         let symbol = symbols.pop().expect("Unfinised expression!");
@@ -263,14 +277,14 @@ fn build_statement_node(
 
         match symbols.pop().expect("Unfinished expression!") {
           Symbol::Semicolon => {}
-          symbol => todo!("Unexpected symbol: {:?}", symbol),
+          symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
         }
 
         return Ok(node);
       }
-      symbol => todo!("Unexpected symbol: {:?}", symbol),
+      symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
     },
-    symbol => todo!("Unexpected symbol: {:?}", symbol),
+    symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
   }
 }
 
@@ -280,6 +294,12 @@ fn build_expression_node(
   symbol: Symbol,
 ) -> Result<ExpressionNode, Error> {
   match symbol {
+    Symbol::True => {
+      return Ok(ExpressionNode::Literal(LiteralDataNode::True));
+    }
+    Symbol::False => {
+      return Ok(ExpressionNode::Literal(LiteralDataNode::False));
+    }
     Symbol::Int(value) => {
       return Ok(ExpressionNode::Literal(LiteralDataNode::Integer(value)));
     }
@@ -315,10 +335,10 @@ fn build_expression_node(
 
             match symbols.pop().expect("Unfinished expression!") {
               Symbol::TemplateStringTemplateCloseBrace => {}
-              symbol => todo!("Unexpected symbol: {:?}", symbol),
+              symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
             }
           }
-          symbol => todo!("Unexpected symbol: {:?}", symbol),
+          symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
         }
       }
     }
@@ -329,7 +349,7 @@ fn build_expression_node(
           is_borrowed: true,
         }));
       }
-      symbol => todo!("Unexpected symbol: {:?}", symbol),
+      symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
     },
     Symbol::InstanceReferenceName(instance_reference_name) => {
       return Ok(ExpressionNode::InstanceReference(InstanceReferenceNode {
@@ -353,7 +373,7 @@ fn build_expression_node(
         vec![],
       )?));
     }
-    symbol => todo!("Unexpected symbol: {:?}", symbol),
+    symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
   }
 }
 
@@ -371,7 +391,7 @@ fn build_expression_call_node(
 
       match symbols.pop().expect("Unfinished function!") {
         Symbol::TypeAccessDoubleSemicolon => {}
-        symbol => todo!("Unexpected symbol: {:?}", symbol),
+        symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
       }
 
       loop {
@@ -381,7 +401,7 @@ fn build_expression_call_node(
           Symbol::FunctionCallName(_) => {
             return build_expression_call_node(&mut symbols, &mut syntax_tree, symbol, segments);
           }
-          symbol => todo!("Unexpected symbol: {:?}", symbol),
+          symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
         }
       }
     }
@@ -396,7 +416,7 @@ fn build_expression_call_node(
 
       match symbols.pop().expect("Unfinished function!") {
         Symbol::FunctionCallOpenParenthesis => {}
-        symbol => todo!("Unexpected symbol: {:?}", symbol),
+        symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
       }
 
       loop {
@@ -406,7 +426,11 @@ fn build_expression_call_node(
           Symbol::FunctionCallCloseParenthesis => {
             break;
           }
-          symbol => args.push(build_expression_node(&mut symbols, &mut syntax_tree, symbol)?),
+          symbol => args.push(build_expression_node(
+            &mut symbols,
+            &mut syntax_tree,
+            symbol,
+          )?),
         }
       }
 
@@ -415,6 +439,6 @@ fn build_expression_call_node(
         args,
       });
     }
-    symbol => todo!("Unexpected symbol: {:?}", symbol),
+    symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
   }
 }

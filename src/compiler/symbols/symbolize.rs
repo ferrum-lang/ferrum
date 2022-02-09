@@ -543,6 +543,8 @@ fn symbolize_function_body(
             true,
           )?;
           tokens.push(Token::new(literal));
+        } else {
+          tokens.push(Token::new(literal));
         }
       }
       ")" => symbols.push(Symbol::FunctionCallCloseParenthesis),
