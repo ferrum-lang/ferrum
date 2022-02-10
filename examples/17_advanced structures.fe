@@ -9,11 +9,11 @@ structure Device {
   // By default the constructor contains all fields
   // But when some or all fields are private it can be useful to provide an alternative constructor
   // Note: `instance_id` can be excluded from `constructor` because it has a default
-  constructor { serial: name, is_active, is_legacy }
+  constructor { serial as name, is_active, is_legacy }
 
   // Generate getters for the following fields
   // Note: anything can be included or excluded from `get`
-  get { serial: name, is_active, is_legacy }
+  get { serial as name, is_active, is_legacy }
 
   // Generate setters for the following fields
   // Note: `set` requires `let`, but `let` doesn't require `set`

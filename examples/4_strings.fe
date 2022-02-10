@@ -1,4 +1,4 @@
-import { Console, StringBuilder } from "std";
+import { Console, StringBuilder as Sb } from "std";
 
 function main() {
   const x = "abc";
@@ -15,16 +15,16 @@ function main() {
   const x = "abc \\{y}";
   Console::write_line(x); // "abc \123"
 
-  const x = mutable StringBuilder::new();
+  const x = mutable Sb::new();
   x.append(" ");
   x.prepend("abc");
   x.append(y);
   const x = x.build(); // "abc 123"
 
-  // Notice how we can mutate `StringBuilder` without using `mutable`,
-  // This is because the return value of `StringBuilder::from` is implicitly `mutable`,
+  // Notice how we can mutate `Sb` without using `mutable`,
+  // This is because the return value of `Sb::from` is implicitly `mutable`,
   // And immutability is only set when assigned to a variable without the `mutable` keyword
-  const x = StringBuilder::from(" ")
+  const x = Sb::from(" ")
     .with_prepend("abc")
     .with_append(y)
     .build(); // "abc 123"
