@@ -253,12 +253,15 @@ fn build_statement_node(
     }
     Symbol::Const => match symbols.pop().expect("Unfinished expression!") {
       Symbol::VariableName(variable_name) => {
-        if symbols.last() == Some(&Symbol::VariableTypeColon) {
+        let explicit_type = if symbols.last() == Some(&Symbol::VariableTypeColon) {
           symbols.pop();
 
-          // TODO: call fn to build type node
-          symbols.pop(); // remove this
-        }
+          let symbol = symbols.pop().expect("Unfinished expression!");
+
+          Some(build_type_node(&mut symbols, &mut syntax_tree, symbol)?)
+        } else {
+          None
+        };
 
         match symbols.pop().expect("Unfinished expression!") {
           Symbol::Assignment => {}
@@ -271,6 +274,7 @@ fn build_statement_node(
           left: AssignmentLeftNode {
             reassignable: false,
             name_token: variable_name,
+            explicit_type,
           },
           right: build_expression_node(&mut symbols, &mut syntax_tree, symbol)?,
         });
@@ -288,6 +292,139 @@ fn build_statement_node(
   }
 }
 
+fn build_type_node(
+  mut symbols: &mut Vec<Symbol>,
+  mut syntax_tree: &mut SyntaxTree,
+  symbol: Symbol,
+) -> Result<TypeNode, Error> {
+  let mut is_borrowed = false;
+  let mut is_mutable = false;
+
+  let mut symbol = symbol;
+
+  loop {
+    match symbol {
+      Symbol::TypeBorrowed => {
+        is_borrowed = true;
+      }
+      Symbol::TypeMutable => {
+        is_mutable = true;
+      }
+      Symbol::TypeName(name) => match name.as_str() {
+        "boolean" | "uint" | "uint1" | "uint8" | "uint16" | "uint32" | "uint64" | "uint128"
+        | "uint256" | "biguint" | "bit" | "byte" | "int" | "int8" | "int16" | "int32" | "int64"
+        | "int128" | "int256" | "bigint" | "float32" | "float64" | "char" | "string" => {
+          assert_ne!(is_mutable, true);
+
+          let is_optional = match symbols.last() {
+            Some(Symbol::TypeOptional) => {
+              symbols.pop();
+              true
+            }
+            _ => false,
+          };
+
+          return Ok(TypeNode::Primative(PrimativeTypeNode {
+            name_token: name,
+            is_borrowed,
+            is_optional,
+          }));
+        }
+        _ => {
+          let is_optional = match symbols.last() {
+            Some(Symbol::TypeOptional) => {
+              symbols.pop();
+              true
+            }
+            _ => false,
+          };
+
+          return Ok(TypeNode::Structure(StructureTypeNode {
+            path: StructureTypePathNode {
+              segments: vec![StructureTypePathSegmentNode { name_token: name }],
+            },
+            is_borrowed,
+            is_mutable,
+            is_optional,
+          }));
+        }
+      },
+      Symbol::TupleTypeStart => {
+        let symbol = symbols.pop().expect("Unfinied tuple type!");
+
+        let tuple_type = build_type_node(&mut symbols, &mut syntax_tree, symbol)?;
+
+        let symbol = symbols.pop().expect("Unfinied tuple type!");
+
+        match symbol {
+          Symbol::TupleTypeSemicolon => {
+            let length = match symbols.pop().expect("Unfinished tuple type!") {
+              Symbol::TupleTypeLength(length) => length,
+              symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
+            };
+
+            match symbols.pop().expect("Unfinished tuple type!") {
+              Symbol::TupleTypeEnd => {}
+              symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
+            }
+
+            let is_optional = match symbols.last() {
+              Some(Symbol::TypeOptional) => {
+                symbols.pop();
+                true
+              }
+              _ => false,
+            };
+
+            return Ok(TypeNode::Tuple(TupleTypeNode {
+              segments: vec![tuple_type; length],
+              is_optional,
+            }));
+          }
+          _ => {
+            symbols.push(symbol);
+
+            let mut segments = vec![tuple_type];
+
+            loop {
+              let symbol = symbols.pop().expect("Unfinished tuple type!");
+
+              match symbol {
+                Symbol::TupleTypeComma => {
+                  let symbol = symbols.pop().expect("Unfinished tuple type!");
+
+                  let tuple_type = build_type_node(&mut symbols, &mut syntax_tree, symbol)?;
+                  segments.push(tuple_type);
+                }
+                Symbol::TupleTypeEnd => {
+                  let is_optional = match symbols.last() {
+                    Some(Symbol::TypeOptional) => {
+                      symbols.pop();
+                      true
+                    }
+                    _ => false,
+                  };
+
+                  return Ok(TypeNode::Tuple(TupleTypeNode {
+                    segments,
+                    is_optional,
+                  }));
+                }
+                symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
+              }
+            }
+          }
+        }
+      }
+      symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
+    }
+
+    symbol = symbols.pop().expect("Unfinished type!");
+  }
+
+  todo!();
+}
+
 fn build_expression_node(
   mut symbols: &mut Vec<Symbol>,
   mut syntax_tree: &mut SyntaxTree,
@@ -303,8 +440,61 @@ fn build_expression_node(
     Symbol::Int(value) => {
       return Ok(ExpressionNode::Literal(LiteralDataNode::Integer(value)));
     }
+    Symbol::Char(value) => {
+      return Ok(ExpressionNode::Literal(LiteralDataNode::Char(value)));
+    }
     Symbol::PlainString(value) => {
       return Ok(ExpressionNode::Literal(LiteralDataNode::PlainString(value)));
+    }
+    Symbol::TupleStart => {
+      let symbol = symbols.pop().expect("Unfinished expression!");
+      let value = build_expression_node(&mut symbols, &mut syntax_tree, symbol)?;
+
+      let symbol = symbols.pop().expect("Unfinished expression!");
+
+      match symbol {
+        Symbol::TupleSemicolon => {
+          let length = match symbols.pop().expect("Unfinished tuple!") {
+            Symbol::TupleLength(length) => length,
+            symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
+          };
+
+          match symbols.pop().expect("Unfinished tuple type!") {
+            Symbol::TupleEnd => {}
+            symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
+          }
+
+          return Ok(ExpressionNode::Literal(LiteralDataNode::Tuple(TupleNode {
+            segments: vec![value; length],
+          })));
+        }
+        _ => {
+          symbols.push(symbol);
+
+          let mut segments = vec![value];
+
+          loop {
+            let symbol = symbols.pop().expect("Unfinished expression!");
+
+            match symbol {
+              Symbol::TupleComma => {
+                let symbol = symbols.pop().expect("Unfinished expression!");
+                let value = build_expression_node(&mut symbols, &mut syntax_tree, symbol)?;
+
+                segments.push(value);
+              }
+              Symbol::TupleEnd => {
+                return Ok(ExpressionNode::Literal(LiteralDataNode::Tuple(TupleNode {
+                  segments,
+                })));
+              }
+              symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
+            }
+          }
+        }
+      }
+
+      todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree);
     }
     Symbol::TemplateStringStart(start) => {
       let mut middle_tokens = vec![];

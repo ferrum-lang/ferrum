@@ -41,6 +41,7 @@ function main() {
   // Tuples
   const x: (uint; 3) = (1, 2, 3);
   const x: (int, string, char) = (42, "Adam", 'F');
+  const x: (uint?; 10) = (none; 10);
 
   const y: int = x.0;
   const y: string = x.1;

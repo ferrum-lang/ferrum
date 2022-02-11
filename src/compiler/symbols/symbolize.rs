@@ -727,37 +727,64 @@ fn symbolize_expression(
         } else {
           symbols.push(Symbol::TupleStart);
 
-          loop {
-            let token = tokens
-              .pop()
-              .expect(&format!("Unfinished expression!\n\nSymbols: {:?}", symbols));
-            let literal = token.get_literal().as_str();
+          let token = tokens
+            .pop()
+            .expect(&format!("Unfinished expression!\n\nSymbols: {:?}", symbols));
+          let literal = token.get_literal().as_str();
 
-            match literal {
-              "," => {
-                symbols.push(Symbol::TupleComma);
-              }
-              ";" => {
-                symbols.push(Symbol::TupleSemicolon);
+          symbolize_expression(&mut tokens, &mut symbols, literal)?;
 
-                let literal = expect_next(
-                  &mut tokens,
-                  &mut symbols,
-                  &|literal| is_numeric(literal),
-                  true,
-                )?;
-                symbols.push(Symbol::TupleLength(literal));
+          let token = tokens
+            .pop()
+            .expect(&format!("Unfinished expression!\n\nSymbols: {:?}", symbols));
+          let literal = token.get_literal().as_str();
 
-                expect_next(&mut tokens, &mut symbols, &|literal| literal == ")", true)?;
-                symbols.push(Symbol::TupleEnd);
-                break;
-              }
-              ")" => {
-                symbols.push(Symbol::TupleEnd);
-                break;
-              }
-              _ => {
-                symbolize_expression(&mut tokens, &mut symbols, literal)?;
+          match literal {
+            ";" => {
+              symbols.push(Symbol::TupleSemicolon);
+
+              let literal = expect_next(
+                &mut tokens,
+                &mut symbols,
+                &|literal| is_numeric(literal),
+                true,
+              )?;
+              symbols.push(Symbol::TupleLength(
+                literal.parse().expect("Invalid tuple length"),
+              ));
+
+              expect_next(&mut tokens, &mut symbols, &|literal| literal == ")", true)?;
+              symbols.push(Symbol::TupleEnd);
+            }
+            _ => {
+              tokens.push(Token::new(literal));
+
+              loop {
+                let token = tokens
+                  .pop()
+                  .expect(&format!("Unfinished expression!\n\nSymbols: {:?}", symbols));
+                let literal = token.get_literal().as_str();
+
+                match literal {
+                  "," => {
+                    symbols.push(Symbol::TupleComma);
+
+                    let token = tokens
+                      .pop()
+                      .expect(&format!("Unfinished expression!\n\nSymbols: {:?}", symbols));
+                    let literal = token.get_literal().as_str();
+
+                    symbolize_expression(&mut tokens, &mut symbols, literal)?;
+                  }
+                  ")" => {
+                    symbols.push(Symbol::TupleEnd);
+                    break;
+                  }
+                  _ if is_whitespace(literal) => {
+                    symbolize_whitespace(&mut tokens, &mut symbols, literal)?
+                  }
+                  _ => todo!("Unexpected token: {}\n\nSymbols: {:?}", literal, symbols),
+                }
               }
             }
           }
@@ -938,45 +965,72 @@ fn symbolize_type(
     "(" => {
       symbols.push(Symbol::TupleTypeStart);
 
-      loop {
-        let token = tokens
-          .pop()
-          .expect(&format!("Unfinished type!\n\nSymbols: {:?}", symbols));
-        let literal = token.get_literal().as_str();
+      let token = tokens
+        .pop()
+        .expect(&format!("Unfinished type!\n\nSymbols: {:?}", symbols));
+      let literal = token.get_literal().as_str();
 
-        match literal {
-          "," => {
-            symbols.push(Symbol::TupleTypeComma);
-          }
-          ";" => {
-            symbols.push(Symbol::TupleTypeSemicolon);
+      symbolize_type(&mut tokens, &mut symbols, literal)?;
 
-            let literal = expect_next(
-              &mut tokens,
-              &mut symbols,
-              &|literal| is_numeric(literal),
-              true,
-            )?;
+      let token = tokens
+        .pop()
+        .expect(&format!("Unfinished type!\n\nSymbols: {:?}", symbols));
+      let literal = token.get_literal().as_str();
 
-            symbols.push(Symbol::TupleTypeLength(literal));
+      match literal {
+        ";" => {
+          symbols.push(Symbol::TupleTypeSemicolon);
 
-            expect_next(&mut tokens, &mut symbols, &|literal| literal == ")", true)?;
-            symbols.push(Symbol::TupleTypeEnd);
-            break;
-          }
-          ")" => {
-            symbols.push(Symbol::TupleTypeEnd);
-            break;
-          }
-          _ => {
-            symbolize_type(&mut tokens, &mut symbols, literal)?;
+          let literal = expect_next(
+            &mut tokens,
+            &mut symbols,
+            &|literal| is_numeric(literal),
+            true,
+          )?;
+
+          symbols.push(Symbol::TupleTypeLength(
+            literal.parse().expect("Invalid tuple length"),
+          ));
+
+          expect_next(&mut tokens, &mut symbols, &|literal| literal == ")", true)?;
+          symbols.push(Symbol::TupleTypeEnd);
+        }
+        _ => {
+          tokens.push(Token::new(literal));
+
+          loop {
+            let token = tokens
+              .pop()
+              .expect(&format!("Unfinished type!\n\nSymbols: {:?}", symbols));
+            let literal = token.get_literal().as_str();
+
+            match literal {
+              "," => {
+                symbols.push(Symbol::TupleTypeComma);
+
+                let token = tokens
+                  .pop()
+                  .expect(&format!("Unfinished expression!\n\nSymbols: {:?}", symbols));
+                let literal = token.get_literal().as_str();
+
+                symbolize_type(&mut tokens, &mut symbols, literal)?;
+              }
+              ")" => {
+                symbols.push(Symbol::TupleTypeEnd);
+                break;
+              }
+              literal if is_whitespace(literal) => {
+                symbolize_whitespace(&mut tokens, &mut symbols, literal)?;
+              }
+              _ => todo!("Unexpected token: {}\n\nSymbols: {:?}", literal, symbols),
+            }
           }
         }
       }
     }
     "boolean" | "uint" | "uint1" | "uint8" | "uint16" | "uint32" | "uint64" | "uint128"
     | "uint256" | "biguint" | "bit" | "byte" | "int" | "int8" | "int16" | "int32" | "int64"
-    | "int128" | "int256" | "bigint" | "float32" | "float64" => {
+    | "int128" | "int256" | "bigint" | "float32" | "float64" | "char" | "string" => {
       symbols.push(Symbol::TypeName(String::from(literal)));
 
       let token = tokens
