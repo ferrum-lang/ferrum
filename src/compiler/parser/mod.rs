@@ -339,10 +339,38 @@ fn build_type_node(
             _ => false,
           };
 
+          let generics = match symbols.last() {
+            Some(Symbol::TypeGenericOpen) => {
+              symbols.pop();
+
+              let mut symbol = symbols.pop().expect("Unfinished type!");
+              let mut generics = vec![build_type_node(&mut symbols, &mut syntax_tree, symbol)?];
+
+              loop {
+                symbol = symbols.pop().expect("Unfinished type!");
+
+                match symbol {
+                  Symbol::TypeGenericComma => {
+                    symbol = symbols.pop().expect("Unfinished type!");
+                    generics.push(build_type_node(&mut symbols, &mut syntax_tree, symbol)?);
+                  }
+                  Symbol::TypeGenericClose => {
+                    break;
+                  }
+                  symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
+                }
+              }
+
+              Some(generics)
+            }
+            _ => None,
+          };
+
           return Ok(TypeNode::Structure(StructureTypeNode {
             path: StructureTypePathNode {
               segments: vec![StructureTypePathSegmentNode { name_token: name }],
             },
+            generics,
             is_borrowed,
             is_mutable,
             is_optional,
@@ -532,11 +560,29 @@ fn build_expression_node(
         }
       }
     }
+    Symbol::Mutable => {
+      let is_borrowed = match symbols.last() {
+        Some(Symbol::InstanceBorrow) => true,
+        _ => false,
+      };
+
+      match symbols.pop().expect("Unfinished expression!") {
+        Symbol::InstanceReferenceName(instance_reference_name) => {
+          return Ok(ExpressionNode::InstanceReference(InstanceReferenceNode {
+            name_token: instance_reference_name,
+            is_mutable: true,
+            is_borrowed,
+          }));
+        }
+        symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
+      }
+    }
     Symbol::InstanceBorrow => match symbols.pop().expect("Unfinished expression!") {
       Symbol::InstanceReferenceName(instance_reference_name) => {
         return Ok(ExpressionNode::InstanceReference(InstanceReferenceNode {
           name_token: instance_reference_name,
           is_borrowed: true,
+          is_mutable: false,
         }));
       }
       symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
@@ -545,6 +591,44 @@ fn build_expression_node(
       return Ok(ExpressionNode::InstanceReference(InstanceReferenceNode {
         name_token: instance_reference_name,
         is_borrowed: false,
+        is_mutable: false,
+      }));
+    }
+    Symbol::InstanceAccessName(instance_access_name) => {
+      match symbols.pop().expect("Unfinished expression!") {
+        Symbol::InstanceAccessPeriod => {}
+        symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
+      }
+
+      let symbol = symbols.pop().expect("Unfinished expression!");
+
+      let right = match build_expression_node(&mut symbols, &mut syntax_tree, symbol)? {
+        ExpressionNode::Call(node) => InstanceAccessRightNode::Call(node),
+        ExpressionNode::InstanceReference(node) => InstanceAccessRightNode::Reference(node),
+        ExpressionNode::InstanceAccess(InstanceAccessNode { right, left: _ }) => {
+          InstanceAccessRightNode::Access(Box::new(right))
+        }
+        ExpressionNode::Literal(LiteralDataNode::Integer(value)) => {
+          InstanceAccessRightNode::Reference(InstanceReferenceNode {
+            name_token: String::from(value),
+            is_borrowed: false,
+            is_mutable: false,
+          })
+        }
+        expression => todo!(
+          "Unexpected expression: {:?}\n\n{:?}",
+          expression,
+          syntax_tree
+        ),
+      };
+
+      return Ok(ExpressionNode::InstanceAccess(InstanceAccessNode {
+        left: Box::new(ExpressionNode::InstanceReference(InstanceReferenceNode {
+          name_token: instance_access_name,
+          is_mutable: false,
+          is_borrowed: false,
+        })),
+        right,
       }));
     }
     Symbol::TypeAccessName(_) => {

@@ -112,6 +112,7 @@ pub struct PrimativeTypeNode {
 #[derive(Debug, Clone)]
 pub struct StructureTypeNode {
   pub path: StructureTypePathNode,
+  pub generics: Option<Vec<TypeNode>>,
   pub is_mutable: bool,
   pub is_borrowed: bool,
   pub is_optional: bool,
@@ -135,6 +136,7 @@ pub struct TupleTypeNode {
 pub enum ExpressionNode {
   Call(ExpressionCallNode),
   InstanceReference(InstanceReferenceNode),
+  InstanceAccess(InstanceAccessNode),
   Literal(LiteralDataNode),
 }
 
@@ -146,6 +148,19 @@ pub struct StructureTypePathNode {
 #[derive(Debug, Clone)]
 pub struct StructureTypePathSegmentNode {
   pub name_token: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct InstanceAccessNode {
+  pub left: Box<ExpressionNode>,
+  pub right: InstanceAccessRightNode,
+}
+
+#[derive(Debug, Clone)]
+pub enum InstanceAccessRightNode {
+  Access(Box<InstanceAccessRightNode>),
+  Reference(InstanceReferenceNode),
+  Call(ExpressionCallNode),
 }
 
 #[derive(Debug, Clone)]
@@ -169,6 +184,7 @@ pub enum ExpressionCallPathSegmentNode {
 pub struct InstanceReferenceNode {
   pub name_token: String,
   pub is_borrowed: bool,
+  pub is_mutable: bool,
 }
 
 #[derive(Debug, Clone)]
