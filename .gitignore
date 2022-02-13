@@ -11,12 +11,11 @@
 !resources
 !resources/*
 
-!out
-!out/**/*
+!out/build/lang_*
 
 !Cargo.toml
 !Cargo.lock
 
-# Added by cargo
+!test.sh
 
 /target

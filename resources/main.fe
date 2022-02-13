@@ -1,12 +1,5 @@
 import { Console } from "std";
 
-function say_hello(name: string) {
-  Console::write_line("Hello, {name}!");
-}
-
 public function main() {
-  const name = "Adam";
-
-  say_hello("{name} Bates");
-  say_hello(name);
+    Console::write_line("Hello world");
 }
