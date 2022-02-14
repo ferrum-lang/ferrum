@@ -832,21 +832,64 @@ fn symbolize_expression(
             "[" => {
                 symbols.push(Symbol::ListOpen);
 
-                loop {
-                    let token = tokens
-                        .pop()
-                        .expect(&format!("Unfinished expression!\n\nSymbols: {:?}", symbols));
-                    let literal = token.get_literal().as_str();
-                    match literal {
-                        "," => {
-                            symbols.push(Symbol::ListComma);
-                        }
-                        "]" => {
-                            symbols.push(Symbol::ListClose);
-                            break;
-                        }
-                        _ => {
-                            symbolize_expression(&mut tokens, &mut symbols, literal)?;
+                let token = tokens
+                    .pop()
+                    .expect(&format!("Unfinished expression!\n\nSymbols: {:?}", symbols));
+                let literal = token.get_literal().as_str();
+
+                symbolize_expression(&mut tokens, &mut symbols, literal)?;
+
+                let token = tokens
+                    .pop()
+                    .expect(&format!("Unfinished expression!\n\nSymbols: {:?}", symbols));
+                let literal = token.get_literal().as_str();
+
+                match literal {
+                    "for" => {
+                        symbols.push(Symbol::ListFor);
+
+                        let literal = expect_next(
+                            &mut tokens,
+                            &mut symbols,
+                            &|literal| is_identifier_name(literal),
+                            true,
+                        )?;
+                        symbols.push(Symbol::VariableName(String::from(literal)));
+
+                        expect_next(&mut tokens, &mut symbols, &|literal| literal == "in", true)?;
+                        symbols.push(Symbol::ListForIn);
+
+                        let token = tokens
+                            .pop()
+                            .expect(&format!("Unfinished expression!\n\nSymbols: {:?}", symbols));
+                        let literal = token.get_literal().as_str();
+
+                        symbolize_expression(&mut tokens, &mut symbols, literal)?;
+
+                        expect_next(&mut tokens, &mut symbols, &|literal| literal == "]", true)?;
+                        symbols.push(Symbol::ListClose);
+                    }
+                    _ => {
+                        tokens.push(Token::new(literal));
+
+                        loop {
+                            let token = tokens.pop().expect(&format!(
+                                "Unfinished expression!\n\nSymbols: {:?}",
+                                symbols
+                            ));
+                            let literal = token.get_literal().as_str();
+                            match literal {
+                                "," => {
+                                    symbols.push(Symbol::ListComma);
+                                }
+                                "]" => {
+                                    symbols.push(Symbol::ListClose);
+                                    break;
+                                }
+                                _ => {
+                                    symbolize_expression(&mut tokens, &mut symbols, literal)?;
+                                }
+                            }
                         }
                     }
                 }

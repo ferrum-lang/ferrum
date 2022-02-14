@@ -80,6 +80,7 @@ pub enum Symbol {
     ListOpen,
     ListComma,
     ListFor,
+    ListForIn,
     ListClose,
     Plus,
     Minus,
