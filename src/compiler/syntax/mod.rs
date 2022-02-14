@@ -139,6 +139,7 @@ pub enum ExpressionNode {
     InstanceAccess(InstanceAccessNode),
     Literal(LiteralDataNode),
     Binary(BinaryExpressionNode),
+    Range(RangeExpressionNode),
 }
 
 #[derive(Debug, Clone)]
@@ -213,8 +214,21 @@ pub struct TupleNode {
 }
 
 #[derive(Debug, Clone)]
-pub struct ListNode {
+pub enum ListNode {
+    Segmented(SegmentedListNode),
+    ForIn(ForInListNode),
+}
+
+#[derive(Debug, Clone)]
+pub struct SegmentedListNode {
     pub segments: Vec<ExpressionNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ForInListNode {
+    pub expression: Box<ExpressionNode>,
+    pub for_name_token: String,
+    pub range: Box<ExpressionNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -240,4 +254,10 @@ pub enum BinaryOpNode {
     GtOrEq,
     Lt,
     LtOrEq,
+}
+
+#[derive(Debug, Clone)]
+pub struct RangeExpressionNode {
+    pub left: Box<ExpressionNode>,
+    pub right: Box<ExpressionNode>,
 }

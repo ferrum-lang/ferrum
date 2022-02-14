@@ -501,24 +501,26 @@ fn build_expression_node(
             match symbol {
                 Symbol::InstanceReferenceName(x) if x.as_str() == "for" => todo!("FIXME"),
                 Symbol::ListFor => {
-                    // TODO: handle `[i + 1 for i in 0..3]`
-                    // Note: i is variable declaration w/ foreach rules
-                    //       0..3 is range, but could come from any expression, eg. `[i + 1 for i in [1, 2, 3]]` or `[i + 1 for i in getRawData()]`
+                    let for_name_token = match symbols.pop().expect("Unfinished list!") {
+                        Symbol::VariableName(name) => name,
+                        symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
+                    };
 
-                    todo!();
-                    // let length = match symbols.pop().expect("Unfinished list!") {
-                    //   Symbol::TupleLength(length) => length,
-                    //   symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
-                    // };
+                    match symbols.pop().expect("Unfinished list!") {
+                        Symbol::ListForIn => {}
+                        symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
+                    }
 
-                    // match symbols.pop().expect("Unfinished list!") {
-                    //   Symbol::TupleEnd => {}
-                    //   symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
-                    // }
+                    let symbol = symbols.pop().expect("Unfinished list!");
+                    let range = build_expression_node(&mut symbols, &mut syntax_tree, symbol)?;
 
-                    // return Ok(ExpressionNode::Literal(LiteralDataNode::Tuple(TupleNode {
-                    //   segments: vec![value; length],
-                    // })));
+                    return Ok(ExpressionNode::Literal(LiteralDataNode::List(
+                        ListNode::ForIn(ForInListNode {
+                            expression: Box::new(value),
+                            for_name_token,
+                            range: Box::new(range),
+                        }),
+                    )));
                 }
                 _ => {
                     symbols.push(symbol);
@@ -538,7 +540,7 @@ fn build_expression_node(
                             }
                             Symbol::ListClose => {
                                 return Ok(ExpressionNode::Literal(LiteralDataNode::List(
-                                    ListNode { segments },
+                                    ListNode::Segmented(SegmentedListNode { segments }),
                                 )));
                             }
                             symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
@@ -595,8 +597,6 @@ fn build_expression_node(
                     }
                 }
             }
-
-            todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree);
         }
         Symbol::TemplateStringStart(start) => {
             let mut middle_tokens = vec![];
@@ -754,6 +754,7 @@ fn build_literal_integer_node(
     loop {
         match symbols.last().expect("Unfinished!") {
             Symbol::Plus => todo!(),
+            Symbol::Range => todo!(),
             _ => return Ok(result),
         }
     }
