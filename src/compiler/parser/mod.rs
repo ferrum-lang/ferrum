@@ -499,7 +499,6 @@ fn build_expression_node(
             let symbol = symbols.pop().expect("Unfinished expression!");
 
             match symbol {
-                Symbol::InstanceReferenceName(x) if x.as_str() == "for" => todo!("FIXME"),
                 Symbol::ListFor => {
                     let for_name_token = match symbols.pop().expect("Unfinished list!") {
                         Symbol::VariableName(name) => name,
@@ -513,6 +512,11 @@ fn build_expression_node(
 
                     let symbol = symbols.pop().expect("Unfinished list!");
                     let range = build_expression_node(&mut symbols, &mut syntax_tree, symbol)?;
+
+                    match symbols.pop().expect("Unfinished list!") {
+                        Symbol::ListClose => {}
+                        symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
+                    }
 
                     return Ok(ExpressionNode::Literal(LiteralDataNode::List(
                         ListNode::ForIn(ForInListNode {
@@ -754,7 +758,17 @@ fn build_literal_integer_node(
     loop {
         match symbols.last().expect("Unfinished!") {
             Symbol::Plus => todo!(),
-            Symbol::Range => todo!(),
+            Symbol::Range => {
+                symbols.pop();
+
+                let symbol = symbols.pop().expect("Unfinished!");
+                let right = build_expression_node(&mut symbols, &mut syntax_tree, symbol)?;
+
+                return Ok(ExpressionNode::Range(RangeExpressionNode {
+                    left: Box::new(result),
+                    right: Box::new(right),
+                }));
+            }
             _ => return Ok(result),
         }
     }
