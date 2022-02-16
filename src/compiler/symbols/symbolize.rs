@@ -665,7 +665,7 @@ fn symbolize_expression(
                     "::" => {
                         symbols.push(Symbol::TypeAccessName(name.to_string()));
 
-                        symbols.push(Symbol::TypeAccessDoubleSemicolon);
+                        symbols.push(Symbol::TypeAccessColons);
                         tokens.pop();
                     }
                     "." => {

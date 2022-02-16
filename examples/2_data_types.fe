@@ -93,8 +93,10 @@ function main() {
   const x: int? = ok(123).get_ok();
   const x: std::Error? = ok(123).get_error();
 
-  (): std::Error => {
+  let f = (): std::Error => {
     const x: result<int> = 123;
     const x: int = x?;
-  }
+  };
+
+  f();
 }

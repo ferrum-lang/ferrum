@@ -56,7 +56,7 @@ pub struct FunctionSignatureNode {
     pub is_public: bool,
     pub name_token: String,
     pub params: Vec<FunctionParamNode>,
-    pub return_type: Option<ReturnTypeNode>,
+    pub return_type: Option<TypeNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -66,9 +66,6 @@ pub struct FunctionParamNode {
     pub is_borrowed: bool,
     pub type_token: String,
 }
-
-#[derive(Debug, Clone)]
-pub struct ReturnTypeNode {}
 
 #[derive(Debug, Clone)]
 pub struct FunctionBodyNode {
@@ -280,7 +277,7 @@ pub struct ClosureExpressionNode {
 #[derive(Debug, Clone)]
 pub struct ClosureSignatureNode {
     pub params: Vec<ClosureParamNode>,
-    pub return_type: Option<ReturnTypeNode>,
+    pub return_type: Option<TypeNode>,
 }
 
 #[derive(Debug, Clone)]

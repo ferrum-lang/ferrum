@@ -144,34 +144,48 @@ fn parse_function(
             &mut syntax_tree,
             symbol,
         )?],
+        Symbol::FunctionParamsCloseParenthesis => vec![],
         symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
     };
 
-    loop {
-        let symbol = symbols.pop().expect("Unfinished function!");
+    if params.len() > 0 {
+        loop {
+            let symbol = symbols.pop().expect("Unfinished function!");
 
-        match symbol {
-            Symbol::FunctionParamsComma => {
-                let symbol = symbols.pop().expect("Unfinished function!");
+            match symbol {
+                Symbol::FunctionParamsComma => {
+                    let symbol = symbols.pop().expect("Unfinished function!");
 
-                params.push(build_function_param_node(
-                    &mut symbols,
-                    &mut syntax_tree,
-                    symbol,
-                )?);
+                    params.push(build_function_param_node(
+                        &mut symbols,
+                        &mut syntax_tree,
+                        symbol,
+                    )?);
+                }
+                Symbol::FunctionParamsCloseParenthesis => {
+                    break;
+                }
+                symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
             }
-            Symbol::FunctionParamsCloseParenthesis => {
-                break;
-            }
-            symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
         }
     }
+
+    let return_type = match symbols.last().expect("Unfinished function!") {
+        Symbol::FunctionReturnTypeColon => {
+            symbols.pop();
+
+            let symbol = symbols.pop().expect("Unfinished function!");
+
+            Some(build_type_node(&mut symbols, &mut syntax_tree, symbol)?)
+        }
+        _ => None,
+    };
 
     let signature = FunctionSignatureNode {
         is_public,
         name_token: function_name,
         params,
-        return_type: None,
+        return_type,
     };
 
     match symbols.pop().expect("Unfinished function!") {
@@ -306,6 +320,43 @@ fn build_statement_node(
             }
             symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
         },
+        Symbol::Let => match symbols.pop().expect("Unfinished expression!") {
+            Symbol::VariableName(variable_name) => {
+                let explicit_type = if symbols.last() == Some(&Symbol::VariableTypeColon) {
+                    symbols.pop();
+
+                    let symbol = symbols.pop().expect("Unfinished expression!");
+
+                    Some(build_type_node(&mut symbols, &mut syntax_tree, symbol)?)
+                } else {
+                    None
+                };
+
+                match symbols.pop().expect("Unfinished expression!") {
+                    Symbol::Assignment => {}
+                    symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
+                }
+
+                let symbol = symbols.pop().expect("Unfinised expression!");
+
+                let node = StatementNode::Assignment(AssignmentNode {
+                    left: AssignmentLeftNode {
+                        reassignable: true,
+                        name_token: variable_name,
+                        explicit_type,
+                    },
+                    right: build_expression_node(&mut symbols, &mut syntax_tree, symbol)?,
+                });
+
+                match symbols.pop().expect("Unfinished expression!") {
+                    Symbol::Semicolon => {}
+                    symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, node),
+                }
+
+                return Ok(node);
+            }
+            symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
+        },
         symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
     }
 }
@@ -350,6 +401,32 @@ fn build_type_node(
                     }));
                 }
                 _ => {
+                    let mut segments = vec![StructureTypePathSegmentNode { name_token: name }];
+
+                    loop {
+                        match symbols.last().expect("Unfinished type!") {
+                            Symbol::TypeAccessColons => {
+                                symbols.pop();
+
+                                match symbols.pop().expect("Unfinished type!") {
+                                    Symbol::TypeName(name) => {
+                                        segments.push(StructureTypePathSegmentNode {
+                                            name_token: name,
+                                        });
+                                    }
+                                    symbol => todo!(
+                                        "Unexpected symbol: {:?}\n\n{:?}",
+                                        symbol,
+                                        syntax_tree
+                                    ),
+                                }
+                            }
+                            _ => {
+                                break;
+                            }
+                        }
+                    }
+
                     let is_optional = match symbols.last() {
                         Some(Symbol::TypeOptional) => {
                             symbols.pop();
@@ -395,9 +472,7 @@ fn build_type_node(
                     };
 
                     return Ok(TypeNode::Structure(StructureTypeNode {
-                        path: StructureTypePathNode {
-                            segments: vec![StructureTypePathSegmentNode { name_token: name }],
-                        },
+                        path: StructureTypePathNode { segments },
                         generics,
                         is_borrowed,
                         is_mutable,
@@ -487,7 +562,296 @@ fn build_expression_node(
     mut syntax_tree: &mut SyntaxTree,
     symbol: Symbol,
 ) -> Result<ExpressionNode, Error> {
-    let mut expression = match symbol {
+    let mut expression = build_single_expression_node(&mut symbols, &mut syntax_tree, symbol)?;
+
+    loop {
+        match symbols.last().expect("Unfinished!") {
+            Symbol::Plus => {
+                symbols.pop();
+
+                let symbol = symbols.pop().expect("Unfinished!");
+
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
+                    right: Box::new(build_single_expression_node(
+                        &mut symbols,
+                        &mut syntax_tree,
+                        symbol,
+                    )?),
+                    op: BinaryOpNode::Add,
+                });
+            }
+            Symbol::Minus => {
+                symbols.pop();
+
+                let symbol = symbols.pop().expect("Unfinished!");
+
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
+                    right: Box::new(build_single_expression_node(
+                        &mut symbols,
+                        &mut syntax_tree,
+                        symbol,
+                    )?),
+                    op: BinaryOpNode::Subtract,
+                });
+            }
+            Symbol::Multiply => {
+                symbols.pop();
+
+                let symbol = symbols.pop().expect("Unfinished!");
+
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
+                    right: Box::new(build_single_expression_node(
+                        &mut symbols,
+                        &mut syntax_tree,
+                        symbol,
+                    )?),
+                    op: BinaryOpNode::Multiply,
+                });
+            }
+            Symbol::Divide => {
+                symbols.pop();
+
+                let symbol = symbols.pop().expect("Unfinished!");
+
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
+                    right: Box::new(build_single_expression_node(
+                        &mut symbols,
+                        &mut syntax_tree,
+                        symbol,
+                    )?),
+                    op: BinaryOpNode::Divide,
+                });
+            }
+            Symbol::Exponent => {
+                symbols.pop();
+
+                let symbol = symbols.pop().expect("Unfinished!");
+
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
+                    right: Box::new(build_single_expression_node(
+                        &mut symbols,
+                        &mut syntax_tree,
+                        symbol,
+                    )?),
+                    op: BinaryOpNode::Exponent,
+                });
+            }
+            Symbol::Modulo => {
+                symbols.pop();
+
+                let symbol = symbols.pop().expect("Unfinished!");
+
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
+                    right: Box::new(build_single_expression_node(
+                        &mut symbols,
+                        &mut syntax_tree,
+                        symbol,
+                    )?),
+                    op: BinaryOpNode::Modulo,
+                });
+            }
+            Symbol::Or => {
+                symbols.pop();
+
+                let symbol = symbols.pop().expect("Unfinished!");
+
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
+                    right: Box::new(build_single_expression_node(
+                        &mut symbols,
+                        &mut syntax_tree,
+                        symbol,
+                    )?),
+                    op: BinaryOpNode::Or,
+                });
+            }
+            Symbol::And => {
+                symbols.pop();
+
+                let symbol = symbols.pop().expect("Unfinished!");
+
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
+                    right: Box::new(build_single_expression_node(
+                        &mut symbols,
+                        &mut syntax_tree,
+                        symbol,
+                    )?),
+                    op: BinaryOpNode::And,
+                });
+            }
+            Symbol::Eq => {
+                symbols.pop();
+
+                let symbol = symbols.pop().expect("Unfinished!");
+
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
+                    right: Box::new(build_single_expression_node(
+                        &mut symbols,
+                        &mut syntax_tree,
+                        symbol,
+                    )?),
+                    op: BinaryOpNode::Eq,
+                });
+            }
+            Symbol::NotEq => {
+                symbols.pop();
+
+                let symbol = symbols.pop().expect("Unfinished!");
+
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
+                    right: Box::new(build_single_expression_node(
+                        &mut symbols,
+                        &mut syntax_tree,
+                        symbol,
+                    )?),
+                    op: BinaryOpNode::NotEq,
+                });
+            }
+            Symbol::Gt => {
+                symbols.pop();
+
+                let symbol = symbols.pop().expect("Unfinished!");
+
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
+                    right: Box::new(build_single_expression_node(
+                        &mut symbols,
+                        &mut syntax_tree,
+                        symbol,
+                    )?),
+                    op: BinaryOpNode::Gt,
+                });
+            }
+            Symbol::GtOrEq => {
+                symbols.pop();
+
+                let symbol = symbols.pop().expect("Unfinished!");
+
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
+                    right: Box::new(build_single_expression_node(
+                        &mut symbols,
+                        &mut syntax_tree,
+                        symbol,
+                    )?),
+                    op: BinaryOpNode::GtOrEq,
+                });
+            }
+            Symbol::Lt => {
+                symbols.pop();
+
+                let symbol = symbols.pop().expect("Unfinished!");
+
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
+                    right: Box::new(build_single_expression_node(
+                        &mut symbols,
+                        &mut syntax_tree,
+                        symbol,
+                    )?),
+                    op: BinaryOpNode::Lt,
+                });
+            }
+            Symbol::LtOrEq => {
+                symbols.pop();
+
+                let symbol = symbols.pop().expect("Unfinished!");
+
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
+                    right: Box::new(build_single_expression_node(
+                        &mut symbols,
+                        &mut syntax_tree,
+                        symbol,
+                    )?),
+                    op: BinaryOpNode::LtOrEq,
+                });
+            }
+            Symbol::NullCoalesce => {
+                symbols.pop();
+
+                let symbol = symbols.pop().expect("Unfinished!");
+
+                expression = ExpressionNode::NullCoalesce(NullCoalesceExpressionNode {
+                    left: Box::new(expression),
+                    right: Box::new(build_single_expression_node(
+                        &mut symbols,
+                        &mut syntax_tree,
+                        symbol,
+                    )?),
+                });
+            }
+            Symbol::CastQuestion => {
+                symbols.pop();
+
+                expression = ExpressionNode::QuestionCast(QuestionCastNode {
+                    expression: Box::new(expression),
+                });
+            }
+            Symbol::Range => {
+                symbols.pop();
+
+                let symbol = symbols.pop().expect("Unfinished!");
+                let right = build_expression_node(&mut symbols, &mut syntax_tree, symbol)?;
+
+                return Ok(ExpressionNode::Range(RangeExpressionNode {
+                    left: Box::new(expression),
+                    right: Box::new(right),
+                }));
+            }
+            Symbol::InstanceAccessPeriod => {
+                symbols.pop();
+
+                let symbol = symbols.pop().expect("Unfinished!");
+
+                let right =
+                    match build_single_expression_node(&mut symbols, &mut syntax_tree, symbol)? {
+                        ExpressionNode::Call(node) => InstanceAccessRightNode::Call(node),
+                        ExpressionNode::InstanceReference(node) => {
+                            InstanceAccessRightNode::Reference(node)
+                        }
+                        ExpressionNode::InstanceAccess(InstanceAccessNode { right, left: _ }) => {
+                            InstanceAccessRightNode::Access(Box::new(right))
+                        }
+                        ExpressionNode::Literal(LiteralDataNode::Integer(value)) => {
+                            InstanceAccessRightNode::Reference(InstanceReferenceNode {
+                                name_token: String::from(value),
+                                is_borrowed: false,
+                                is_mutable: false,
+                            })
+                        }
+                        expression => todo!(
+                            "Unexpected expression: {:?}\n\n{:?}",
+                            expression,
+                            syntax_tree
+                        ),
+                    };
+
+                expression = ExpressionNode::InstanceAccess(InstanceAccessNode {
+                    left: Box::new(expression),
+                    right,
+                });
+            }
+            _ => return Ok(expression),
+        }
+    }
+}
+
+fn build_single_expression_node(
+    mut symbols: &mut Vec<Symbol>,
+    mut syntax_tree: &mut SyntaxTree,
+    symbol: Symbol,
+) -> Result<ExpressionNode, Error> {
+    Ok(match symbol {
         Symbol::True => ExpressionNode::Literal(LiteralDataNode::Boolean(true)),
         Symbol::False => ExpressionNode::Literal(LiteralDataNode::Boolean(false)),
         Symbol::Int(value) => ExpressionNode::Literal(LiteralDataNode::Integer(value)),
@@ -734,258 +1098,7 @@ fn build_expression_node(
             build_closure_expression(&mut symbols, &mut syntax_tree, symbol)?
         }
         symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
-    };
-
-    loop {
-        match symbols.last().expect("Unfinished!") {
-            Symbol::Plus => {
-                symbols.pop();
-
-                let symbol = symbols.pop().expect("Unfinished!");
-
-                expression = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(expression),
-                    right: Box::new(build_expression_node(
-                        &mut symbols,
-                        &mut syntax_tree,
-                        symbol,
-                    )?),
-                    op: BinaryOpNode::Add,
-                });
-            }
-            Symbol::Minus => {
-                symbols.pop();
-
-                let symbol = symbols.pop().expect("Unfinished!");
-
-                expression = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(expression),
-                    right: Box::new(build_expression_node(
-                        &mut symbols,
-                        &mut syntax_tree,
-                        symbol,
-                    )?),
-                    op: BinaryOpNode::Subtract,
-                });
-            }
-            Symbol::Multiply => {
-                symbols.pop();
-
-                let symbol = symbols.pop().expect("Unfinished!");
-
-                expression = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(expression),
-                    right: Box::new(build_expression_node(
-                        &mut symbols,
-                        &mut syntax_tree,
-                        symbol,
-                    )?),
-                    op: BinaryOpNode::Multiply,
-                });
-            }
-            Symbol::Divide => {
-                symbols.pop();
-
-                let symbol = symbols.pop().expect("Unfinished!");
-
-                expression = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(expression),
-                    right: Box::new(build_expression_node(
-                        &mut symbols,
-                        &mut syntax_tree,
-                        symbol,
-                    )?),
-                    op: BinaryOpNode::Divide,
-                });
-            }
-            Symbol::Exponent => {
-                symbols.pop();
-
-                let symbol = symbols.pop().expect("Unfinished!");
-
-                expression = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(expression),
-                    right: Box::new(build_expression_node(
-                        &mut symbols,
-                        &mut syntax_tree,
-                        symbol,
-                    )?),
-                    op: BinaryOpNode::Exponent,
-                });
-            }
-            Symbol::Modulo => {
-                symbols.pop();
-
-                let symbol = symbols.pop().expect("Unfinished!");
-
-                expression = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(expression),
-                    right: Box::new(build_expression_node(
-                        &mut symbols,
-                        &mut syntax_tree,
-                        symbol,
-                    )?),
-                    op: BinaryOpNode::Modulo,
-                });
-            }
-            Symbol::Or => {
-                symbols.pop();
-
-                let symbol = symbols.pop().expect("Unfinished!");
-
-                expression = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(expression),
-                    right: Box::new(build_expression_node(
-                        &mut symbols,
-                        &mut syntax_tree,
-                        symbol,
-                    )?),
-                    op: BinaryOpNode::Or,
-                });
-            }
-            Symbol::And => {
-                symbols.pop();
-
-                let symbol = symbols.pop().expect("Unfinished!");
-
-                expression = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(expression),
-                    right: Box::new(build_expression_node(
-                        &mut symbols,
-                        &mut syntax_tree,
-                        symbol,
-                    )?),
-                    op: BinaryOpNode::And,
-                });
-            }
-            Symbol::Eq => {
-                symbols.pop();
-
-                let symbol = symbols.pop().expect("Unfinished!");
-
-                expression = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(expression),
-                    right: Box::new(build_expression_node(
-                        &mut symbols,
-                        &mut syntax_tree,
-                        symbol,
-                    )?),
-                    op: BinaryOpNode::Eq,
-                });
-            }
-            Symbol::NotEq => {
-                symbols.pop();
-
-                let symbol = symbols.pop().expect("Unfinished!");
-
-                expression = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(expression),
-                    right: Box::new(build_expression_node(
-                        &mut symbols,
-                        &mut syntax_tree,
-                        symbol,
-                    )?),
-                    op: BinaryOpNode::NotEq,
-                });
-            }
-            Symbol::Gt => {
-                symbols.pop();
-
-                let symbol = symbols.pop().expect("Unfinished!");
-
-                expression = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(expression),
-                    right: Box::new(build_expression_node(
-                        &mut symbols,
-                        &mut syntax_tree,
-                        symbol,
-                    )?),
-                    op: BinaryOpNode::Gt,
-                });
-            }
-            Symbol::GtOrEq => {
-                symbols.pop();
-
-                let symbol = symbols.pop().expect("Unfinished!");
-
-                expression = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(expression),
-                    right: Box::new(build_expression_node(
-                        &mut symbols,
-                        &mut syntax_tree,
-                        symbol,
-                    )?),
-                    op: BinaryOpNode::GtOrEq,
-                });
-            }
-            Symbol::Lt => {
-                symbols.pop();
-
-                let symbol = symbols.pop().expect("Unfinished!");
-
-                expression = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(expression),
-                    right: Box::new(build_expression_node(
-                        &mut symbols,
-                        &mut syntax_tree,
-                        symbol,
-                    )?),
-                    op: BinaryOpNode::Lt,
-                });
-            }
-            Symbol::LtOrEq => {
-                symbols.pop();
-
-                let symbol = symbols.pop().expect("Unfinished!");
-
-                expression = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(expression),
-                    right: Box::new(build_expression_node(
-                        &mut symbols,
-                        &mut syntax_tree,
-                        symbol,
-                    )?),
-                    op: BinaryOpNode::LtOrEq,
-                });
-            }
-            Symbol::NullCoalesce => {
-                symbols.pop();
-
-                let symbol = symbols.pop().expect("Unfinished!");
-
-                expression = ExpressionNode::NullCoalesce(NullCoalesceExpressionNode {
-                    left: Box::new(expression),
-                    right: Box::new(build_expression_node(
-                        &mut symbols,
-                        &mut syntax_tree,
-                        symbol,
-                    )?),
-                });
-            }
-            Symbol::CastQuestion => {
-                symbols.pop();
-
-                expression = ExpressionNode::QuestionCast(QuestionCastNode {
-                    expression: Box::new(expression),
-                });
-            }
-            Symbol::Range => {
-                symbols.pop();
-
-                let symbol = symbols.pop().expect("Unfinished!");
-                let right = build_expression_node(&mut symbols, &mut syntax_tree, symbol)?;
-
-                return Ok(ExpressionNode::Range(RangeExpressionNode {
-                    left: Box::new(expression),
-                    right: Box::new(right),
-                }));
-            }
-            Symbol::InstanceAccessPeriod => {
-                todo!();
-            }
-            _ => return Ok(expression),
-        }
-    }
+    })
 }
 
 fn build_call_node_expression(
@@ -1003,7 +1116,7 @@ fn build_call_node_expression(
             ));
 
             match symbols.pop().expect("Unfinished call!") {
-                Symbol::TypeAccessDoubleSemicolon => {}
+                Symbol::TypeAccessColons => {}
                 symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
             }
 
@@ -1141,9 +1254,20 @@ fn build_closure_expression(
         }
     }
 
+    let return_type = match symbols.last().expect("Unfinished closure!") {
+        Symbol::FunctionReturnTypeColon => {
+            symbols.pop();
+
+            let symbol = symbols.pop().expect("Unfinished closure!");
+
+            Some(build_type_node(&mut symbols, &mut syntax_tree, symbol)?)
+        }
+        _ => None,
+    };
+
     let signature = ClosureSignatureNode {
         params,
-        return_type: None,
+        return_type,
     };
 
     match symbols.pop().expect("Unfinished closure!") {

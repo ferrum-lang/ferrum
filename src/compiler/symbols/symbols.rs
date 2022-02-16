@@ -32,7 +32,6 @@ pub enum Symbol {
     FunctionReturnTypeName(String),
     FunctionExpressionsOpenBrace,
     FunctionExpressionsCloseBrace,
-    TypeAccessDoubleSemicolon,
     TypeAccessName(String),
     InstanceBorrow,
     InstanceReferenceName(String),
