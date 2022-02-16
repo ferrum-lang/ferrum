@@ -136,13 +136,24 @@ fn parse_function(
         symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
     }
 
-    let mut params = vec![];
+    let symbol = symbols.pop().expect("Unfinished function!");
+
+    let mut params = match symbol {
+        Symbol::FunctionParamsParamName(_) => vec![build_function_param_node(
+            &mut symbols,
+            &mut syntax_tree,
+            symbol,
+        )?],
+        symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
+    };
 
     loop {
         let symbol = symbols.pop().expect("Unfinished function!");
 
         match symbol {
-            Symbol::FunctionParamsParamName(_) => {
+            Symbol::FunctionParamsComma => {
+                let symbol = symbols.pop().expect("Unfinished function!");
+
                 params.push(build_function_param_node(
                     &mut symbols,
                     &mut syntax_tree,
@@ -476,22 +487,12 @@ fn build_expression_node(
     mut syntax_tree: &mut SyntaxTree,
     symbol: Symbol,
 ) -> Result<ExpressionNode, Error> {
-    match symbol {
-        Symbol::True => {
-            return build_literal_boolean_node(&mut symbols, &mut syntax_tree, true);
-        }
-        Symbol::False => {
-            return build_literal_boolean_node(&mut symbols, &mut syntax_tree, false);
-        }
-        Symbol::Int(value) => {
-            return build_literal_integer_node(&mut symbols, &mut syntax_tree, value);
-        }
-        Symbol::Char(value) => {
-            return Ok(ExpressionNode::Literal(LiteralDataNode::Char(value)));
-        }
-        Symbol::PlainString(value) => {
-            return Ok(ExpressionNode::Literal(LiteralDataNode::PlainString(value)));
-        }
+    let mut expression = match symbol {
+        Symbol::True => ExpressionNode::Literal(LiteralDataNode::Boolean(true)),
+        Symbol::False => ExpressionNode::Literal(LiteralDataNode::Boolean(false)),
+        Symbol::Int(value) => ExpressionNode::Literal(LiteralDataNode::Integer(value)),
+        Symbol::Char(value) => ExpressionNode::Literal(LiteralDataNode::Char(value)),
+        Symbol::PlainString(value) => ExpressionNode::Literal(LiteralDataNode::PlainString(value)),
         Symbol::ListOpen => {
             let symbol = symbols.pop().expect("Unfinished expression!");
             let value = build_expression_node(&mut symbols, &mut syntax_tree, symbol)?;
@@ -518,18 +519,18 @@ fn build_expression_node(
                         symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
                     }
 
-                    return Ok(ExpressionNode::Literal(LiteralDataNode::List(
-                        ListNode::ForIn(ForInListNode {
-                            expression: Box::new(value),
-                            for_name_token,
-                            range: Box::new(range),
-                        }),
-                    )));
+                    ExpressionNode::Literal(LiteralDataNode::List(ListNode::ForIn(ForInListNode {
+                        expression: Box::new(value),
+                        for_name_token,
+                        range: Box::new(range),
+                    })))
                 }
                 _ => {
                     symbols.push(symbol);
 
                     let mut segments = vec![value];
+
+                    let expression;
 
                     loop {
                         let symbol = symbols.pop().expect("Unfinished expression!");
@@ -543,13 +544,16 @@ fn build_expression_node(
                                 segments.push(value);
                             }
                             Symbol::ListClose => {
-                                return Ok(ExpressionNode::Literal(LiteralDataNode::List(
+                                expression = ExpressionNode::Literal(LiteralDataNode::List(
                                     ListNode::Segmented(SegmentedListNode { segments }),
-                                )));
+                                ));
+                                break;
                             }
                             symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
                         }
                     }
+
+                    expression
                 }
             }
         }
@@ -571,14 +575,16 @@ fn build_expression_node(
                         symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
                     }
 
-                    return Ok(ExpressionNode::Literal(LiteralDataNode::Tuple(TupleNode {
+                    ExpressionNode::Literal(LiteralDataNode::Tuple(TupleNode {
                         segments: vec![value; length],
-                    })));
+                    }))
                 }
                 _ => {
                     symbols.push(symbol);
 
                     let mut segments = vec![value];
+
+                    let expression;
 
                     loop {
                         let symbol = symbols.pop().expect("Unfinished expression!");
@@ -592,17 +598,22 @@ fn build_expression_node(
                                 segments.push(value);
                             }
                             Symbol::TupleEnd => {
-                                return Ok(ExpressionNode::Literal(LiteralDataNode::Tuple(
-                                    TupleNode { segments },
-                                )));
+                                expression =
+                                    ExpressionNode::Literal(LiteralDataNode::Tuple(TupleNode {
+                                        segments,
+                                    }));
+                                break;
                             }
                             symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
                         }
                     }
+
+                    expression
                 }
             }
         }
         Symbol::TemplateStringStart(start) => {
+            let expression;
             let mut middle_tokens = vec![];
             let mut expressions = vec![];
 
@@ -614,14 +625,15 @@ fn build_expression_node(
                         middle_tokens.push(middle);
                     }
                     Symbol::TemplateStringEnd(end) => {
-                        return Ok(ExpressionNode::Literal(LiteralDataNode::TemplateString(
+                        expression = ExpressionNode::Literal(LiteralDataNode::TemplateString(
                             TemplateStringNode {
                                 start_token: start,
                                 middle_tokens,
                                 expressions,
                                 end_token: end,
                             },
-                        )))
+                        ));
+                        break;
                     }
                     Symbol::TemplateStringTemplateOpenBrace => {
                         let symbol = symbols.pop().expect("Unfinished expression!");
@@ -638,6 +650,8 @@ fn build_expression_node(
                     symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
                 }
             }
+
+            expression
         }
         Symbol::Mutable => {
             let is_borrowed = match symbols.last() {
@@ -647,35 +661,31 @@ fn build_expression_node(
 
             match symbols.pop().expect("Unfinished expression!") {
                 Symbol::InstanceReferenceName(instance_reference_name) => {
-                    return Ok(ExpressionNode::InstanceReference(InstanceReferenceNode {
+                    ExpressionNode::InstanceReference(InstanceReferenceNode {
                         name_token: instance_reference_name,
                         is_mutable: true,
                         is_borrowed,
-                    }));
+                    })
                 }
                 symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
             }
         }
         Symbol::InstanceBorrow => match symbols.pop().expect("Unfinished expression!") {
             Symbol::InstanceReferenceName(instance_reference_name) => {
-                return Ok(ExpressionNode::InstanceReference(InstanceReferenceNode {
+                ExpressionNode::InstanceReference(InstanceReferenceNode {
                     name_token: instance_reference_name,
                     is_borrowed: true,
                     is_mutable: false,
-                }));
+                })
             }
             symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
         },
         Symbol::InstanceReferenceName(instance_reference_name) => {
-            return build_instance_reference_node(
-                &mut symbols,
-                &mut syntax_tree,
-                InstanceReferenceNode {
-                    name_token: instance_reference_name,
-                    is_borrowed: false,
-                    is_mutable: false,
-                },
-            );
+            ExpressionNode::InstanceReference(InstanceReferenceNode {
+                name_token: instance_reference_name,
+                is_borrowed: false,
+                is_mutable: false,
+            })
         }
         Symbol::InstanceAccessName(instance_access_name) => {
             match symbols.pop().expect("Unfinished expression!") {
@@ -705,81 +715,26 @@ fn build_expression_node(
                 ),
             };
 
-            return Ok(ExpressionNode::InstanceAccess(InstanceAccessNode {
+            ExpressionNode::InstanceAccess(InstanceAccessNode {
                 left: Box::new(ExpressionNode::InstanceReference(InstanceReferenceNode {
                     name_token: instance_access_name,
                     is_mutable: false,
                     is_borrowed: false,
                 })),
                 right,
-            }));
+            })
         }
         Symbol::TypeAccessName(_) => {
-            return Ok(build_call_node_expression(
-                &mut symbols,
-                &mut syntax_tree,
-                symbol,
-                vec![],
-            )?);
+            build_call_node_expression(&mut symbols, &mut syntax_tree, symbol, vec![])?
         }
         Symbol::FunctionCallName(_) => {
-            return Ok(build_call_node_expression(
-                &mut symbols,
-                &mut syntax_tree,
-                symbol,
-                vec![],
-            )?);
+            build_call_node_expression(&mut symbols, &mut syntax_tree, symbol, vec![])?
+        }
+        Symbol::ClosureParamsOpen => {
+            build_closure_expression(&mut symbols, &mut syntax_tree, symbol)?
         }
         symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
-    }
-}
-
-fn build_literal_boolean_node(
-    mut symbols: &mut Vec<Symbol>,
-    mut syntax_tree: &mut SyntaxTree,
-    value: bool,
-) -> Result<ExpressionNode, Error> {
-    let mut result = ExpressionNode::Literal(LiteralDataNode::Boolean(value));
-
-    loop {
-        match symbols.last().expect("Unfinished!") {
-            _ => return Ok(result),
-        }
-    }
-}
-
-fn build_literal_integer_node(
-    mut symbols: &mut Vec<Symbol>,
-    mut syntax_tree: &mut SyntaxTree,
-    value: String,
-) -> Result<ExpressionNode, Error> {
-    let mut result = ExpressionNode::Literal(LiteralDataNode::Integer(value));
-
-    loop {
-        match symbols.last().expect("Unfinished!") {
-            Symbol::Plus => todo!(),
-            Symbol::Range => {
-                symbols.pop();
-
-                let symbol = symbols.pop().expect("Unfinished!");
-                let right = build_expression_node(&mut symbols, &mut syntax_tree, symbol)?;
-
-                return Ok(ExpressionNode::Range(RangeExpressionNode {
-                    left: Box::new(result),
-                    right: Box::new(right),
-                }));
-            }
-            _ => return Ok(result),
-        }
-    }
-}
-
-fn build_instance_reference_node(
-    mut symbols: &mut Vec<Symbol>,
-    mut syntax_tree: &mut SyntaxTree,
-    instance_reference: InstanceReferenceNode,
-) -> Result<ExpressionNode, Error> {
-    let mut result = ExpressionNode::InstanceReference(instance_reference);
+    };
 
     loop {
         match symbols.last().expect("Unfinished!") {
@@ -788,8 +743,8 @@ fn build_instance_reference_node(
 
                 let symbol = symbols.pop().expect("Unfinished!");
 
-                result = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(result),
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
                     right: Box::new(build_expression_node(
                         &mut symbols,
                         &mut syntax_tree,
@@ -803,8 +758,8 @@ fn build_instance_reference_node(
 
                 let symbol = symbols.pop().expect("Unfinished!");
 
-                result = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(result),
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
                     right: Box::new(build_expression_node(
                         &mut symbols,
                         &mut syntax_tree,
@@ -818,8 +773,8 @@ fn build_instance_reference_node(
 
                 let symbol = symbols.pop().expect("Unfinished!");
 
-                result = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(result),
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
                     right: Box::new(build_expression_node(
                         &mut symbols,
                         &mut syntax_tree,
@@ -833,8 +788,8 @@ fn build_instance_reference_node(
 
                 let symbol = symbols.pop().expect("Unfinished!");
 
-                result = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(result),
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
                     right: Box::new(build_expression_node(
                         &mut symbols,
                         &mut syntax_tree,
@@ -848,8 +803,8 @@ fn build_instance_reference_node(
 
                 let symbol = symbols.pop().expect("Unfinished!");
 
-                result = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(result),
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
                     right: Box::new(build_expression_node(
                         &mut symbols,
                         &mut syntax_tree,
@@ -863,8 +818,8 @@ fn build_instance_reference_node(
 
                 let symbol = symbols.pop().expect("Unfinished!");
 
-                result = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(result),
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
                     right: Box::new(build_expression_node(
                         &mut symbols,
                         &mut syntax_tree,
@@ -878,8 +833,8 @@ fn build_instance_reference_node(
 
                 let symbol = symbols.pop().expect("Unfinished!");
 
-                result = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(result),
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
                     right: Box::new(build_expression_node(
                         &mut symbols,
                         &mut syntax_tree,
@@ -893,8 +848,8 @@ fn build_instance_reference_node(
 
                 let symbol = symbols.pop().expect("Unfinished!");
 
-                result = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(result),
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
                     right: Box::new(build_expression_node(
                         &mut symbols,
                         &mut syntax_tree,
@@ -908,8 +863,8 @@ fn build_instance_reference_node(
 
                 let symbol = symbols.pop().expect("Unfinished!");
 
-                result = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(result),
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
                     right: Box::new(build_expression_node(
                         &mut symbols,
                         &mut syntax_tree,
@@ -923,8 +878,8 @@ fn build_instance_reference_node(
 
                 let symbol = symbols.pop().expect("Unfinished!");
 
-                result = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(result),
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
                     right: Box::new(build_expression_node(
                         &mut symbols,
                         &mut syntax_tree,
@@ -938,8 +893,8 @@ fn build_instance_reference_node(
 
                 let symbol = symbols.pop().expect("Unfinished!");
 
-                result = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(result),
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
                     right: Box::new(build_expression_node(
                         &mut symbols,
                         &mut syntax_tree,
@@ -953,8 +908,8 @@ fn build_instance_reference_node(
 
                 let symbol = symbols.pop().expect("Unfinished!");
 
-                result = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(result),
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
                     right: Box::new(build_expression_node(
                         &mut symbols,
                         &mut syntax_tree,
@@ -968,8 +923,8 @@ fn build_instance_reference_node(
 
                 let symbol = symbols.pop().expect("Unfinished!");
 
-                result = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(result),
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
                     right: Box::new(build_expression_node(
                         &mut symbols,
                         &mut syntax_tree,
@@ -983,8 +938,8 @@ fn build_instance_reference_node(
 
                 let symbol = symbols.pop().expect("Unfinished!");
 
-                result = ExpressionNode::Binary(BinaryExpressionNode {
-                    left: Box::new(result),
+                expression = ExpressionNode::Binary(BinaryExpressionNode {
+                    left: Box::new(expression),
                     right: Box::new(build_expression_node(
                         &mut symbols,
                         &mut syntax_tree,
@@ -993,7 +948,42 @@ fn build_instance_reference_node(
                     op: BinaryOpNode::LtOrEq,
                 });
             }
-            _ => return Ok(result),
+            Symbol::NullCoalesce => {
+                symbols.pop();
+
+                let symbol = symbols.pop().expect("Unfinished!");
+
+                expression = ExpressionNode::NullCoalesce(NullCoalesceExpressionNode {
+                    left: Box::new(expression),
+                    right: Box::new(build_expression_node(
+                        &mut symbols,
+                        &mut syntax_tree,
+                        symbol,
+                    )?),
+                });
+            }
+            Symbol::CastQuestion => {
+                symbols.pop();
+
+                expression = ExpressionNode::QuestionCast(QuestionCastNode {
+                    expression: Box::new(expression),
+                });
+            }
+            Symbol::Range => {
+                symbols.pop();
+
+                let symbol = symbols.pop().expect("Unfinished!");
+                let right = build_expression_node(&mut symbols, &mut syntax_tree, symbol)?;
+
+                return Ok(ExpressionNode::Range(RangeExpressionNode {
+                    left: Box::new(expression),
+                    right: Box::new(right),
+                }));
+            }
+            Symbol::InstanceAccessPeriod => {
+                todo!();
+            }
+            _ => return Ok(expression),
         }
     }
 }
@@ -1105,4 +1095,146 @@ fn build_call_node_expression(
         }
         _ => Ok(expression),
     };
+}
+
+fn build_closure_expression(
+    mut symbols: &mut Vec<Symbol>,
+    mut syntax_tree: &mut SyntaxTree,
+    symbol: Symbol,
+) -> Result<ExpressionNode, Error> {
+    match symbol {
+        Symbol::ClosureParamsOpen => {}
+        symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
+    }
+
+    let symbol = symbols.pop().expect("Unfinished closure!");
+
+    let mut params = match symbol {
+        Symbol::FunctionParamsParamName(_) => vec![build_closure_param_node(
+            &mut symbols,
+            &mut syntax_tree,
+            symbol,
+        )?],
+        Symbol::ClosureParamsClose => vec![],
+        symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
+    };
+
+    if params.len() > 0 {
+        loop {
+            let symbol = symbols.pop().expect("Unfinished closure!");
+
+            match symbol {
+                Symbol::ClosureParamsComma => {
+                    let symbol = symbols.pop().expect("Unfinished closure!");
+
+                    params.push(build_closure_param_node(
+                        &mut symbols,
+                        &mut syntax_tree,
+                        symbol,
+                    )?);
+                }
+                Symbol::ClosureParamsClose => {
+                    break;
+                }
+                symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
+            }
+        }
+    }
+
+    let signature = ClosureSignatureNode {
+        params,
+        return_type: None,
+    };
+
+    match symbols.pop().expect("Unfinished closure!") {
+        Symbol::ClosureArrow => {}
+        symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
+    }
+
+    let mut statements = match symbols.last().expect("Unfinished closure!") {
+        Symbol::FunctionExpressionsOpenBrace => {
+            symbols.pop();
+            vec![]
+        }
+        _ => {
+            let symbol = symbols.pop().expect("Unfinished closure!");
+            vec![StatementNode::Expression(build_expression_node(
+                &mut symbols,
+                &mut syntax_tree,
+                symbol,
+            )?)]
+        }
+    };
+
+    if statements.len() == 0 {
+        loop {
+            let symbol = symbols.pop().expect("Unfinished function!");
+
+            match symbol {
+                Symbol::FunctionExpressionsCloseBrace => {
+                    break;
+                }
+                symbol => statements.push(build_statement_node(
+                    &mut symbols,
+                    &mut syntax_tree,
+                    symbol,
+                )?),
+            }
+        }
+    }
+
+    let body = FunctionBodyNode { statements };
+
+    return Ok(ExpressionNode::Closure(ClosureExpressionNode {
+        signature,
+        body,
+    }));
+}
+
+fn build_closure_param_node(
+    symbols: &mut Vec<Symbol>,
+    syntax_tree: &mut SyntaxTree,
+    symbol: Symbol,
+) -> Result<ClosureParamNode, Error> {
+    match symbol {
+        Symbol::FunctionParamsParamName(param_name) => {
+            match symbols.pop().expect("Unfinished function param!") {
+                Symbol::FunctionParamsParamTypeColon => {}
+                symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
+            };
+
+            let is_mutable = match symbols.last().expect("Unfinished function param!") {
+                Symbol::FunctionParamsParamTypeMutable => {
+                    symbols.pop();
+                    true
+                }
+                _ => false,
+            };
+
+            let is_borrowed = match symbols.last().expect("Unfinished function param!") {
+                Symbol::FunctionParamsParamTypeBorrowed => {
+                    symbols.pop();
+                    true
+                }
+                _ => false,
+            };
+
+            let type_name = match symbols.last().expect("Unfinished function param!") {
+                Symbol::FunctionParamsParamTypeName(name) => {
+                    let name = name.clone();
+                    symbols.pop();
+                    Some(name)
+                }
+                _ => None,
+            };
+
+            return Ok(ClosureParamNode {
+                name_token: param_name,
+                is_mutable,
+                is_borrowed,
+                type_token: type_name,
+            });
+        }
+        symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
+    }
 }

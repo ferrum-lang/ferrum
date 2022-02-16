@@ -348,6 +348,7 @@ fn symbolize_function_params(
             name if is_identifier_name(name) => {
                 symbolize_function_param(&mut tokens, &mut symbols, name)?;
             }
+            "," => symbols.push(Symbol::FunctionParamsComma),
             ")" => {
                 symbols.push(Symbol::FunctionParamsCloseParenthesis);
 
@@ -1369,6 +1370,8 @@ fn is_ternary(tokens: &mut Vec<Token>, symbols: &mut Vec<Symbol>, _literal: &str
                 is_ternary = Some(true);
             }
         }
+
+        history.push(token);
     }
 
     while let Some(item) = history.pop() {

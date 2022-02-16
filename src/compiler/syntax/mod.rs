@@ -140,6 +140,9 @@ pub enum ExpressionNode {
     Literal(LiteralDataNode),
     Binary(BinaryExpressionNode),
     Range(RangeExpressionNode),
+    Closure(ClosureExpressionNode),
+    NullCoalesce(NullCoalesceExpressionNode),
+    QuestionCast(QuestionCastNode),
 }
 
 #[derive(Debug, Clone)]
@@ -260,4 +263,35 @@ pub enum BinaryOpNode {
 pub struct RangeExpressionNode {
     pub left: Box<ExpressionNode>,
     pub right: Box<ExpressionNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct NullCoalesceExpressionNode {
+    pub left: Box<ExpressionNode>,
+    pub right: Box<ExpressionNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ClosureExpressionNode {
+    pub signature: ClosureSignatureNode,
+    pub body: FunctionBodyNode,
+}
+
+#[derive(Debug, Clone)]
+pub struct ClosureSignatureNode {
+    pub params: Vec<ClosureParamNode>,
+    pub return_type: Option<ReturnTypeNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ClosureParamNode {
+    pub name_token: String,
+    pub is_mutable: bool,
+    pub is_borrowed: bool,
+    pub type_token: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct QuestionCastNode {
+    pub expression: Box<ExpressionNode>,
 }
