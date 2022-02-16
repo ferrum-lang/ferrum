@@ -288,7 +288,7 @@ fn build_statement_node(
 
                 match symbols.pop().expect("Unfinished expression!") {
                     Symbol::Semicolon => {}
-                    symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
+                    symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, node),
                 }
 
                 return Ok(node);
@@ -715,20 +715,20 @@ fn build_expression_node(
             }));
         }
         Symbol::TypeAccessName(_) => {
-            return Ok(ExpressionNode::Call(build_expression_call_node(
+            return Ok(build_call_node_expression(
                 &mut symbols,
                 &mut syntax_tree,
                 symbol,
                 vec![],
-            )?));
+            )?);
         }
         Symbol::FunctionCallName(_) => {
-            return Ok(ExpressionNode::Call(build_expression_call_node(
+            return Ok(build_call_node_expression(
                 &mut symbols,
                 &mut syntax_tree,
                 symbol,
                 vec![],
-            )?));
+            )?);
         }
         symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
     }
@@ -998,34 +998,38 @@ fn build_instance_reference_node(
     }
 }
 
-fn build_expression_call_node(
+fn build_call_node_expression(
     mut symbols: &mut Vec<Symbol>,
     mut syntax_tree: &mut SyntaxTree,
     symbol: Symbol,
     mut segments: Vec<ExpressionCallPathSegmentNode>,
-) -> Result<ExpressionCallNode, Error> {
+) -> Result<ExpressionNode, Error> {
+    let expression;
+
     match symbol {
         Symbol::TypeAccessName(type_access_name) => {
             segments.push(ExpressionCallPathSegmentNode::TypeIdentity(
                 type_access_name,
             ));
 
-            match symbols.pop().expect("Unfinished function!") {
+            match symbols.pop().expect("Unfinished call!") {
                 Symbol::TypeAccessDoubleSemicolon => {}
                 symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
             }
 
             loop {
-                let symbol = symbols.pop().expect("Unfinished function!");
+                let symbol = symbols.pop().expect("Unfinished call!");
 
                 match symbol {
                     Symbol::FunctionCallName(_) => {
-                        return build_expression_call_node(
+                        expression = build_call_node_expression(
                             &mut symbols,
                             &mut syntax_tree,
                             symbol,
                             segments,
-                        );
+                        )?;
+
+                        break;
                     }
                     symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
                 }
@@ -1060,11 +1064,45 @@ fn build_expression_call_node(
                 }
             }
 
-            return Ok(ExpressionCallNode {
+            expression = ExpressionNode::Call(ExpressionCallNode {
                 subject: call_path,
                 args,
             });
         }
         symbol => todo!("Unexpected symbol: {:?}\n\n{:?}", symbol, syntax_tree),
     }
+
+    return match symbols.last().expect("Unfinished call!") {
+        Symbol::InstanceAccessPeriod => {
+            symbols.pop();
+
+            let symbol = symbols.pop().expect("Unfinished call!");
+
+            let right = match build_expression_node(&mut symbols, &mut syntax_tree, symbol)? {
+                ExpressionNode::Call(node) => InstanceAccessRightNode::Call(node),
+                ExpressionNode::InstanceReference(node) => InstanceAccessRightNode::Reference(node),
+                ExpressionNode::InstanceAccess(InstanceAccessNode { right, left: _ }) => {
+                    InstanceAccessRightNode::Access(Box::new(right))
+                }
+                ExpressionNode::Literal(LiteralDataNode::Integer(value)) => {
+                    InstanceAccessRightNode::Reference(InstanceReferenceNode {
+                        name_token: String::from(value),
+                        is_borrowed: false,
+                        is_mutable: false,
+                    })
+                }
+                expression => todo!(
+                    "Unexpected expression: {:?}\n\n{:?}",
+                    expression,
+                    syntax_tree
+                ),
+            };
+
+            Ok(ExpressionNode::InstanceAccess(InstanceAccessNode {
+                left: Box::new(expression),
+                right,
+            }))
+        }
+        _ => Ok(expression),
+    };
 }
