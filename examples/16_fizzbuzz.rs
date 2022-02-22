@@ -1,24 +1,24 @@
-mod lang_prelude;
-mod lang_std;
+mod fe_prelude;
+mod fe_std;
 
-use lang_prelude::*;
-use lang_std::{Console, LangStringBuilder};
-
-#[allow(non_upper_case_globals)]
-const STR_SLICE_0: LangString = LangString::from_slice("Fizz");
+use fe_prelude::*;
+use fe_std::{Console, FeStringBuilder};
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_1: LangString = LangString::from_slice("Buzz");
+const STR_SLICE_0: FeString = FeString::from_slice("Fizz");
 
-fn fizzbuzz(n: usize) -> LangString {
+#[allow(non_upper_case_globals)]
+const STR_SLICE_1: FeString = FeString::from_slice("Buzz");
+
+fn fizzbuzz(n: usize) -> FeString {
     let is_fizz = n % 3 == 0;
     let is_buzz = n % 5 == 0;
 
     if !is_fizz && !is_buzz {
-        return LangString::from_owned(n.to_string());
+        return FeString::from_owned(n.to_string());
     }
 
-    let mut builder = LangStringBuilder::new();
+    let mut builder = FeStringBuilder::new();
 
     if is_fizz {
         builder.append(STR_SLICE_0);

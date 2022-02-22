@@ -1,53 +1,53 @@
-mod lang_prelude;
-mod lang_std;
+mod fe_prelude;
+mod fe_std;
 
-use lang_prelude::*;
-use lang_std::Console;
-
-#[allow(non_upper_case_globals)]
-const STR_SLICE_0: LangString = LangString::from_slice("true");
+use fe_prelude::*;
+use fe_std::Console;
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_1: LangString = LangString::from_slice("false");
+const STR_SLICE_0: FeString = FeString::from_slice("true");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_2: LangString = LangString::from_slice("else");
+const STR_SLICE_1: FeString = FeString::from_slice("false");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_3: LangString = LangString::from_slice("Adam");
+const STR_SLICE_2: FeString = FeString::from_slice("else");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_4: LangString = LangString::from_slice("1");
+const STR_SLICE_3: FeString = FeString::from_slice("Adam");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_5: LangString = LangString::from_slice("2");
+const STR_SLICE_4: FeString = FeString::from_slice("1");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_6: LangString = LangString::from_slice("3");
+const STR_SLICE_5: FeString = FeString::from_slice("2");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_7: LangString = LangString::from_slice("4");
+const STR_SLICE_6: FeString = FeString::from_slice("3");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_8: LangString = LangString::from_slice("5");
+const STR_SLICE_7: FeString = FeString::from_slice("4");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_9: LangString = LangString::from_slice("7");
+const STR_SLICE_8: FeString = FeString::from_slice("5");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_10: LangString = LangString::from_slice("yes");
+const STR_SLICE_9: FeString = FeString::from_slice("7");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_11: LangString = LangString::from_slice("no");
+const STR_SLICE_10: FeString = FeString::from_slice("yes");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_12: LangString = LangString::from_slice("none");
+const STR_SLICE_11: FeString = FeString::from_slice("no");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_13: LangString = LangString::from_slice("true");
+const STR_SLICE_12: FeString = FeString::from_slice("none");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_14: LangString = LangString::from_slice("false");
+const STR_SLICE_13: FeString = FeString::from_slice("true");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_14: FeString = FeString::from_slice("false");
 
 fn main() {
     if true {
@@ -69,7 +69,7 @@ fn main() {
     let x = Some(123);
 
     if let Some(y) = x {
-        Console::write_line(LangString::from_owned(y.to_string()));
+        Console::write_line(FeString::from_owned(y.to_string()));
     }
 
     match x {
@@ -80,7 +80,7 @@ fn main() {
     match "Adam" {
         "Bates" => Console::write_line(STR_SLICE_7),
         "" => Console::write_line(STR_SLICE_8),
-        x if x.len() > 3 => Console::write_line(LangString::from_owned(format!("{}: 6", x))),
+        x if x.len() > 3 => Console::write_line(FeString::from_owned(format!("{}: 6", x))),
         _ => Console::write_line(STR_SLICE_9),
     }
 
@@ -89,7 +89,7 @@ fn main() {
 
     let x: Option<bool> = Some(true);
     Console::write_line(
-        x.map(|x| LangString::from_owned(x.to_string()))
+        x.map(|x| FeString::from_owned(x.to_string()))
             .unwrap_or(STR_SLICE_12),
     );
 

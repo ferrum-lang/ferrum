@@ -1,8 +1,8 @@
 use super::{syntax::*, Error};
 
-const IMPORT_PREFIX: &'static str = "lang_";
+const IMPORT_PREFIX: &'static str = "fe_";
 
-const INCLUDE_PRELUDE: &'static str = "mod lang_prelude;\nuse lang_prelude::*;\n";
+const INCLUDE_PRELUDE: &'static str = "mod fe_prelude;\nuse fe_prelude::*;\n";
 
 pub fn generate_rust(mut syntax_tree: SyntaxTree) -> Result<String, Error> {
     println!("Building Rust From:\n{:?}\n", syntax_tree);
@@ -174,7 +174,7 @@ pub fn generate_type(
                 "float32" => "f32",
                 "float64" => "f64",
                 "char" => "char",
-                "string" => "LangString",
+                "string" => "FeString",
                 name => todo!("Unexpected primative type: {:?}", name),
             };
 
@@ -368,7 +368,7 @@ pub fn generate_expression(
                 expression_rs.push_str(&format!("'{}'", value));
             }
             LiteralDataNode::PlainString(value) => {
-                expression_rs.push_str(&format!("LangString::from_slice(\"{}\")", value));
+                expression_rs.push_str(&format!("FeString::from_slice(\"{}\")", value));
             }
             LiteralDataNode::TemplateString(mut template_string) => {
                 let mut string = template_string.start_token;
@@ -394,7 +394,7 @@ pub fn generate_expression(
                 }
 
                 expression_rs.push_str(&format!(
-                    "LangString::from_owned(format!(\"{}\", {}))",
+                    "FeString::from_owned(format!(\"{}\", {}))",
                     string, args
                 ));
             }
@@ -451,7 +451,7 @@ pub fn generate_expression(
 
 fn fix_type_token(type_token: String) -> String {
     match type_token.as_str() {
-        "string" => "LangString".to_string(),
+        "string" => "FeString".to_string(),
         _ => type_token,
     }
 }

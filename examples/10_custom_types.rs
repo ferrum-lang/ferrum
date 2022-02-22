@@ -1,37 +1,37 @@
-mod lang_prelude;
-mod lang_std;
+mod fe_prelude;
+mod fe_std;
 
-use lang_prelude::*;
-use lang_std::{Console, Map};
-
-#[allow(non_upper_case_globals)]
-const STR_SLICE_0: LangString = LangString::from_slice("123");
+use fe_prelude::*;
+use fe_std::{Console, Map};
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_1: LangString = LangString::from_slice("Adam");
+const STR_SLICE_0: FeString = FeString::from_slice("123");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_2: LangString = LangString::from_slice("Bates");
+const STR_SLICE_1: FeString = FeString::from_slice("Adam");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_3: LangString = LangString::from_slice("124");
+const STR_SLICE_2: FeString = FeString::from_slice("Bates");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_4: LangString = LangString::from_slice("Madison");
+const STR_SLICE_3: FeString = FeString::from_slice("124");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_5: LangString = LangString::from_slice("Colletti");
+const STR_SLICE_4: FeString = FeString::from_slice("Madison");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_5: FeString = FeString::from_slice("Colletti");
 
 #[derive(PartialEq, Eq, Hash)]
 struct PersonId {
-    pub value: LangString,
+    pub value: FeString,
 }
 impl Share<PersonId> for PersonId {}
 
 struct Person {
     pub id: Shareable<PersonId>,
-    first_name: LangString,
-    last_name: LangString,
+    first_name: FeString,
+    last_name: FeString,
     age: usize,
 }
 impl Share<Person> for Person {}
@@ -39,8 +39,8 @@ impl Share<Person> for Person {}
 impl Person {
     pub fn new(
         id: Shareable<PersonId>,
-        first_name: LangString,
-        last_name: LangString,
+        first_name: FeString,
+        last_name: FeString,
         age: usize,
     ) -> Self {
         Self {
@@ -60,7 +60,7 @@ trait PersonRepository {
     fn create_person(
         &mut self,
         person: Shareable<Person>,
-    ) -> Result<lang_std::Void, PersonRepositoryError>;
+    ) -> Result<fe_std::Void, PersonRepositoryError>;
     fn find_all_people(&self) -> Result<Vec<Shareable<Person>>, PersonRepositoryError>;
     fn find_person_by_id(
         &self,
@@ -70,11 +70,11 @@ trait PersonRepository {
         &mut self,
         id: Shareable<PersonId>,
         person: Shareable<Person>,
-    ) -> Result<lang_std::Void, PersonRepositoryError>;
+    ) -> Result<fe_std::Void, PersonRepositoryError>;
     fn delete_person_by_id(
         &mut self,
         id: Shareable<PersonId>,
-    ) -> Result<lang_std::Void, PersonRepositoryError>;
+    ) -> Result<fe_std::Void, PersonRepositoryError>;
 }
 
 struct LocalPersonRepository {
@@ -94,7 +94,7 @@ impl PersonRepository for LocalPersonRepository {
     fn create_person(
         &mut self,
         person: Shareable<Person>,
-    ) -> Result<lang_std::Void, PersonRepositoryError> {
+    ) -> Result<fe_std::Void, PersonRepositoryError> {
         self.map.insert(person.borrow().id.share(), person.share());
         return Ok(());
     }
@@ -119,7 +119,7 @@ impl PersonRepository for LocalPersonRepository {
         &mut self,
         id: Shareable<PersonId>,
         person: Shareable<Person>,
-    ) -> Result<lang_std::Void, PersonRepositoryError> {
+    ) -> Result<fe_std::Void, PersonRepositoryError> {
         ({
             if self.map.get(&id).is_none() {
                 return Err(PersonRepositoryError {});
@@ -135,7 +135,7 @@ impl PersonRepository for LocalPersonRepository {
     fn delete_person_by_id(
         &mut self,
         id: Shareable<PersonId>,
-    ) -> Result<lang_std::Void, PersonRepositoryError> {
+    ) -> Result<fe_std::Void, PersonRepositoryError> {
         return self
             .map
             .remove(&id)
@@ -176,7 +176,7 @@ trait PersonService {
     fn delete_person_by_id(
         &mut self,
         id: Shareable<PersonId>,
-    ) -> Result<lang_std::Void, PersonServiceError>;
+    ) -> Result<fe_std::Void, PersonServiceError>;
 }
 
 struct StoredPersonService {
@@ -265,7 +265,7 @@ impl PersonService for StoredPersonService {
     fn delete_person_by_id(
         &mut self,
         id: Shareable<PersonId>,
-    ) -> Result<lang_std::Void, PersonServiceError> {
+    ) -> Result<fe_std::Void, PersonServiceError> {
         return self
             .person_repository
             .delete_person_by_id(id)
@@ -273,7 +273,7 @@ impl PersonService for StoredPersonService {
     }
 }
 
-fn main() -> Result<lang_std::Void, PersonServiceError> {
+fn main() -> Result<fe_std::Void, PersonServiceError> {
     let mut person_repository = LocalPersonRepository::new(None);
 
     let mut person_service: Box<dyn PersonService> =
@@ -294,18 +294,18 @@ fn main() -> Result<lang_std::Void, PersonServiceError> {
     ));
 
     let added1 = person_service.add_person(person1.share())?;
-    Console::write_line(LangString::from_owned(format!(
+    Console::write_line(FeString::from_owned(format!(
         "Added person id {}",
         added1.borrow().id.borrow().value
     )));
 
     let found_or_added1 = person_service.find_or_add_person(person2.share())?;
     match found_or_added1 {
-        FindOrAdd::Found(found) => Console::write_line(LangString::from_owned(format!(
+        FindOrAdd::Found(found) => Console::write_line(FeString::from_owned(format!(
             "Found person id {}",
             found.borrow().id.borrow().value
         ))),
-        FindOrAdd::Added(added) => Console::write_line(LangString::from_owned(format!(
+        FindOrAdd::Added(added) => Console::write_line(FeString::from_owned(format!(
             "Added person id {}",
             added.borrow().id.borrow().value
         ))),
@@ -313,11 +313,11 @@ fn main() -> Result<lang_std::Void, PersonServiceError> {
 
     let found_or_added2 = person_service.find_or_add_person(person2.share())?;
     match found_or_added2 {
-        FindOrAdd::Found(found) => Console::write_line(LangString::from_owned(format!(
+        FindOrAdd::Found(found) => Console::write_line(FeString::from_owned(format!(
             "Found person id {}",
             found.borrow().id.borrow().value
         ))),
-        FindOrAdd::Added(added) => Console::write_line(LangString::from_owned(format!(
+        FindOrAdd::Added(added) => Console::write_line(FeString::from_owned(format!(
             "Added person id {}",
             added.borrow().id.borrow().value
         ))),
@@ -326,13 +326,13 @@ fn main() -> Result<lang_std::Void, PersonServiceError> {
     person1.borrow_mut().age = 25;
     let updated1 =
         person_service.update_person_by_id(person1.borrow().id.share(), person1.share())?;
-    Console::write_line(LangString::from_owned(format!(
+    Console::write_line(FeString::from_owned(format!(
         "Updated person id {}",
         updated1.borrow().id.borrow().value
     )));
 
     person_service.delete_person_by_id(person2.borrow().id.share())?;
-    Console::write_line(LangString::from_owned(format!(
+    Console::write_line(FeString::from_owned(format!(
         "Deleted person id {}",
         person2.borrow().id.borrow().value
     )));

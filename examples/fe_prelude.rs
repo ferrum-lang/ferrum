@@ -2,24 +2,24 @@ fn main() {}
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
-enum LangStringValue {
+enum FeStringValue {
     Slice(&'static str),
     Owned(String),
 }
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
-pub struct LangString {
-    value: LangStringValue,
+pub struct FeString {
+    value: FeStringValue,
     pub length: usize,
 }
 
-impl LangString {
+impl FeString {
     #[allow(dead_code)]
     pub const fn from_slice(slice: &'static str) -> Self {
         Self {
             length: slice.len(),
-            value: LangStringValue::Slice(slice),
+            value: FeStringValue::Slice(slice),
         }
     }
 
@@ -27,45 +27,116 @@ impl LangString {
     pub fn from_owned(string: String) -> Self {
         Self {
             length: string.len(),
-            value: LangStringValue::Owned(string),
+            value: FeStringValue::Owned(string),
         }
     }
 
     #[allow(dead_code)]
     pub fn as_slice(&self) -> &str {
         match &self.value {
-            LangStringValue::Slice(x) => x,
-            LangStringValue::Owned(x) => &*x,
+            FeStringValue::Slice(x) => x,
+            FeStringValue::Owned(x) => &*x,
         }
     }
 
     #[allow(dead_code)]
     pub fn as_owned(self) -> String {
         match self.value {
-            LangStringValue::Slice(x) => x.to_string(),
-            LangStringValue::Owned(x) => x,
+            FeStringValue::Slice(x) => x.to_string(),
+            FeStringValue::Owned(x) => x,
         }
     }
 }
 
-impl PartialEq for LangString {
+impl From<bool> for FeString {
+    fn from(value: bool) -> Self {
+        FeString::from_owned(value.to_string())
+    }
+}
+impl From<u8> for FeString {
+    fn from(value: u8) -> Self {
+        FeString::from_owned(value.to_string())
+    }
+}
+impl From<u16> for FeString {
+    fn from(value: u16) -> Self {
+        FeString::from_owned(value.to_string())
+    }
+}
+impl From<u32> for FeString {
+    fn from(value: u32) -> Self {
+        FeString::from_owned(value.to_string())
+    }
+}
+impl From<u64> for FeString {
+    fn from(value: u64) -> Self {
+        FeString::from_owned(value.to_string())
+    }
+}
+impl From<u128> for FeString {
+    fn from(value: u128) -> Self {
+        FeString::from_owned(value.to_string())
+    }
+}
+impl From<usize> for FeString {
+    fn from(value: usize) -> Self {
+        FeString::from_owned(value.to_string())
+    }
+}
+impl From<i8> for FeString {
+    fn from(value: i8) -> Self {
+        FeString::from_owned(value.to_string())
+    }
+}
+impl From<i16> for FeString {
+    fn from(value: i16) -> Self {
+        FeString::from_owned(value.to_string())
+    }
+}
+impl From<i32> for FeString {
+    fn from(value: i32) -> Self {
+        FeString::from_owned(value.to_string())
+    }
+}
+impl From<i64> for FeString {
+    fn from(value: i64) -> Self {
+        FeString::from_owned(value.to_string())
+    }
+}
+impl From<i128> for FeString {
+    fn from(value: i128) -> Self {
+        FeString::from_owned(value.to_string())
+    }
+}
+impl From<isize> for FeString {
+    fn from(value: isize) -> Self {
+        FeString::from_owned(value.to_string())
+    }
+}
+impl From<char> for FeString {
+    fn from(value: char) -> Self {
+        FeString::from_owned(value.to_string())
+    }
+}
+
+impl PartialEq for FeString {
     fn eq(&self, other: &Self) -> bool {
         self.as_slice() == other.as_slice()
     }
 }
-impl Eq for LangString {}
+impl Eq for FeString {}
 
-impl std::hash::Hash for LangString {
+impl std::hash::Hash for FeString {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.as_slice().hash(state);
     }
 }
 
-impl std::fmt::Display for LangString {
+impl std::fmt::Display for FeString {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match &self.value {
-            LangStringValue::Slice(x) => write!(f, "{}", x),
-            LangStringValue::Owned(x) => write!(f, "{}", x),
+            FeStringValue::Slice(x) => write!(f, "{}", x),
+            FeStringValue::Owned(x) => write!(f, "{}", x),
         }
     }
 }

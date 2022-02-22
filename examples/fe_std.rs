@@ -1,4 +1,6 @@
-use lang_prelude::*;
+use fe_prelude::*;
+
+fn main() {}
 
 #[allow(dead_code)]
 pub type Void = ();
@@ -7,16 +9,16 @@ pub type Void = ();
 pub struct Console {}
 impl Console {
     #[allow(dead_code)]
-    pub fn write_line(text: LangString) {
-        println!("{}", text);
+    pub fn write_line<S: Into<FeString>>(text: S) {
+        println!("{}", text.into());
     }
 }
 
 #[allow(dead_code)]
-pub struct LangStringBuilder {
+pub struct FeStringBuilder {
     state: String,
 }
-impl LangStringBuilder {
+impl FeStringBuilder {
     #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
@@ -25,48 +27,48 @@ impl LangStringBuilder {
     }
 
     #[allow(dead_code)]
-    pub fn from(string: LangString) -> Self {
+    pub fn from(string: FeString) -> Self {
         Self {
             state: string.as_owned(),
         }
     }
 
     #[allow(dead_code)]
-    pub fn with_prepend(mut self, string: LangString) -> Self {
+    pub fn with_prepend(mut self, string: FeString) -> Self {
         self.state.insert_str(0, string.as_slice());
         return self;
     }
 
     #[allow(dead_code)]
-    pub fn with_append(mut self, string: LangString) -> Self {
+    pub fn with_append(mut self, string: FeString) -> Self {
         self.state.push_str(string.as_slice());
         return self;
     }
 
     #[allow(dead_code)]
-    pub fn prepend(&mut self, string: LangString) {
+    pub fn prepend(&mut self, string: FeString) {
         self.state.insert_str(0, string.as_slice());
     }
 
     #[allow(dead_code)]
-    pub fn append(&mut self, string: LangString) {
+    pub fn append(&mut self, string: FeString) {
         self.state.push_str(string.as_slice());
     }
 
     #[allow(dead_code)]
-    pub fn build(self) -> LangString {
-        LangString::from_owned(self.state)
+    pub fn build(self) -> FeString {
+        FeString::from_owned(self.state)
     }
 }
 
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct Error {
-    message: Option<LangString>,
+    message: Option<FeString>,
 }
 impl Error {
     #[allow(dead_code)]
-    pub fn new(message: LangString) -> Self {
+    pub fn new(message: FeString) -> Self {
         Self {
             message: Some(message),
         }
@@ -89,3 +91,28 @@ pub type Map<K, V> = std::collections::HashMap<K, V>;
 
 #[allow(dead_code)]
 pub type Set<K> = std::collections::HashSet<K>;
+
+pub struct UUID {
+    value: String,
+}
+impl UUID {
+    pub fn from_seed(seed: &FeString) -> Self {
+        let memory_address = seed.clone().as_owned().as_ptr() as usize;
+        return Self {
+            value: format!("{}", memory_address),
+        };
+    }
+}
+impl std::clone::Clone for UUID {
+    fn clone(&self) -> Self {
+        let memory_address = self.value.as_ptr() as usize;
+        return Self {
+            value: format!("{}", memory_address),
+        };
+    }
+}
+impl std::fmt::Display for UUID {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        write!(fmt, "{}", self.value)
+    }
+}

@@ -1,31 +1,31 @@
-mod lang_prelude;
-mod lang_std;
+mod fe_prelude;
+mod fe_std;
 
-use lang_prelude::*;
-
-#[allow(non_upper_case_globals)]
-const STR_SLICE_0: LangString = LangString::from_slice("Adam");
+use fe_prelude::*;
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_1: LangString = LangString::from_slice("Adam Bates");
+const STR_SLICE_0: FeString = FeString::from_slice("Adam");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_2: LangString = LangString::from_slice("Person");
+const STR_SLICE_1: FeString = FeString::from_slice("Adam Bates");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_3: LangString = LangString::from_slice("Bates");
+const STR_SLICE_2: FeString = FeString::from_slice("Person");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_4: LangString = LangString::from_slice("ADAM");
+const STR_SLICE_3: FeString = FeString::from_slice("Bates");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_5: LangString = LangString::from_slice("Other");
+const STR_SLICE_4: FeString = FeString::from_slice("ADAM");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_6: LangString = LangString::from_slice("BATES");
+const STR_SLICE_5: FeString = FeString::from_slice("Other");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_6: FeString = FeString::from_slice("BATES");
 
 struct Person {
-    pub name: LangString,
+    pub name: FeString,
 }
 
 fn test_person() {
@@ -53,8 +53,8 @@ fn test_person() {
 }
 
 struct PartiallyMutableExample {
-    pub first: LangString,
-    pub second: LangString,
+    pub first: FeString,
+    pub second: FeString,
     pub third: Person,
 }
 
@@ -81,8 +81,8 @@ fn test_partial_mutable_example() {
 }
 
 struct ForcedPartiallyMutableExample {
-    pub first: LangString,
-    pub second: LangString,
+    pub first: FeString,
+    pub second: FeString,
 }
 
 fn test_forced_partially_mutable_example() {
@@ -95,8 +95,8 @@ fn test_forced_partially_mutable_example() {
 }
 
 struct MutableExample {
-    pub first: LangString,
-    pub second: LangString,
+    pub first: FeString,
+    pub second: FeString,
 }
 
 fn test_mutable_example() {
@@ -115,8 +115,8 @@ fn test_mutable_example() {
 }
 
 struct ForcedMutableExample {
-    pub first: LangString,
-    pub second: LangString,
+    pub first: FeString,
+    pub second: FeString,
 }
 
 fn test_forced_mutable_example() {
@@ -130,8 +130,8 @@ fn test_forced_mutable_example() {
 }
 
 struct ImmutableExample {
-    pub first: LangString,
-    pub second: LangString,
+    pub first: FeString,
+    pub second: FeString,
 }
 
 fn test_immutable_example() {

@@ -1,41 +1,41 @@
-mod lang_prelude;
-mod lang_std;
+mod fe_prelude;
+mod fe_std;
 
-use lang_prelude::*;
-use lang_std::Console;
-
-#[allow(non_upper_case_globals)]
-const STR_SLICE_0: LangString = LangString::from_slice("Adam");
+use fe_prelude::*;
+use fe_std::Console;
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_1: LangString = LangString::from_slice("Madeline");
+const STR_SLICE_0: FeString = FeString::from_slice("Adam");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_2: LangString = LangString::from_slice("Brian");
+const STR_SLICE_1: FeString = FeString::from_slice("Madeline");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_3: LangString =
-    LangString::from_slice("Got unique person1 while person2 still exists!!!");
+const STR_SLICE_2: FeString = FeString::from_slice("Brian");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_4: LangString = LangString::from_slice("new");
+const STR_SLICE_3: FeString =
+    FeString::from_slice("Got unique person1 while person2 still exists!!!");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_5: LangString = LangString::from_slice("person1 cannot be made unique yet.");
+const STR_SLICE_4: FeString = FeString::from_slice("new");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_6: LangString = LangString::from_slice("Got unique person1 after person2 dropped.");
+const STR_SLICE_5: FeString = FeString::from_slice("person1 cannot be made unique yet.");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_7: LangString =
-    LangString::from_slice("person1 cannot be made unique even after person2 dropped?!");
+const STR_SLICE_6: FeString = FeString::from_slice("Got unique person1 after person2 dropped.");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_7: FeString =
+    FeString::from_slice("person1 cannot be made unique even after person2 dropped?!");
 
 struct Person {
-    pub name: LangString,
+    pub name: FeString,
     pub age: usize,
 }
 impl Person {
-    fn new(name: LangString, age: usize) -> Self {
+    fn new(name: FeString, age: usize) -> Self {
         Self { name, age }
     }
 
@@ -73,7 +73,7 @@ fn main() {
     let person3 = person2.share();
 
     // `Shareables` must be `borrow`ed, or `borrow_mut`ed to access inner data
-    Console::write_line(LangString::from_owned(format!(
+    Console::write_line(FeString::from_owned(format!(
         "{} is {} years old.",
         person3.borrow().name,
         person2.borrow().age
@@ -90,7 +90,7 @@ fn main() {
 
     person1.borrow_mut().age = 26;
 
-    Console::write_line(LangString::from_owned(format!(
+    Console::write_line(FeString::from_owned(format!(
         "{} is {} years old.",
         person1.borrow().name,
         person3.borrow().age

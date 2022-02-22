@@ -1,17 +1,17 @@
-mod lang_prelude;
-mod lang_std;
+mod fe_prelude;
+mod fe_std;
 
-use lang_prelude::*;
-use lang_std::{Console, LangStringBuilder};
-
-#[allow(non_upper_case_globals)]
-const STR_SLICE_0: LangString = LangString::from_slice("abc");
+use fe_prelude::*;
+use fe_std::{Console, FeStringBuilder};
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_1: LangString = LangString::from_slice("abc {y}");
+const STR_SLICE_0: FeString = FeString::from_slice("abc");
 
 #[allow(non_upper_case_globals)]
-const STR_SLICE_2: LangString = LangString::from_slice(" ");
+const STR_SLICE_1: FeString = FeString::from_slice("abc {y}");
+
+#[allow(non_upper_case_globals)]
+const STR_SLICE_2: FeString = FeString::from_slice(" ");
 
 fn main() {
     let x = STR_SLICE_0;
@@ -19,24 +19,24 @@ fn main() {
 
     let y = 123;
 
-    let x = LangString::from_owned(format!("abc {}", y));
+    let x = FeString::from_owned(format!("abc {}", y));
     Console::write_line(x);
 
     let x = STR_SLICE_1;
     Console::write_line(x);
 
-    let x = LangString::from_owned(format!("abc \\{}", y));
+    let x = FeString::from_owned(format!("abc \\{}", y));
     Console::write_line(x);
 
-    let mut x = LangStringBuilder::new();
+    let mut x = FeStringBuilder::new();
     x.append(STR_SLICE_2);
     x.prepend(STR_SLICE_0);
-    x.append(LangString::from_owned(y.to_string()));
+    x.append(FeString::from_owned(y.to_string()));
     let x = x.build();
 
-    let x = LangStringBuilder::from(STR_SLICE_2)
+    let x = FeStringBuilder::from(STR_SLICE_2)
         .with_prepend(STR_SLICE_0)
-        .with_append(LangString::from_owned(y.to_string()))
+        .with_append(FeString::from_owned(y.to_string()))
         .build();
 
     let z: Vec<char> = x.as_slice().chars().collect();

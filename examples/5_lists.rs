@@ -1,8 +1,8 @@
-mod lang_prelude;
-mod lang_std;
+mod fe_prelude;
+mod fe_std;
 
-use lang_prelude::*;
-use lang_std::Console;
+use fe_prelude::*;
+use fe_std::Console;
 
 fn main() {
     let x = vec![1, 2, 3];
@@ -29,9 +29,9 @@ fn main() {
 
     let x = [1, 2];
 
-    Console::write_line(LangString::from_owned(format!("{}, {}", x[0], x[1])));
+    Console::write_line(FeString::from_owned(format!("{}, {}", x[0], x[1])));
 
-    Console::write_line(LangString::from_owned(
+    Console::write_line(FeString::from_owned(
         vec![1, 2, 3]
             .iter()
             .map(|e| e.to_string())
@@ -39,7 +39,7 @@ fn main() {
             .join(", "),
     ));
 
-    Console::write_line(LangString::from_owned(
+    Console::write_line(FeString::from_owned(
         vec![1, 2, 3]
             .iter()
             .map(|e| e.to_string())
