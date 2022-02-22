@@ -1,6 +1,5 @@
 #[derive(Debug, PartialEq, Eq)]
 pub enum Symbol {
-    Whitespace,
     Semicolon,
     Mutable,
     ReferenceAmpersand,
@@ -26,10 +25,6 @@ pub enum Symbol {
     FunctionParamsComma,
     FunctionParamsCloseParenthesis,
     FunctionReturnTypeColon,
-    FunctionReturnTypeMutable,
-    FunctionReturnTypeBorrowed,
-    FunctionReturnTypeShared,
-    FunctionReturnTypeName(String),
     FunctionExpressionsOpenBrace,
     FunctionExpressionsCloseBrace,
     TypeAccessName(String),

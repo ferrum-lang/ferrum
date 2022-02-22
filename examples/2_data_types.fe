@@ -4,7 +4,6 @@ function main() {
   const x: boolean = false;
 
   // Numbers
-  const x: uint1 = 0;
   const x: uint8 = 0;
   const x: uint16 = 0;
   const x: uint32 = 0;
@@ -14,7 +13,6 @@ function main() {
 
   const x: uint = 0; // `usize` in Rust
 
-  const x: bit = 0; // `bit` is alias for uint1
   const x: byte = 0; // `byte` is alias for uint8
 
   const x: int8 = 0;
@@ -40,8 +38,8 @@ function main() {
 
   // Tuples
   const x: (uint; 3) = (1, 2, 3);
-  const x: (int, string, char) = (42, "Adam", 'F');
   const x: (uint?; 10) = (none; 10);
+  const x: (int, string, char) = (42, "Adam", 'F');
 
   const y: int = x.0;
   const y: string = x.1;
@@ -49,6 +47,7 @@ function main() {
 
   // Lists
   const x: list<int> = [1, 2, 3];
+}/* 
   const x: list<int> = [i + 1 for i in 0..3];
 
   // Optionals
@@ -100,3 +99,5 @@ function main() {
 
   f();
 }
+
+/**/

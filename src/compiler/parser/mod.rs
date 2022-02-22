@@ -1,7 +1,7 @@
 use super::{symbols::Symbol, syntax::*, Error};
 
 pub fn parse_symbols(mut symbols: Vec<Symbol>) -> Result<SyntaxTree, Error> {
-    println!("Building Syntax Tree From:\n{:?}\n", symbols);
+    // println!("Building Syntax Tree From:\n{:?}\n", symbols);
 
     symbols.reverse();
 
