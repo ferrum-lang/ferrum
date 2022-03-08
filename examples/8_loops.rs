@@ -1,3 +1,5 @@
+#![feature(const_fn_trait_bound)]
+
 mod fe_prelude;
 mod fe_std;
 

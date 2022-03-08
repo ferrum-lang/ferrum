@@ -1,3 +1,5 @@
+use std::{clone, cmp, fmt, hash, ops, rc};
+
 fn main() {}
 
 #[allow(dead_code)]
@@ -13,7 +15,6 @@ pub struct FeString {
     value: FeStringValue,
     pub length: usize,
 }
-
 impl FeString {
     #[allow(dead_code)]
     pub const fn from_slice(slice: &'static str) -> Self {
@@ -47,7 +48,6 @@ impl FeString {
         }
     }
 }
-
 impl From<bool> for FeString {
     fn from(value: bool) -> Self {
         FeString::from_owned(value.to_string())
@@ -118,26 +118,36 @@ impl From<char> for FeString {
         FeString::from_owned(value.to_string())
     }
 }
+impl<T> From<FeShareable<T>> for FeString
+where
+    T: fmt::Debug + clone::Clone + Into<FeString>,
+{
+    fn from(value: FeShareable<T>) -> Self {
+        let value = match value.try_mutable() {
+            Ok(value) => value,
+            Err(value) => value.clone().take(),
+        };
 
+        return value.into();
+    }
+}
 impl PartialEq for FeString {
     fn eq(&self, other: &Self) -> bool {
         self.as_slice() == other.as_slice()
     }
 }
 impl Eq for FeString {}
-
-impl std::hash::Hash for FeString {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+impl hash::Hash for FeString {
+    fn hash<H: hash::Hasher>(&self, state: &mut H) {
         self.as_slice().hash(state);
     }
 }
-
-impl std::fmt::Display for FeString {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match &self.value {
-            FeStringValue::Slice(x) => write!(f, "{}", x),
-            FeStringValue::Owned(x) => write!(f, "{}", x),
-        }
+impl fmt::Display for FeString {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        return match &self.value {
+            FeStringValue::Slice(x) => fmt::Display::fmt(x, f),
+            FeStringValue::Owned(x) => fmt::Display::fmt(x, f),
+        };
     }
 }
 
@@ -161,127 +171,226 @@ impl BigUint {
     }
 }
 
-#[allow(dead_code)]
-type Mut<T> = std::cell::RefCell<T>;
-
-#[allow(dead_code)]
-type MutRc<T> = std::rc::Rc<Mut<T>>;
-
-pub enum Instance<'a, T> {
-    Immutable(&'a T),
-    Mutable(&'a mut T),
+#[derive(Debug)]
+enum FeShareableValue<T> {
+    Unique(T),
+    Shared(rc::Rc<T>),
 }
-impl<'a, T> Instance<'a, T> {
-    pub fn try_mutable(self) -> Result<&'a mut T, &'a T> {
-        match self {
-            Self::Mutable(mutable) => Ok(mutable),
-            Self::Immutable(immutable) => Err(immutable),
-        }
+
+#[derive(Debug)]
+pub struct FeShareable<T: fmt::Debug> {
+    value: FeShareableValue<T>,
+}
+impl<T> FeShareable<T>
+where
+    T: fmt::Debug,
+{
+    pub const fn new(value: T) -> Self {
+        return Self {
+            value: FeShareableValue::Unique(value),
+        };
+    }
+
+    pub fn share(self) -> (Self, Self) {
+        match self.value {
+            FeShareableValue::Shared(value) => {
+                let shared = Self {
+                    value: FeShareableValue::Shared(rc::Rc::clone(&value)),
+                };
+
+                return (
+                    Self {
+                        value: FeShareableValue::Shared(value),
+                    },
+                    shared,
+                );
+            }
+            FeShareableValue::Unique(value) => {
+                let value = rc::Rc::new(value);
+
+                let shared = Self {
+                    value: FeShareableValue::Shared(rc::Rc::clone(&value)),
+                };
+
+                return (
+                    Self {
+                        value: FeShareableValue::Shared(value),
+                    },
+                    shared,
+                );
+            }
+        };
+    }
+
+    pub fn try_mutable(self) -> Result<T, Self> {
+        return match self.value {
+            FeShareableValue::Unique(value) => Ok(value),
+            FeShareableValue::Shared(value) => match rc::Rc::try_unwrap(value) {
+                Ok(value) => Ok(value),
+                Err(value) => Err(Self {
+                    value: FeShareableValue::Shared(value),
+                }),
+            },
+        };
+    }
+
+    pub fn take(self) -> T {
+        return match self.try_mutable() {
+            Ok(value) => value,
+            Err(this) => panic!(
+                "Cannot take ownership of data while multiple shared references exist: {:?}",
+                this
+            ),
+        };
+    }
+}
+impl<T> ops::Deref for FeShareable<T>
+where
+    T: fmt::Debug,
+{
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        return match &self.value {
+            FeShareableValue::Unique(value) => value,
+            FeShareableValue::Shared(value) => value,
+        };
+    }
+}
+impl<T> clone::Clone for FeShareable<T>
+where
+    T: fmt::Debug + clone::Clone,
+{
+    fn clone(&self) -> Self {
+        let value: &T = &self;
+        return Self::new(value.clone());
+    }
+}
+impl<T> fmt::Display for FeShareable<T>
+where
+    T: fmt::Debug + fmt::Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let value: &T = &self;
+        return fmt::Display::fmt(value, f);
+    }
+}
+impl<T> cmp::PartialEq for FeShareable<T>
+where
+    T: fmt::Debug + cmp::PartialEq,
+{
+    fn eq(&self, other: &FeShareable<T>) -> bool {
+        let value: &T = &self;
+        return cmp::PartialEq::eq(value, &other);
+    }
+}
+impl<T> cmp::Eq for FeShareable<T> where T: fmt::Debug + cmp::Eq {}
+impl<T> cmp::PartialOrd for FeShareable<T>
+where
+    T: fmt::Debug + cmp::PartialOrd,
+{
+    fn partial_cmp(&self, other: &FeShareable<T>) -> Option<cmp::Ordering> {
+        let value: &T = &self;
+        return cmp::PartialOrd::partial_cmp(value, &other);
+    }
+}
+impl<T> cmp::Ord for FeShareable<T>
+where
+    T: fmt::Debug + cmp::Ord,
+{
+    fn cmp(&self, other: &Self) -> cmp::Ordering {
+        let value: &T = &self;
+        return cmp::Ord::cmp(value, &other);
+    }
+}
+impl<T> hash::Hash for FeShareable<T>
+where
+    T: fmt::Debug + hash::Hash,
+{
+    fn hash<H: hash::Hasher>(&self, state: &mut H) {
+        let value: &T = &self;
+        return value.hash(state);
     }
 }
 
-pub trait Share<T> {
-    fn on_share(&self) {}
+pub trait ShareSub {
+    fn on_share(&self);
 }
-
-#[allow(dead_code)]
-pub struct Shareable<T> {
-    value: MutRc<T>,
-}
-
-impl<T> Shareable<T>
+impl<T> ShareSub for FeShareable<T>
 where
-    T: Share<T>,
+    T: fmt::Debug + ShareSub,
 {
-    #[allow(dead_code)]
+    fn on_share(&self) {
+        let value: &T = &self;
+        value.on_share();
+    }
+}
+
+#[derive(Debug)]
+enum FeMutFieldValue<T: fmt::Debug> {
+    Mut(T),
+    Immut(FeShareable<T>),
+}
+
+#[derive(Debug)]
+pub struct FeMutField<T: fmt::Debug> {
+    value: FeMutFieldValue<T>,
+}
+impl<T: fmt::Debug> FeMutField<T> {
     pub fn new(value: T) -> Self {
         return Self {
-            value: MutRc::new(Mut::new(value)),
+            value: FeMutFieldValue::Mut(value),
         };
     }
 
-    #[allow(dead_code)]
-    pub fn share(&self) -> Self {
-        let shared: Shareable<T> = Self {
-            value: MutRc::clone(&self.value),
+    pub fn try_mutable(self) -> Result<T, Self> {
+        return match self.value {
+            FeMutFieldValue::Mut(value) => Ok(value),
+            FeMutFieldValue::Immut(value) => match value.try_mutable() {
+                Ok(value) => Ok(value),
+                Err(this) => Err(Self::from(this)),
+            },
         };
-
-        let borrow: &T = &self.borrow();
-        borrow.on_share();
-
-        return shared;
     }
 
-    #[allow(dead_code)]
-    pub fn borrow(&self) -> std::cell::Ref<T> {
-        return self.value.borrow();
-    }
-
-    #[allow(dead_code)]
-    pub fn borrow_mut(&mut self) -> std::cell::RefMut<T> {
-        return self.value.borrow_mut();
-    }
-
-    #[allow(dead_code)]
-    pub fn try_unique(self) -> Result<T, Self> {
-        let res = std::rc::Rc::try_unwrap(self.value);
-
-        return match res {
-            Err(rc_value) => Err(Self { value: rc_value }),
-            Ok(refcell_value) => Ok(refcell_value.into_inner()),
+    pub fn take(self) -> T {
+        return match self.value {
+            FeMutFieldValue::Mut(value) => value,
+            FeMutFieldValue::Immut(value) => value.take(),
         };
     }
 }
+impl<T: fmt::Debug> ops::Deref for FeMutField<T> {
+    type Target = T;
 
-impl<T> std::ops::Deref for Shareable<T> {
-    type Target = Mut<T>;
-
-    fn deref(&self) -> &Self::Target {
-        return self.value.as_ref();
+    fn deref(&self) -> &T {
+        return match &self.value {
+            FeMutFieldValue::Mut(value) => value,
+            FeMutFieldValue::Immut(value) => value,
+        };
     }
 }
-
-impl<T> std::fmt::Display for Shareable<T>
-where
-    T: std::fmt::Display,
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.value.borrow().fmt(f)
+impl<T: fmt::Debug> ops::DerefMut for FeMutField<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        return match &mut self.value {
+            FeMutFieldValue::Mut(value) => value,
+            _ => panic!("Cannot mutably borrow immutable data!"),
+        };
     }
 }
-
-impl<T> std::cmp::PartialEq for Shareable<T>
+impl<T> clone::Clone for FeMutField<T>
 where
-    T: std::cmp::PartialEq,
+    T: fmt::Debug + clone::Clone,
 {
-    fn eq(&self, other: &Shareable<T>) -> bool {
-        self.value.borrow().eq(&other.value.borrow())
+    fn clone(&self) -> Self {
+        let value: &T = &self;
+        return Self::new(value.clone());
     }
 }
-impl<T> std::cmp::Eq for Shareable<T> where T: std::cmp::Eq {}
-
-impl<T> std::cmp::PartialOrd for Shareable<T>
-where
-    T: std::cmp::PartialOrd,
-{
-    fn partial_cmp(&self, other: &Shareable<T>) -> Option<std::cmp::Ordering> {
-        self.value.borrow().partial_cmp(&other.value.borrow())
-    }
-}
-impl<T> std::cmp::Ord for Shareable<T>
-where
-    T: std::cmp::Ord,
-{
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.value.borrow().cmp(&other.value.borrow())
-    }
-}
-
-impl<T> std::hash::Hash for Shareable<T>
-where
-    T: std::hash::Hash,
-{
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.value.borrow().hash(state)
+impl<T: fmt::Debug> From<FeShareable<T>> for FeMutField<T> {
+    fn from(shareable: FeShareable<T>) -> Self {
+        return Self {
+            value: FeMutFieldValue::Immut(shareable),
+        };
     }
 }

@@ -6,24 +6,16 @@ structure Person {
     public let age: uint,
   }
 
-  public &self.requires_borrow() {}
+  public self.requires_borrow() {}
 
-  public mutable &self.requires_borrow_mut() {}
-
-  // Note: methods that don't borrow data must be unique
-  // It is impossible to have shared + owned requirements on a method
-  public unique self.requires_own() -> Self {
-    return self;
-  }
-  
-  public unique mutable self.requires_own_mut() -> Self {
+  public mutable self.requires_borrow_mut(): mutable Self {
     return self;
   }
 }
 
 structure House {
   state {
-    public let owner = shared mutable Person,
+    public let owner = mutable Person,
   }
 }
 
@@ -39,18 +31,16 @@ function main() {
   const person1 = Person {
     name: "Adam",
     age: 25,
-  }.requires_own_mut();
-
-  let person1 = person1.requires_own();
+  };
 
   // move, `person1` is no longer available
   const person2 = person1;
 
   // RC clone
-  const person3 = share person2;
+  const person3 = &person2;
 
   // Won't compile because `person3` not `mutable`
-  // const person4 = share mutable person3;
+  // const person3 = mutable person3;
 
   Console::write_line("{person3.name} is {person2.age} years old.");
 
@@ -59,8 +49,8 @@ function main() {
     age: 25,
   };
 
-  // RC refCell clone
-  const person2 = share mutable person1;
+  // RC clone, move person1 into immutable
+  const person2 = &person1;
 
   // move, `person2` is no longer available, but `person1` still is
   const person3 = person2;
@@ -68,22 +58,23 @@ function main() {
   // Won't compile because `person3` not `mutable`
   // person3.age = 26;
 
+  const person1 = mutable person1.clone();
+
   person1.age = 26;
 
-  Console::write_line("{person1.name} is {person3.age} years old.");
+  Console::write_line("{person3.name} is {person1.age} years old.");
 
   person1.requires_borrow();
   person1.requires_borrow_mut();
 
   // --- //
 
-  const house1 = mutable House { owner: share person1 };
-  const house2 = House { owner: share person1 };
+  const house1 = mutable House { owner: person1 };
 
   // Won't compile because person3 is not mutable, and house3 is mutable
-  // const house3 = mutable House { owner: share person3 };
+  // const house3 = mutable House { owner: person3 };
 
-  const house4 = House { owner: share person3 };
+  const house2 = House { owner: share person3 };
 
   house1.owner.age = 50;
 
@@ -92,17 +83,11 @@ function main() {
 
   // --- //
 
-  const mom = unique Person { name: "Madeline", age: 52, };
-  const dad = unique Person { name: "Brian", age: 56, };
-
-  // Won't compile because `mom` is marked as `unique`
-  // const other = share mom;
-
-  // Movement is still ok
-  const mom = unique mom;
+  const mom = Person { name: "Madeline", age: 52, };
+  const dad = Person { name: "Brian", age: 56, };
 
   const adam = Child {
-    parents: (unique mom, unique dad), // requires `unique` values here
+    parents: (mom, dad),
   };
 
   // --- //
@@ -113,14 +98,11 @@ function main() {
   };
 
   {
-    const person2 = share person1;
+    const person2 = &person1;
 
-    const opt_unique_person = person1.try_unique();
-
-    match opt_unique_person {
-      ok(unique person) => {
+    match person1.try_mutable() {
+      ok(person) => {
         Console::write_line("Got unique person1 while person2 still exists!!!");
-        person.requires_own();
         person1 = Person { name: "new", age: 0, };
       },
       error(person) => {
@@ -130,12 +112,9 @@ function main() {
     }
   }
 
-  const opt_unique_person = person1.try_unique();
-
-  match opt_unique_person {
-    ok(unique person) => {
+  match person1.try_mutable() {
+    ok(person) => {
       Console::write_line("Got unique person1 after person2 dropped.");
-      person.requires_own();
     },
     error(person) => {
       Console::write_line("person1 cannot be made unique even after person2 dropped?!");

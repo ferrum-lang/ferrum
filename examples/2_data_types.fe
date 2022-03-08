@@ -69,6 +69,8 @@ function main() {
 
   const x: string? = "abc";
   const y: uint? = x?.length;
+  
+  const x: string? = "abc";
   const y: uint = x?.length ?? 0;
 
   const x: result<int> = none.ok_or(error("uh oh!"));

@@ -34,21 +34,21 @@ function no_args_with_return(): string {
   return "Bates";
 }
 
-function one_arg_no_return(arg1: &string) {
+function one_arg_no_return(arg1: string) {
   Console::write_line("one_arg_no_return: {arg1}");
 }
 
-function one_arg_with_return(arg1: &string): string {
+function one_arg_with_return(arg1: string): string {
   Console::write_line("one_arg_with_owned_return: {arg1}");
 
   return "Bates";
 }
 
-function two_args_no_return(arg1: &string, arg2: int) {
+function two_args_no_return(arg1: string, arg2: int) {
   Console::write_line("two_args_no_return: {arg1}, {arg2}");
 }
 
-function two_args_with_return(arg1: &string, arg2: int): string {
+function two_args_with_return(arg1: string, arg2: int): string {
   Console::write_line("two_args_with_return: {arg1}, {arg2}");
 
   return "Bates";

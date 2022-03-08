@@ -2,7 +2,8 @@ use super::{syntax::*, Error};
 
 const IMPORT_PREFIX: &'static str = "fe_";
 
-const INCLUDE_PRELUDE: &'static str = "mod fe_prelude;\nuse fe_prelude::*;\n";
+const INCLUDE_PRELUDE: &'static str =
+    "#![feature(const_fn_trait_bound)]\n\nmod fe_prelude;\nuse fe_prelude::*;\n";
 
 pub fn generate_rust(mut syntax_tree: SyntaxTree) -> Result<String, Error> {
     println!("Building Rust From:\n{:?}\n", syntax_tree);

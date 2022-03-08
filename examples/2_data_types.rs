@@ -1,3 +1,5 @@
+#![feature(const_fn_trait_bound)]
+
 mod fe_prelude;
 mod fe_std;
 
@@ -78,6 +80,8 @@ fn main() {
 
     let x: Option<FeString> = Some(STR_SLICE_1);
     let y: Option<usize> = x.map(|x| x.length);
+
+    let x: Option<FeString> = Some(STR_SLICE_1);
     let y: usize = x.map(|x| x.length).unwrap_or(0);
 
     let x: Result<isize, fe_std::Error> = None.ok_or(fe_std::Error::new(STR_SLICE_2));

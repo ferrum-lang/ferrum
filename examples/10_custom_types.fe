@@ -8,7 +8,7 @@ immutable structure PersonId {
 
 structure Person {
   state {
-    public const id: shared PersonId,
+    public const id: PersonId,
     let first_name: string,
     let last_name: string,
     let age: uint,
@@ -18,15 +18,15 @@ structure Person {
 structure PersonRepositoryError {};
 
 contract PersonRepository {
-  public mutable &self.create_person(person: shared Person): result<_, PersonRepositoryError>;
+  public mutable self.create_person(person: Person): result<_, PersonRepositoryError>;
   
-  public &self.find_all_people(): result<list<shared Person>, PersonRepositoryError>;
+  public self.find_all_people(): result<list<Person>, PersonRepositoryError>;
   
-  public &self.find_person_by_id(id: shared PersonId): result<shared Person?, PersonRepositoryError>;
+  public self.find_person_by_id(id: PersonId): result<Person?, PersonRepositoryError>;
   
-  public mutable &self.update_person_by_id(id: shared PersonId, person: shared Person): result<_, PersonRepositoryError>;
+  public mutable self.update_person_by_id(id: PersonId, person: Person): result<_, PersonRepositoryError>;
   
-  public mutable &self.delete_person_by_id(id: shared PersonId): result<_, PersonRepositoryError>;
+  public mutable self.delete_person_by_id(id: PersonId): result<_, PersonRepositoryError>;
 }
 
 structure LocalPersonRepository {
@@ -34,29 +34,31 @@ structure LocalPersonRepository {
     // `const` prevents re-assignment after construction
     // `mutable` allows Map to be mutated as long as `Self` is mutable
     // `= Map::new()` is a default value if no initial value given
-    const map: mutable Map<shared PersonId, shared Person> = Map::new(),
+    const map: mutable Map<PersonId, Person> = Map::new(),
   }
 
   // `..` includes all fields, even private ones, in the constructor
   constructor { .. }
 
   implements PersonRepository {
-    public mutable &self.create_person(person: shared Person): result<_, PersonRepositoryError> {
-      self.map.put(share person.id, person);
+    public mutable self.create_person(person: Person): result<_, PersonRepositoryError> {
+      self.map.put(&person.id, person);
       return ok;
     }
 
-    public &self.find_all_people(): result<list<shared Person>, PersonRepositoryError> {
+    public self.find_all_people(): result<list<Person>, PersonRepositoryError> {
       return ok(
-        self.map.values().shared()
+        self.map.values()
       );
     }
 
-    public &self.find_person_by_id(id: shared PersonId): result<shared Person?>, PersonRepositoryError> {
-      return ok(self.map.get(&id).shared());
+    public self.find_person_by_id(id: PersonId): result<Person?>, PersonRepositoryError> {
+      return ok(
+        self.map.get(id)
+      );
     }
 
-    public mutable &self.update_person_by_id(id: shared PersonId, person: shared Person): result<_, PersonRepositoryError> {
+    public mutable self.update_person_by_id(id: PersonId, person: Person): result<_, PersonRepositoryError> {
       self.map
         .put_existing(id, person)
         .ok_or(PersonRepositoryError {})?;
@@ -64,7 +66,7 @@ structure LocalPersonRepository {
       return ok;
     }
 
-    public mutable &self.delete_person_by_id(id: shared PersonId): result<_, PersonRepositoryError> {
+    public mutable self.delete_person_by_id(id: PersonId): result<_, PersonRepositoryError> {
       return self.map
         .remove(id)
         .ok_or(PersonRepositoryError {});
@@ -82,17 +84,17 @@ enum FindOrAdd<T> {
 }
 
 contract PersonService {
-  public mutable &self.add_person(person: shared Person): result<shared Person, PersonServiceError>;
+  public mutable self.add_person(person: Person): result<Person, PersonServiceError>;
 
-  public mutable &self.find_or_add_person(person: shared Person): result<FindOrAdd<shared Person>, PersonServiceError>;
+  public mutable self.find_or_add_person(person: Person): result<FindOrAdd<Person>, PersonServiceError>;
   
-  public &self.find_all_people(): result<list<shared Person>, PersonServiceError>;
+  public self.find_all_people(): result<list<Person>, PersonServiceError>;
   
-  public &self.find_person_by_id(id: shared PersonId): result<optional<shared Person>, PersonServiceError>;
+  public self.find_person_by_id(id: PersonId): result<optional<Person>, PersonServiceError>;
   
-  public mutable &self.update_person_by_id(id: shared PersonId, person: shared Person): result<shared Person, PersonServiceError>;
+  public mutable self.update_person_by_id(id: PersonId, person: Person): result<Person, PersonServiceError>;
   
-  public mutable &self.delete_person_by_id(id: shared PersonId): result<_, PersonServiceError>;
+  public mutable self.delete_person_by_id(id: PersonId): result<_, PersonServiceError>;
 }
 
 structure StoredPersonService {
@@ -102,7 +104,7 @@ structure StoredPersonService {
 
   constructor { person_repository, }
 
-  &self.get_person_by_id(id: shared PersonId): result<shared Person, PersonServiceError> {
+  &self.get_person_by_id(id: PersonId): result<Person, PersonServiceError> {
     return self.person_repository
       .find_person_by_id(id)
       .map_err((e) => PersonServiceError {})?
@@ -110,8 +112,8 @@ structure StoredPersonService {
   }
 
   implements PersonService {
-    public mutable &self.add_person(person: shared Person): result<shared Person, PersonServiceError> {
-      let id = share person.id;
+    public mutable self.add_person(person: Person): result<Person, PersonServiceError> {
+      let id = &person.id;
 
       self.person_repository
         .create_person(person)
@@ -120,7 +122,7 @@ structure StoredPersonService {
       return self.get_person_by_id(id);
     }
 
-    public mutable &self.find_or_add_person(person: shared Person): result<FindOrAdd<shared Person>, PersonServiceError> {
+    public mutable self.find_or_add_person(person: Person): result<FindOrAdd<Person>, PersonServiceError> {
       let existing = self
         .get_person_by_id(share person.id)
         .map_err((e) => PersonServiceError {})?;
@@ -134,27 +136,27 @@ structure StoredPersonService {
         .map_err((e) => PersonServiceError {});
     }
 
-    public &self.find_all_people(): result<list<shared Person>, PersonServiceError> {
+    public self.find_all_people(): result<list<Person>, PersonServiceError> {
       return self.person_repository
         .find_all_people()
         .map_err((e) => PersonServiceError {});
     }
 
-    public &self.find_person_by_id(id: shared PersonId): result<shared Person?>, PersonServiceError> {
+    public self.find_person_by_id(id: PersonId): result<Person?>, PersonServiceError> {
       return self.person_repository
         .find_person_by_id(id)
         .map_err((e) => PersonServiceError {});
     }
 
-    public mutable &self.update_person_by_id(id: shared PersonId, person: shared Person): result<shared Person, PersonServiceError> {
+    public mutable self.update_person_by_id(id: PersonId, person: Person): result<Person, PersonServiceError> {
       self.person_repository
-        .update_person_by_id(share id, person)
+        .update_person_by_id(&id, person)
         .map_err((e) => PersonServiceError {})?;
       
       return self.get_person_by_id(id);
     }
 
-    public mutable &self.delete_person_by_id(id: shared PersonId): result<_, PersonServiceError> {
+    public mutable self.delete_person_by_id(id: PersonId): result<_, PersonServiceError> {
       return self.person_repository
         .delete_person_by_id(id)
         .map_err((e) => PersonServiceError {});
@@ -174,32 +176,33 @@ function main(): result<_, PersonServiceError> {
     age: 24,
   };
 
-  const person2 = mutable Person {
+  const person2 = Person {
     id: PersonId { value: "124" },
     first_name: "Madison",
     last_name: "Colletti",
     age: 23,
   };
 
-  const added1 = person_service.add_person(share person1)?;
+  // Can't share here because sharing will prevent person1 from being mutable in the future
+  const added1 = person_service.add_person(person1.clone())?;
   Console::write_line("Added person id {added1.id.value}");
 
-  const found_or_added1 = person_service.find_or_add_person(share person2)?;
+  const found_or_added1 = person_service.find_or_add_person(&person2)?;
   match found_or_added1 {
     FindOrAdd::Found(found) => Console::write_line("Found person id {found.id.value}"),
     FindOrAdd::Added(added) => Console::write_line("Added person id {added.id.value}"),
   };
 
-  const found_or_added2 = person_service.find_or_add_person(share person2)?;
+  const found_or_added2 = person_service.find_or_add_person(&person2)?;
   match found_or_added2 {
     FindOrAdd::Found(found) => Console::write_line("Found person id {found.id.value}"),
     FindOrAdd::Added(added) => Console::write_line("Added person id {added.id.value}"),
   };
 
   person1.age = 25;
-  const updated1 = person_service.update_person_by_id(share person1.id, share person1)?;
+  const updated1 = person_service.update_person_by_id(&person1.id, &person1)?;
   Console::write_line("Updated person id {updated1.id.value}");
 
-  person_service.delete_person_by_id(share person2.id)?;
+  person_service.delete_person_by_id(&person2.id)?;
   Console::write_line("Deleted person id {person2.id.value}");
 }

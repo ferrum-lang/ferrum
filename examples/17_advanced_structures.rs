@@ -1,3 +1,5 @@
+#![feature(const_fn_trait_bound)]
+
 mod fe_prelude;
 mod fe_std;
 
@@ -16,24 +18,28 @@ const STR_SLICE_2: FeString = FeString::from_slice("3");
 #[allow(non_upper_case_globals)]
 const STR_SLICE_3: FeString = FeString::from_slice("4");
 
+#[derive(Debug)]
 struct Device {
-    instance_id: fe_std::UUID,
-    serial: FeString,
+    instance_id: FeShareable<fe_std::UUID>,
+    serial: FeShareable<FeString>,
     is_active: bool,
     is_legacy: bool,
 }
 impl Device {
-    pub fn new(name: FeString, is_active: Option<bool>, is_legacy: Option<bool>) -> Self {
-        let mut s = Self {
-            instance_id: fe_std::UUID::from_seed(&name),
+    pub fn new(
+        name: FeShareable<FeString>,
+        is_active: Option<bool>,
+        is_legacy: Option<bool>,
+    ) -> Self {
+        let shared = name.share();
+        let name = shared.0;
+
+        return Self {
+            instance_id: FeShareable::new(fe_std::UUID::from_seed(&shared.1)),
             serial: name,
             is_active: is_active.unwrap_or(true),
             is_legacy: is_legacy.unwrap_or(false),
         };
-
-        Self::on_create(&mut s);
-
-        return s;
     }
 
     pub fn get_name(&self) -> &FeString {
@@ -52,41 +58,15 @@ impl Device {
         self.is_active = is_active;
     }
 
-    fn on_create(created: &mut Device) {
-        Console::write_line(FeString::from_owned(format!(
-            "Created device {}",
-            created.instance_id
-        )));
-    }
-
-    fn on_drop(dropped: &mut Device) {
-        Console::write_line(FeString::from_owned(format!(
-            "Dropping device {}",
-            dropped.instance_id
-        )));
-    }
-
     fn on_clone(source: &Device, cloned: &mut Device) {
-        cloned.instance_id = fe_std::UUID::from_seed(&FeString::from_owned(
+        cloned.instance_id = FeShareable::new(fe_std::UUID::from_seed(&FeString::from_owned(
             cloned.instance_id.to_string().clone(),
-        ));
+        )));
 
         Console::write_line(FeString::from_owned(format!(
             "Cloned device {} into device {}",
             source.instance_id, cloned.instance_id,
         )));
-    }
-
-    fn on_share(shared: &Device) {
-        Console::write_line(FeString::from_owned(format!(
-            "Shared device {}",
-            shared.instance_id
-        )));
-    }
-}
-impl std::ops::Drop for Device {
-    fn drop(&mut self) {
-        Self::on_drop(self);
     }
 }
 impl std::clone::Clone for Device {
@@ -103,26 +83,32 @@ impl std::clone::Clone for Device {
         return cloned;
     }
 }
-impl Share<Device> for Device {
+impl ShareSub for Device {
     fn on_share(&self) {
-        Self::on_share(self);
+        Console::write_line(FeString::from_owned(format!(
+            "Shared device {}",
+            self.instance_id
+        )));
     }
 }
 
 fn main() {
-    let inactive_legacy_device = Device::new(STR_SLICE_0, Some(false), Some(true));
+    let inactive_legacy_device =
+        Device::new(FeShareable::new(STR_SLICE_0), Some(false), Some(true));
 
-    let legacy_device = Device::new(STR_SLICE_1, None, Some(true));
+    let legacy_device = Device::new(FeShareable::new(STR_SLICE_1), None, Some(true));
 
-    let inactive_device = Device::new(STR_SLICE_2, Some(false), None);
+    let inactive_device = Device::new(FeShareable::new(STR_SLICE_2), Some(false), None);
 
-    let device = Device::new(STR_SLICE_3, None, None);
+    let device = Device::new(FeShareable::new(STR_SLICE_3), None, None);
 
-    let x = Shareable::new(device.clone());
+    let x = FeShareable::new(device.clone());
 
-    let share1 = x.share();
-    let borrow1 = share1.borrow();
+    let shared = x.share();
+    let x = shared.0;
+    let shared1 = shared.1;
 
-    let share2 = x.share();
-    let borrow2 = share2.borrow();
+    let shared = x.share();
+    let x = shared.0;
+    let shared2 = shared.1;
 }

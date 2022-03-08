@@ -1,3 +1,5 @@
+#![feature(const_fn_trait_bound)]
+
 mod fe_prelude;
 mod fe_std;
 
@@ -17,7 +19,7 @@ fn main() {
     let x = STR_SLICE_0;
     Console::write_line(x);
 
-    let y = 123;
+    let y: isize = 123;
 
     let x = FeString::from_owned(format!("abc {}", y));
     Console::write_line(x);

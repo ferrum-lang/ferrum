@@ -68,9 +68,9 @@ pub struct Error {
 }
 impl Error {
     #[allow(dead_code)]
-    pub fn new(message: FeString) -> Self {
+    pub fn new<T: Into<FeString>>(message: T) -> Self {
         Self {
-            message: Some(message),
+            message: Some(message.into()),
         }
     }
 
@@ -92,6 +92,7 @@ pub type Map<K, V> = std::collections::HashMap<K, V>;
 #[allow(dead_code)]
 pub type Set<K> = std::collections::HashSet<K>;
 
+#[derive(Debug)]
 pub struct UUID {
     value: String,
 }
