@@ -1,31 +1,27 @@
-import { Console } from "std";
+const x: (int; 3) = (1, 2, 3)
+const x: (int, string) = (42, "Adam")
 
-function main() {
-  const x: (int; 3) = (1, 2, 3);
-  const x: (int, string) = (42, "Adam");
-  
-  Console::write_line("{x.0} - {x.1}"); // "42 - Adam"
+log.info("{x.0} - {x.1}") // "42 - Adam"
 
-  // tuples are always fixed in length and known at compile-time
-  const x = (
-    (0),
-    (1, 2, 3),
-    (4, 5, 6),
-    (7, 8, 9),
-    (10),
-  );
+// tuples are always fixed in length and known at compile-time
+const x = (
+  (0),
+  (1, 2, 3),
+  (4, 5, 6),
+  (7, 8, 9),
+  (10),
+)
 
-  const (a, b) = ("abc", 123); // can destructure
+const (a, b) = ("abc", 123) // can destructure
 
-  Console::write_line("{a}, {b}"); // "abc, 123"
+log.info("{a}, {b}") // "abc, 123"
 
-  Console::write_line((1, "two", 3)); // "1, two, 3"
+log.info((1, "two", 3)) // "1, two, 3"
 
-  Console::write_line((1, 2, 3).join("_")); // "1_2_3"
+log.info((1, 2, 3).join("_")) // "1_2_3"
 
-  const (a, b, ..rest, end): (int, string, int, string, int, string) = (1, "two", 3, "four", 5, "six");
+const (a, b, ..rest, end): (int, string, int, string, int, string) = (1, "two", 3, "four", 5, "six")
 
-  Console::write_line("{a}, {b}"); // "1, two"
-  Console::write_line(rest); // "3, four, 5"
-  Console::write_line(end);
-}
+log.info("{a}, {b}") // "1, two"
+log.info(rest) // "3, four, 5"
+log.info(end) // "six"

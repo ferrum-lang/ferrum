@@ -1,5 +1,1 @@
-import { Console } from "std";
-
-function main() {
-  Console::write_line("Hello world");
-}
+log.info("Hello world")

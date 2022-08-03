@@ -1,12 +1,10 @@
-import { Console, Map } from "std";
+import { Map } from "std";
 
-immutable structure PersonId {
-  state {
-    public const value: string,
-  }
+struct PersonId {
+  value: string,
 }
 
-structure Person {
+class Person {
   state {
     public const id: PersonId,
     let first_name: string,
@@ -15,194 +13,154 @@ structure Person {
   }
 }
 
-structure PersonRepositoryError {};
+interface PersonRepository {
+  self.find_all_people() -> [Person]!
+  
+  self.find_person_by_id(id: PersonId) -> Person?!
 
-contract PersonRepository {
-  public mutable self.create_person(person: Person): result<_, PersonRepositoryError>;
+  mut self.create_person(person: Person) -> !
   
-  public self.find_all_people(): result<list<Person>, PersonRepositoryError>;
+  mut self.update_person_by_id(id: PersonId, person: Person) -> !
   
-  public self.find_person_by_id(id: PersonId): result<Person?, PersonRepositoryError>;
-  
-  public mutable self.update_person_by_id(id: PersonId, person: Person): result<_, PersonRepositoryError>;
-  
-  public mutable self.delete_person_by_id(id: PersonId): result<_, PersonRepositoryError>;
+  mut self.delete_person_by_id(id: PersonId) -> !
 }
 
-structure LocalPersonRepository {
+class LocalPersonRepository {
   state {
     // `const` prevents re-assignment after construction
-    // `mutable` allows Map to be mutated as long as `Self` is mutable
+    // `mut` allows Map to be mutated as long as `Self` is mutable
     // `= Map::new()` is a default value if no initial value given
-    const map: mutable Map<PersonId, Person> = Map::new(),
+    const map: mut Map<PersonId, Person> = Map::new(),
   }
 
   // `..` includes all fields, even private ones, in the constructor
-  constructor { .. }
+  pub construct..
 
-  implements PersonRepository {
-    public mutable self.create_person(person: Person): result<_, PersonRepositoryError> {
-      self.map.put(&person.id, person);
-      return ok;
+  impl PersonRepository {
+    self.find_all_people() -> [Person]! => self.map.values()
+
+    self.find_person_by_id(id: PersonId) -> Person?! => self.map.get(id)
+
+    mut self.create_person(person: Person) -> ! {
+      self.map.put(person.id, person)
     }
 
-    public self.find_all_people(): result<list<Person>, PersonRepositoryError> {
-      return ok(
-        self.map.values()
-      );
+    mut self.update_person_by_id(id: PersonId, person: Person) -> ! {
+      if not self.map.put_existing(id, person) {
+        return err("Person with id [{id}] not found")
+      }
     }
 
-    public self.find_person_by_id(id: PersonId): result<Person?>, PersonRepositoryError> {
-      return ok(
-        self.map.get(id)
-      );
-    }
-
-    public mutable self.update_person_by_id(id: PersonId, person: Person): result<_, PersonRepositoryError> {
-      self.map
-        .put_existing(id, person)
-        .ok_or(PersonRepositoryError {})?;
-
-      return ok;
-    }
-
-    public mutable self.delete_person_by_id(id: PersonId): result<_, PersonRepositoryError> {
-      return self.map
-        .remove(id)
-        .ok_or(PersonRepositoryError {});
+    mut self.delete_person_by_id(id: PersonId) -> ! {
+      if not self.map.remove(id) {
+        return err("Person with id [{id}] not found")
+      }
     }
   }
 }
-
-// error PersonServiceError { ... }
-
-structure PersonServiceError {}
 
 enum FindOrAdd<T> {
   Found(T),
   Added(T),
 }
 
-contract PersonService {
-  public mutable self.add_person(person: Person): result<Person, PersonServiceError>;
+interface PersonService {
+  self.find_all_people() -> [Person]!
+  
+  self.find_person_by_id(id: PersonId) -> Person?!
 
-  public mutable self.find_or_add_person(person: Person): result<FindOrAdd<Person>, PersonServiceError>;
+  mut self.add_person(person: Person) -> Person!
+
+  mut self.find_or_add_person(person: Person) -> FindOrAdd<Person>!
   
-  public self.find_all_people(): result<list<Person>, PersonServiceError>;
+  mut self.update_person_by_id(id: PersonId, person: Person) -> Person!
   
-  public self.find_person_by_id(id: PersonId): result<optional<Person>, PersonServiceError>;
-  
-  public mutable self.update_person_by_id(id: PersonId, person: Person): result<Person, PersonServiceError>;
-  
-  public mutable self.delete_person_by_id(id: PersonId): result<_, PersonServiceError>;
+  mut self.delete_person_by_id(id: PersonId) -> !
 }
 
-structure StoredPersonService {
+class StoredPersonService {
   state {
-    const person_repository: mutable ~PersonRepository,
+    const person_repository: mut ~PersonRepository,
   }
 
-  constructor { person_repository, }
-
-  &self.get_person_by_id(id: PersonId): result<Person, PersonServiceError> {
+  self.get_person_by_id(id: PersonId) -> Person! {
     return self.person_repository
-      .find_person_by_id(id)
-      .map_err((e) => PersonServiceError {})?
-      .ok_or_else(() => PersonServiceError {});
+      .find_person_by_id(id)!
+      .ok_or_else(() => err("Person with id [{id}] not found"))
   }
 
-  implements PersonService {
-    public mutable self.add_person(person: Person): result<Person, PersonServiceError> {
-      let id = &person.id;
+  impl PersonService {
+    self.find_all_people() -> [Person]!
+      => self.person_repository.find_all_people()
 
-      self.person_repository
-        .create_person(person)
-        .map_err((e) => PersonServiceError {})?;
+    self.find_person_by_id(id: PersonId) -> Person?!
+      => self.person_repository.find_person_by_id(id)
+
+    mut self.add_person(person: Person) -> Person! {
+      self.person_repository.create_person(person)!
       
-      return self.get_person_by_id(id);
+      return self.get_person_by_id(person.id)
     }
 
-    public mutable self.find_or_add_person(person: Person): result<FindOrAdd<Person>, PersonServiceError> {
-      let existing = self
-        .get_person_by_id(share person.id)
-        .map_err((e) => PersonServiceError {})?;
-
-      if some(person) matches existing {
-        return ok(FindOrAdd::Found(person));
+    mut self.find_or_add_person(person: Person) -> FindOrAdd<Person>! {
+      if some(person) matches self.get_person_by_id(person.id)! {
+        return FindOrAdd::Found(person)
       }
 
-      return self.add_person(person)
-        .map_ok((person) => FindOrAdd::Added(person))
-        .map_err((e) => PersonServiceError {});
+      return self.add_person(person).map_ok(FindOrAdd::Added)
     }
 
-    public self.find_all_people(): result<list<Person>, PersonServiceError> {
-      return self.person_repository
-        .find_all_people()
-        .map_err((e) => PersonServiceError {});
-    }
-
-    public self.find_person_by_id(id: PersonId): result<Person?>, PersonServiceError> {
-      return self.person_repository
-        .find_person_by_id(id)
-        .map_err((e) => PersonServiceError {});
-    }
-
-    public mutable self.update_person_by_id(id: PersonId, person: Person): result<Person, PersonServiceError> {
-      self.person_repository
-        .update_person_by_id(&id, person)
-        .map_err((e) => PersonServiceError {})?;
+    mut self.update_person_by_id(id: PersonId, person: Person) -> Person! {
+      self.person_repository.update_person_by_id(id, person)!
       
-      return self.get_person_by_id(id);
+      return self.get_person_by_id(id)
     }
 
-    public mutable self.delete_person_by_id(id: PersonId): result<_, PersonServiceError> {
-      return self.person_repository
-        .delete_person_by_id(id)
-        .map_err((e) => PersonServiceError {});
+    mut self.delete_person_by_id(id: PersonId) -> ! {
+      self.person_repository.delete_person_by_id(id)!
     }
   }
 }
 
-function main(): result<_, PersonServiceError> {
-  const person_repository = mutable LocalPersonRepository {};
+pub fn main() -> ! {
+  const person_repository = mut LocalPersonRepository;
   
-  const person_service: ~PersonService = mutable StoredPersonService { person_repository, };
+  const person_service: ~PersonService = mut StoredPersonService { person_repository, };
 
-  const person1 = mutable Person {
+  const person1 = mut Person {
     id: PersonId { value: "123" },
     first_name: "Adam",
     last_name: "Bates",
     age: 24,
-  };
+  }
 
-  const person2 = Person {
-    id: PersonId { value: "124" },
-    first_name: "Madison",
-    last_name: "Colletti",
-    age: 23,
-  };
+  // Compiler warning: If using named-args in a constructor, consider using object-notation
+  const person2 = Person(
+    id = PersonId(value: "124"),
+    first_name = "Madison",
+    last_name = "Colletti",
+    age = 23,
+  )
 
-  // Can't share here because sharing will prevent person1 from being mutable in the future
-  const added1 = person_service.add_person(person1.clone())?;
-  Console::write_line("Added person id {added1.id.value}");
+  const added1 = person_service.add_person(person1)!
+  log.info("Added person id {added1.id.value}")
 
-  const found_or_added1 = person_service.find_or_add_person(&person2)?;
+  const found_or_added1 = person_service.find_or_add_person(person2)!
   match found_or_added1 {
-    FindOrAdd::Found(found) => Console::write_line("Found person id {found.id.value}"),
-    FindOrAdd::Added(added) => Console::write_line("Added person id {added.id.value}"),
-  };
+    Found(found) => log.info("Found person id {found.id.value}"),
+    Added(added) => log.info("Added person id {added.id.value}"),
+  }
 
-  const found_or_added2 = person_service.find_or_add_person(&person2)?;
+  const found_or_added2 = person_service.find_or_add_person(person2)!
   match found_or_added2 {
-    FindOrAdd::Found(found) => Console::write_line("Found person id {found.id.value}"),
-    FindOrAdd::Added(added) => Console::write_line("Added person id {added.id.value}"),
-  };
+    Found(found) => log.info("Found person id {found.id.value}"),
+    Added(added) => log.info("Added person id {added.id.value}"),
+  }
 
-  person1.age = 25;
-  const updated1 = person_service.update_person_by_id(&person1.id, &person1)?;
-  Console::write_line("Updated person id {updated1.id.value}");
+  person1.age = 25
+  const updated1 = person_service.update_person_by_id(person1.id, person1)!
+  log.info("Updated person id {updated1.id.value}")
 
-  person_service.delete_person_by_id(&person2.id)?;
-  Console::write_line("Deleted person id {person2.id.value}");
+  person_service.delete_person_by_id(person2.id)!
+  log.info("Deleted person id {person2.id.value}")
 }

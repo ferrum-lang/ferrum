@@ -1,50 +1,48 @@
-import { Console } from "std";
-
-function main() {
-  if true {
-    Console::write_line("true");
-  } else if false {
-    Console::write_line("false");
-  } else {
-    Console::write_line("else");
-  }
-
-  const x = 1;
-  const y = 2;
-  const z = "Adam";
-
-  if (x == 0 || y == 0) && z.length > 0 {
-    Console::write_line(1);
-  }
-
-  const x = some(123);
-
-  if some(y) matches x {
-    Console::write_line(y);
-  }
-
-  match x {
-    none => Console::write_line(2),
-    _ => Console::write_line(3),
-  }
-
-  match "Adam" {
-    "Bates" => Console::write_line(4),
-    "" => Console::write_line(5),
-    x if x.length > 3 => Console::write_line("{x}: 6"),
-    _ => Console::write_line(7),
-  }
-
-  const x = true;
-  Console::write_line(x ? "yes" : "no");
-
-  const x: boolean? = true;
-  Console::write_line(x ?? "none"); // prints "true", "false", or "none"
-
-  // Won't compile as no clear way to print optional
-  // Console::write_line(x);
-
-  // Won't compile as too ambiguous without parenthesis
-  // Console::write_line(x ? x ? "true" : "false" : "none")
-  Console::write_line(x ? (x ? "true : "false") : "none")
+if true {
+  log.info("true")
+} else if false {
+  log.info("false")
+} else {
+  log.info("else")
 }
+
+const x = 1
+const y = 2
+const z = "Adam"
+
+if (x == 0 || y == 0) && z.length > 0 {
+  log.info(1)
+}
+
+const x = some(123)
+
+if some(y) matches x {
+  log.info(y)
+}
+
+match x {
+  none => log.info(2),
+  _ => log.info(3),
+}
+
+match "Adam" {
+  "Bates" => log.info(4),
+  "" => log.info(5),
+  x if x.length > 3 => log.info("{x}: 6"),
+  _ => log.info(7),
+}
+
+const x = true
+log.info(x ? "yes" : "no")
+
+const x: bool? = true
+
+log.info(x) // prints "some(true)", "some(false)", or "none"
+
+log.info(x ?? "none") // prints "true", "false", or "none"
+
+// Won't compile as too ambiguous without parenthesis
+// log.info(x ? x ? "true" : "false" : "none")
+
+log.info(x ? (x ? "true : "false") : "none")
+

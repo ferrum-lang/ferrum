@@ -1,15 +1,13 @@
-mod args;
 mod compiler;
 mod config;
+mod error;
 mod executor;
 mod io;
 
-use anyhow::Result;
+use error::Error;
 
-fn main() -> Result<()> {
-    let args = args::parse_args();
-    
-    let config = config::build(args);
+fn main() -> Result<(), Error> {
+    let config = config::build_env_config()?;
 
     let input_contents = io::read_input_contents(&config)?;
 
@@ -19,4 +17,3 @@ fn main() -> Result<()> {
 
     return executor::build_and_run(&config);
 }
-

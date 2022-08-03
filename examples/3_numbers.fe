@@ -1,12 +1,9 @@
-import { Console } from "std";
 
-function main() {
-  const x = 2;
-  const y = 3;
+const x = 2
+const y = 3
 
-  Console::write_line(x + y); // 5
-  Console::write_line(x - y); // -1 
-  Console::write_line(x * y); // 6
-  Console::write_line(x / y); // 0.6 (integer division always returns f64)
-  Console::write_line(x ^ y); // 8
-}
+log.info(x + y) // 5
+log.info(x - y) // -1 
+log.info(x * y) // 6
+log.info(x / y) // 0.6 (integer division always returns float)
+log.info(x ^ y) // 8

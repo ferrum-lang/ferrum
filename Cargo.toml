@@ -7,3 +7,6 @@ edition = "2021"
 
 [dependencies]
 structopt = "0.3.13"
+anyhow = "1.0"
+thiserror = "1.0"
+

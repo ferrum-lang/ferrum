@@ -1,18 +1,17 @@
+mod ast;
 mod generator;
-mod lexer;
-mod parser;
-mod symbols;
-mod syntax;
-mod tokens;
+mod lexical;
+mod semantics;
 
-use super::error::Error;
+use anyhow::Result;
 
-pub fn compile(contents: String) -> Result<String, Error> {
-    let tokens = lexer::lex_into_tokens(contents)?;
+pub fn compile(input_contents: String) -> Result<String> {
+    let tokens = lexical::parse_tokens(input_contents)?;
 
-    let symbols = symbols::symolize_tokens(tokens)?;
+    let syntax_tree = ast::parse_ast(tokens)?;
 
-    let syntax_tree = parser::parse_symbols(symbols)?;
+    semantics::validate(&syntax_tree)?;
 
     return generator::generate_rust(syntax_tree);
 }
+

@@ -1,92 +1,90 @@
 
-structure Person {
+class Person {
   state {
-    // Note: `string` can be stored under `let`,
-    // but `string` cannot be marked `mutable` as it is an immutable structure
     public let name: string,
   }
 }
 
-function test_person() {
-  const person = Person { name: "Adam", };
+fn test_person() {
+  const person = Person { name: "Adam", }
 
   // Won't compile because immutable
-  // person.name = "Adam Bates";
+  // person.name = "Adam Bates"
 
   // Won't compile because `const`
-  // person = Person { name: "Adam Bates", };
+  // person = Person { name: "Adam Bates", }
 
   // --- //
 
-  let person = Person { name: "Adam" };
+  let person = Person { name: "Adam" }
 
   // Won't compile because immutable Person
-  // person.name = "Adam Bates";
+  // person.name = "Adam Bates"
 
   // Compiles ok because `let`
-  person = Person { name: "Adam Bates" };
+  person = Person { name: "Adam Bates" }
 
   // Won't compile because `person` is not `mutable`
-  // person = mutable Person { name: "Adam Bates" };
+  // person = mut Person { name: "Adam Bates" }
 
   // --- //
 
-  const person = mutable Person { name: "Adam" };
+  const person = mut Person { name: "Adam" }
 
-  // Compiles ok because `mutable` and `person.name` is stored under `let`
-  person.name = "Adam Bates";
+  // Compiles ok because `mut` and `person.name` is stored under `let`
+  person.name = "Adam Bates"
 
   // Won't compile because `const person`
-  // person = Person { name: "Adam Bates", };
+  // person = Person { name: "Adam Bates", }
 
   // --- //
 
-  let person = mutable Person { name: "Adam" };
+  let person = mut Person { name: "Adam" }
 
-  // Compiles ok because `mutable` and `person.name` is stored under `let`
-  person.name = "Adam Bates";
+  // Compiles ok because `mut` and `person.name` is stored under `let`
+  person.name = "Adam Bates"
 
   // Compiles ok because `let`
-  person = mutable Person { name: "Adam Bates" };
+  person = mut Person { name: "Adam Bates" }
 
-  // Won't compile because `person` is `mutable`
-  // person = Person { name: "Adam Bates" };
+  // Won't compile because `person` is mutable
+  // person = Person { name: "Adam Bates" }
 }
 
-structure PartiallyMutableExample {
+class PartiallyMutableExample {
   state {
     public let first: string,
     public const second: string,
+    public const third: mut Person,
 
     // Note: `const` but still `mutable`
     // This means `third` cannot be reassigned, but can still be mutated
-    public const third: mutable Person,
   }
 }
 
-function test_partial_mutable_example() {
-  const person = mutable Person { name: "Person" };
+fn test_partial_mutable_example() {
+  const person = mut Person { name: "Person" }
 
-  const example = mutable PartiallyMutableExample {
+  const example = mut PartiallyMutableExample {
     first: "Adam",
     second: "Bates",
-    third: person, // Note: `person` MUST be `mutable` because `PartiallyMutableExample` is mutable here
-  };
+    third: person, // Note: `person` MUST be `mut` because `PartiallyMutableExample` is mutable here
+  }
 
-  example.first = "ADAM";
+  example.first = "ADAM"
   
   // Won't compile.
   // Even though `example` is mutable, the underlying data is stored as `const`
-  // example.second = "BATES";
+  // example.second = "BATES"
 
   // Won't compile.
   // Even though `example` is mutable, the underlying data is stored as `const`
-  // example.third = Person { name: "Other" };
+  // example.third = Person { name: "Other" }
 
   // Compiles ok because example.person is mutable.
-  example.third.name = "Other";
+  example.third.name = "Other"
 
-  const person = Person { name: "Person" };
+  const person = Person { name: "Person" }
 
   const example = PartiallyMutableExample {
     first: "Adam",
@@ -95,48 +93,48 @@ function test_partial_mutable_example() {
   }
 }
 
-structure MutableExample {
+class MutableExample {
   state {
     public let first: string,
     public let second: string,
   }
 }
 
-function test_mutable_example() {
-  const example = mutable MutableExample {
+fn test_mutable_example() {
+  const example = mut MutableExample {
     first: "Adam",
     second: "Bates",
-  };
+  }
 
   example.first = "ADAM";
   example.second = "BATES";
 
-  const example = MutableExample { first: "Adam", second: "Bates" };
+  const example = MutableExample { first: "Adam", second: "Bates" }
 }
 
-immutable structure ImmutableExample {
+immutable class ImmutableExample {
   state {
-    public const first: string, // `let` and `mutable` are not allowed here because of `immutable structure`
+    public const first: string, // `let` and `mutable` are not allowed here because of `immutable`
     public const second: string,
   }
 }
 
-function test_immutable_example() {
+fn test_immutable_example() {
   const example = ImmutableExample {
     first: "Adam",
     second: "Bates",
   }
 
-  // Won't compile because not `mutable`
-  // example.first = "ADAM";
+  // Won't compile because not `mut`
+  // example.first = "ADAM"
 
-  // Won't compile because `immutable structure`
-  // const example = mutable ImmutableExample { ... };
+  // Won't compile because `immutable`
+  // const example = mut ImmutableExample { ... }
 }
 
-function main() {
-  test_person();
-  test_partial_mutable_example();
-  test_mutable_example();
-  test_immutable_example();
+pub fn main() {
+  test_person()
+  test_partial_mutable_example()
+  test_mutable_example()
+  test_immutable_example()
 }

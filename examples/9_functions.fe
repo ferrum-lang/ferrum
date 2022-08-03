@@ -1,59 +1,57 @@
-import { Console } from "std";
-
-function main() {
-  no_args_no_return();
+pub fn main() {
+  no_args_no_return()
   
-  const x = no_args_with_return();
-  Console::write_line("Got {x}");
+  const x = no_args_with_return()
+  log.info("Got {x}")
 
-  one_arg_no_return("Adam");
+  one_arg_no_return("Adam")
 
-  const x = one_arg_with_return("Adam");
-  Console::write_line("Got: {x}");
+  const x = one_arg_with_return("Adam")
+  log.info("Got: {x}")
 
-  two_args_no_return("Adam", 25);
+  two_args_no_return("Adam", 25)
 
-  const x = two_args_with_return("Adam", 25);
-  Console::write_line("Got: {x}");
+  const x = two_args_with_return("Adam", 25)
+  log.info("Got: {x}")
 
-  var_args("Adam", " ", "Bates", "!");
+  var_args("Adam", " ", "Bates", "!")
 
-  const x = ["Hello", " ", "World"];
-  var_args(..x);
+  const x = ["Hello", " ", "World"]
+  var_args(..x)
 }
 
-function no_args_no_return() {
-  Console::write_line("no_args_no_return");
+fn no_args_no_return() {
+  log.info("no_args_no_return")
 }
 
-function no_args_with_return(): string {
-  Console::write_line("no_args_with_return");
+fn no_args_with_return() -> string {
+  log.info("no_args_with_return")
 
   // Unlike Rust, `return` keyword is mandatory
-  // Also note: returned string is owned here because there's no incoming data to borrow from
-  return "Bates";
+  return "Bates"
 }
 
-function one_arg_no_return(arg1: string) {
-  Console::write_line("one_arg_no_return: {arg1}");
+fn one_arg_no_return(arg1: string) {
+  log.info("one_arg_no_return: {arg1}")
 }
 
-function one_arg_with_return(arg1: string): string {
-  Console::write_line("one_arg_with_owned_return: {arg1}");
+fn one_arg_with_return(arg1: string) -> string {
+  log.info("one_arg_with_owned_return: {arg1}")
 
-  return "Bates";
+  return "Bates"
 }
 
-function two_args_no_return(arg1: string, arg2: int) {
-  Console::write_line("two_args_no_return: {arg1}, {arg2}");
+fn two_args_no_return(arg1: string, arg2: int) {
+  log.info("two_args_no_return: {arg1}, {arg2}")
 }
 
-function two_args_with_return(arg1: string, arg2: int): string {
-  Console::write_line("two_args_with_return: {arg1}, {arg2}");
+fn two_args_with_return(arg1: string, arg2: int) -> string {
+  log.info("two_args_with_return: {arg1}, {arg2}")
 
-  return "Bates";
+  return "Bates"
 }
 
-function var_args(..args: list<string>) {
-  Console::write_line("var_args: {args}");
+fn var_args(..args: [string]) {
+  log.info("var_args: {args}")
 }
+

@@ -2,7 +2,7 @@ use super::ast::AST;
 
 use anyhow::Result;
 
-pub fn generate_rust(ast: AST) -> Result<String> {
+pub fn validate(ast: &AST) -> Result<()> {
     todo!()
 }
 

@@ -1,28 +1,25 @@
-import { Console, StringBuilder, } from "std";
-
-function fizzbuzz(n: uint): string {
-  const is_fizz = n % 3 == 0;
-  const is_buzz = n % 5 == 0;
+fn fizzbuzz(n: uint) -> string {
+  const is_fizz = n % 3 == 0
+  const is_buzz = n % 5 == 0
 
   if !is_fizz && !is_buzz {
-    return n.to_string();
+    return n.to_string()
   }
 
-  const builder = mutable StringBuilder::new();
+  const str = mut ""
 
   if is_fizz {
-    builder.append("Fizz");
+    str.append("Fizz")
   }
 
   if is_buzz {
-    builder.append("Buzz");
+    str.append("Buzz")
   }
 
-  return builder.build();
+  return str
 }
 
-function main() {
-  for n in 1..=20 {
-    Console::write_line(fizzbuzz(n));
-  }
+for n in 1..=20 {
+  log.info(fizzbuzz(n))
 }
+

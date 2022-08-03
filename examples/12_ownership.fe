@@ -1,123 +1,80 @@
-import { Console } from "std";
-
-structure Person {
+class Person {
   state {
-    public let name: string,
-    public let age: uint,
+    pub let name: string,
+    pub let age: uint,
   }
 
-  public self.requires_borrow() {}
+  pub self.requires_borrow() {}
 
-  public mutable self.requires_borrow_mut(): mutable Self {
-    return self;
+  pub mut self.requires_borrow_mut() -> mut Self {
+    return self
   }
 }
 
-structure House {
-  state {
-    public let owner = mutable Person,
-  }
+struct House {
+  owner: mut Person,
 }
 
-structure Child {
+class Child {
   state {
     const parents: (Person; 2),
   }
-
-  constructor { parents, }
 }
 
-function main() {
-  const person1 = Person {
-    name: "Adam",
-    age: 25,
-  };
-
-  // move, `person1` is no longer available
-  const person2 = person1;
-
-  // RC clone
-  const person3 = &person2;
-
-  // Won't compile because `person3` not `mutable`
-  // const person3 = mutable person3;
-
-  Console::write_line("{person3.name} is {person2.age} years old.");
-
-  const person1 = mutable Person {
-    name: "Adam",
-    age: 25,
-  };
-
-  // RC clone, move person1 into immutable
-  const person2 = &person1;
-
-  // move, `person2` is no longer available, but `person1` still is
-  const person3 = person2;
-
-  // Won't compile because `person3` not `mutable`
-  // person3.age = 26;
-
-  const person1 = mutable person1.clone();
-
-  person1.age = 26;
-
-  Console::write_line("{person3.name} is {person1.age} years old.");
-
-  person1.requires_borrow();
-  person1.requires_borrow_mut();
-
-  // --- //
-
-  const house1 = mutable House { owner: person1 };
-
-  // Won't compile because person3 is not mutable, and house3 is mutable
-  // const house3 = mutable House { owner: person3 };
-
-  const house2 = House { owner: share person3 };
-
-  house1.owner.age = 50;
-
-  // Won't compile because house2 is not mutable
-  // house2.owner.age = 60;
-
-  // --- //
-
-  const mom = Person { name: "Madeline", age: 52, };
-  const dad = Person { name: "Brian", age: 56, };
-
-  const adam = Child {
-    parents: (mom, dad),
-  };
-
-  // --- //
-
-  let person1 = Person {
-    name: "Adam",
-    age: 25,
-  };
-
-  {
-    const person2 = &person1;
-
-    match person1.try_mutable() {
-      ok(person) => {
-        Console::write_line("Got unique person1 while person2 still exists!!!");
-        person1 = Person { name: "new", age: 0, };
-      },
-      error(person) => {
-        Console::write_line("person1 cannot be made unique yet.");
-        person1 = person;
-      }
-    }
-  }
-
-  match person1.try_mutable() {
-    ok(person) => {
-      Console::write_line("Got unique person1 after person2 dropped.");
-    },
-    error(person) => {
-      Console::write_line("person1 cannot be made unique even after person2 dropped?!");
-    }
-  }
+const person1 = Person {
+  name: "Adam",
+  age: 25,
 }
+
+// move, `person1` is no longer available
+const person2 = person1
+
+// RC clones can happen when passing data into objects or functions (and it is later accessed)
+// but not possible to RC clone a value in the current scope
+// as there should be no need
+
+log.info("{person2.name} is {person2.age} years old.")
+
+const person1 = mut Person {
+  name: "Adam",
+  age: 25,
+}
+
+// move, `person1` is no longer available
+const person2 = person1
+
+// Won't compile because `person2` not `mutable`
+// person2.age = 26;
+
+const person1 = mut person2.clone()
+
+person1.age = 26
+
+log.info("{person2.name} is {person1.age} years old.")
+
+person1.requires_borrow()
+person1.requires_borrow_mut()
+
+// --- //
+
+const house1 = mut House { owner: person1 }
+
+const house2 = House { owner: person2 }
+
+// Won't compile because person2 is not mutable, and house3 & House::owner are mutable
+// const house3 = mut House { owner: person2 }
+
+house1.owner.age = 50
+
+// Won't compile because house2 is not mutable
+// house2.owner.age = 60
+
+// --- //
+
+const mom = Person { name: "Madeline", age: 52, }
+const dad = Person { name: "Brian", age: 56, }
+
+const adam = Child {
+  parents: (mom, dad),
+}
+

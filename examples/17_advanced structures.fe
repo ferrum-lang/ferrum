@@ -1,7 +1,7 @@
-structure Device {
+class Device {
   state {
-    let instance_id: std::UUID = std::UUID::from_seed(&serial),
-    const serial: string,
+    let instance_id: std::UUID = std::UUID::from_seed(name),
+    const name: string,
     let is_active: bool = true,
     let is_legacy: bool = false,
   }
@@ -9,32 +9,7 @@ structure Device {
   // By default the constructor contains all fields
   // But when some or all fields are private it can be useful to provide an alternative constructor
   // Note: `instance_id` can be excluded from `constructor` because it has a default
-  constructor { serial as name, is_active, is_legacy }
-
-  // Generate getters for the following fields
-  // Note: anything can be included or excluded from `get`
-  get { serial as name, is_active, is_legacy }
-
-  // Generate setters for the following fields
-  // Note: `set` requires `let`, but `let` doesn't require `set`
-  set { is_active }
-
-  // Predefined functions to subscribe to
-  // These functions never return anything, as they act as "listeners" to events
-  subscribe {
-    // `on_clone` will be called just after the instance is cloned using the `clone` keyword
-    // Arguments are immutable borrowed source, and mutable borrowed clone
-    on_clone: (source: Device, cloned: mutable Device) => {
-      cloned.instance_id = std::UUID::from_seed(cloned.instance_id.to_string());
-      Console::write_line("Cloned device {source.instance_id} into device {cloned.instance_id}");
-    }
-
-    // `on_share` will be called just after the instance is shared using the `share` keyword
-    // Argument is immutable borrowed self
-    on_share: (shared: Device) => {
-      Console::write_line("Shared device {shared.instance_id}")
-    }
-  }
+  construct (name, is_active, is_legacy) ..
 }
 
 function main() {
@@ -42,24 +17,356 @@ function main() {
     name: "1",
     is_active: false,
     is_legacy: true,
-  };
+  }
 
   const legacy_device = Device {
     name: "2",
     is_legacy: true,
-  };
+  }
 
   const inactive_device = Device {
     name: "3",
     is_active: false,
-  };
+  }
 
   const device = Device {
     name: "4",
-  };
+  }
 
-  let x = clone device;
-
-  let shared1 = &x;
-  let shared2 = &x;
+  let x = device.clone()
 }
+
+struct BadNode<T> {
+  data: mut T,
+  connections: mut [mut BadNode<T>] = [],
+}
+
+const x = mut BadNode(1)
+
+// Won't compile because data is int, and cannot be mut
+// const y = mut x.data
+// const y: mut BadNode<int> = x.data
+
+struct Node<T> {
+    data: mut? T,
+    connections: mut+ [Node<T>] = [],
+}
+
+const adam = mut Node("adam")
+const madison = mut Node("madison")
+
+adam.connections.push(mut *madison)
+madison.connections.push(mut *adam)
+
+for node in madison.connections {
+  node.data.append("2")
+}
+
+log.info(adam.data) // "adam2"
+
+// * tells the compiler that data-ownership is being shared here
+// This will either cause ARC or GC implementation to manage memory
+// Depending on how its used
+// - ARC for single-threaded AND non-cyclical data
+// - GC for multi-threaded and/or cyclical data
+// - GC also for data sent out of scope, ie.
+/*
+let res
+{
+    const person1 = Person(25)
+    {
+        const person2 = Person(26)
+        {
+            res = get_oldest_person(person1, person2)
+        }
+    }
+}
+
+log.info(res) // person2 being accessed outside scope, so GC will wrap this code
+*/
+
+class DoublyLinkedList<mut? T> {
+    struct Node {
+        data: mut? T,
+        prev: mut Node?,
+        next: mut Node?,
+    }
+
+    state {
+        let ends: (mut Node, mut Node)?,
+        let length: uint = 0,
+    }
+
+    pub construct () { .. }
+
+    pub self.size() -> uint => self.length
+
+    pub self.head() -> T? {
+        const (head, ..) = self.ends?
+
+        return head.data
+    }
+
+    pub self.tail() -> T? {
+        const (.., tail) = self.ends?
+
+        return tail.data
+    }
+
+    pub self.peek(index: uint) -> T? {
+        if index >= self.length {
+            return none
+        }
+
+        const (head, tail) = self.ends?
+
+        if index == 0 {
+            return head
+        }
+
+        if index == self.length - 1 {
+            return tail
+        }
+
+        let (node, i) = (head, 0)
+
+        while i < index {
+            node = node.next?
+            i += 1
+        }
+
+        return node.data
+    }
+
+    pub mut self.push_head(value: T) {
+        const new_node = mut Node(value)
+
+        match self.ends {
+            (head, tail) => {
+                new_node.next = *head
+                head.prev = *new_node
+                self.ends = (new_node, tail)
+            },
+            _ => self.ends = (*new_node, new_node),
+        }
+
+        self.length += 1
+    }
+
+    pub mut self.push_tail(value: T) {
+        const new_node = mut Node(value)
+
+        match self.ends {
+            (head, tail) => {
+                new_node.prev = *tail
+                tail.next = *new_node
+                self.ends = (head, new_node)
+            },
+            _ => self.ends = (*new_node, new_node),
+        }
+
+        self.length += 1
+    }
+
+    pub mut self.pop_head() -> T? {
+        const (head, tail) = self.ends?
+
+        match head.next {
+            none => {
+                self.ends = none
+                self.length = 0
+            },
+            &tail => {
+                tail.prev = none
+                self.ends = (*tail, tail)
+                self.length = 1
+            },
+            node => {
+                node.prev = none
+                self.ends = (node, tail)
+                self.length -= 1
+            },
+        }
+
+        return head
+    }
+
+    pub mut self.pop_tail() -> T? {
+        const (head, tail) = self.ends?
+
+        match tail.prev {
+            none => {
+                self.ends = none
+                self.length = 0
+            },
+            &head => {
+                head.next = none
+                self.ends = (*head, head)
+                self.length = 1
+            },
+            node => {
+                node.next = none
+                self.ends = (head, node)
+                self.length -= 1
+            },
+        }
+
+        return tail
+    }
+
+    pub mut self.clear() -> uint {
+        const size = self.length
+
+        self.ends = none
+        self.length = 0
+
+        return size
+    }
+
+    pub self.matches(other: DoublyLinkedList<T>) -> bool {
+        return self ~= other
+    }
+}
+
+const list = mut DoublyLinkedList()
+
+log.info(list.size()) // 0
+log.info(list.head()) // none
+log.info(list.tail()) // none
+
+list.push_head("B")
+
+log.info(list.size()) // 1
+log.info(list.head()) // some("B")
+log.info(list.tail()) // some("B")
+
+list.push_head("A")
+
+log.info(list.size()) // 2
+log.info(list.head()) // some("A")
+log.info(list.tail()) // some("B")
+
+list.push_tail("C")
+
+log.info(list.size()) // 3
+log.info(list.head()) // some("A")
+log.info(list.peek(1)) // some("B")
+log.info(list.tail()) // some("C")
+
+log.info(list.pop_head()) // some("A")
+log.info(list.size()) // 2
+log.info(list.head()) // some("B")
+log.info(list.tail()) // some("C")
+
+log.info(list.pop_tail()) // some("C")
+log.info(list.size()) // 1
+log.info(list.head()) // some("B")
+log.info(list.tail()) // some("B")
+
+log.info(list.clear()) // 1
+log.info(list.size()) // 0
+log.info(list.head()) // none
+log.info(list.tail()) // none
+
+
+/////// JS
+
+class Node {
+  constructor(data) {
+    this.data = data;
+    this.connections = [];
+  }
+}
+
+const adam = new Node("adam");
+const madison = new Node("madison");
+
+adam.connections.push(madison);
+madison.connections.push(adam);
+
+madison.connections.forEach((node) => {
+  node.data += "2";
+});
+
+console.log(adam.data); // "adam2"
+
+/////// Java
+
+public class Node<T> {
+  public T data;
+  public List<Node<T>> connections;
+
+  public Node<T>(data: T) {
+    this.data = data;
+    this.connections = new ArrayList<>();
+  }
+}
+
+public class App {
+  public static void main(String[] args) {
+    final Node<String> adam = new Node("adam");
+    final Node<String> madison = new Node("madison");
+
+    adam.connections.push(madison);
+    madison.connections.push(adam);
+
+    for (Node<String> connection : connections) {
+      connection.data += "2";
+    }
+
+    System.out.println(adam.data); // "adam2"
+  }
+}
+
+
+////
+
+struct Person {
+  first_name: string,
+  last_name: string,
+  age: uint,
+}
+
+struct Dog {
+  name: string,
+  age: uint,
+}
+
+class PersonService {
+  state {
+    const datastore: mut Datastore,
+    const dog_service: mut DogService,
+  }
+
+  pub self.get_person_by_id(id: int) -> Person?! {
+    return self.datastore.get("person/{id}")
+  }
+
+  pub mut self.adopt_dog(person_id: int, dog: Dog) -> ! {
+    const person = self.get_person_by_id(person_id)! || err("Person not found")!
+
+    person.dogs.push(dog)
+
+    self.datastore.set("person/{person_id}", person)
+  }
+}
+
+class DogService {
+  state {
+    const datastore: mut Datastore,
+    const person_service: mut PersonService,
+  }
+
+  pub self.get_dog_by_id(id: int) -> Dog?! {
+    return self.datastore.get("dog/{id}")
+  }
+
+  pub mut self.add_owner(dog_id: int, owner: Person) -> ! {
+    const dog = self.get_dog_by_id(dog_id)! || err("Dog not found")!
+
+    dog.owners.push(owner)
+
+    self.datastore.set("dog/{dog_id}", dog)
+  }
+}
+

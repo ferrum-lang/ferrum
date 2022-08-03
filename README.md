@@ -33,19 +33,29 @@ x = 456;
 const x = 123;
 ```
 
-- `&...`
+- `*`
 
-- `"..."`
+- `""`
 
-- `[...]`
+- `[]`
 
-- `(...)`
+- `()`
 
 - `..`
 
 - `if`
 
+- `not`
+
+- `else`
+
+- `true`
+
+- `false`
+
 - `match`
+
+- `matches`
 
 - `loop`
 
@@ -53,9 +63,11 @@ const x = 123;
 
 - `for`
 
-- `structure`
+- `struct`
 
-- `contract`
+- `class`
+
+- `interface`
 
 - `enum`
 
@@ -63,15 +75,9 @@ const x = 123;
 
 - `state`
 
-- `function`
+- `fn`
 
-- `mutable`
-
-- `unique`
-
-- `shared`
-
-- `share`
+- `mut`
 
 - `some`
 
@@ -79,13 +85,25 @@ const x = 123;
 
 - `ok`
 
-- `error`
+- `err`
+
+- `PANIC`
+
+- `TODO`
+
+- `UNREACHABLE`
+
+- `=`
+
+- `==`
+
+- `!=`
+
+- `~=`
 
 ### Built-in types
 
-- `boolean`
-
-- `uint`
+- `bool`
 
 - `bit`
 
@@ -131,10 +149,12 @@ const x = 123;
 
 - `string`
 
-- `list`
+- `[]`
 
-- `option`
+- `()`
 
-- `result`
+- `?`
+
+- `!`
 
 ###### Created by Adam Bates
