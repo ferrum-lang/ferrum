@@ -1,0 +1,58 @@
+
+async fn is_async() {
+    TODO
+}
+
+async? fn maybe_async() {
+    if $.fn.is_async {
+        TODO
+    } else {
+        TODO
+    }
+}
+
+fn not_async() {
+    TODO
+}
+
+fn main() {
+    // Compiler error when calling `async` function without ever awaiting it
+    // is_async()
+
+    // To prevent blocking and run in background:
+    background(() => is_async())
+
+    // `await` is only valid on `async` functions
+    // Can await even if scoping function isn't `async`
+    // Just puts a syncronous block on the async function
+    is_async().await
+
+    // If `await` is never used, `async?` functions will be run synchronously (ie. $.fn.is_async will be false)
+    maybe_async()
+
+    // If `await` is used, the function is run as async
+    maybe_async().await
+
+    not_async()
+
+    // compiler error when calling `await` on a non-async function
+    // non_async().await
+}
+
+async fn ping_server() -> string! {
+    // async functions can return the result of an async call without awaiting
+    return get_text_res_from_url("https://api.amglive2.com/ping")
+}
+
+fn sync_ping_server() -> string! {
+    
+    // compiler error when trying to return async result without awaiting from non-async function
+    // return ping_server()
+
+    TODO
+}
+
+async fn get_text_res_from_url(url: string) -> string! {
+    TODO
+}
+
