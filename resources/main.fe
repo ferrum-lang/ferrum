@@ -1,5 +1,4 @@
-import { Console } from "std";
+const x: Set<string> = mut Set::from("a", "b", "c")
 
-public function main() {
-    Console::write_line("Hello world");
-}
+log.info("Hello world: {set}, {set.length}")
+

@@ -3,6 +3,7 @@ mod compiler;
 mod config;
 mod executor;
 mod io;
+mod utils;
 
 use anyhow::Result;
 
