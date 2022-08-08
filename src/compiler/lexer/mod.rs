@@ -5,4 +5,5 @@ mod tokens;
 
 pub use parse::tokenize;
 pub use source_meta::SourceMeta;
-pub use tokens::Tokens;
+pub use tokens::{BuiltInType, Keyword, Literal, Token, TokenData, Tokens};
+

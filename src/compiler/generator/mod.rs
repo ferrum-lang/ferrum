@@ -1,4 +1,4 @@
-use super::ast::AST;
+use super::parser::AST;
 
 use anyhow::Result;
 

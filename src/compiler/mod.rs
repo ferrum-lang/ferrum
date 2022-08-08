@@ -1,31 +1,29 @@
-mod ast;
+mod parser;
 mod generator;
 mod lexer;
 mod semantics;
-
-use crate::io;
 
 use std::path;
 
 use anyhow::Result;
 
 pub fn compile(filepath: &path::PathBuf) -> Result<String> {
-    let mut syntax_tree = compile_to_unchecked_ast(filepath)?;
+    let mut ast = compile_to_unchecked_ast(filepath)?;
 
-    semantics::fix_and_validate(&mut syntax_tree)?;
+    semantics::fix_and_validate(&mut ast)?;
 
-    return generator::generate_rust(syntax_tree);
+    return generator::generate_rust(ast);
 }
 
-fn compile_to_unchecked_ast(filepath: &path::PathBuf) -> Result<ast::AST> {
+fn compile_to_unchecked_ast(filepath: &path::PathBuf) -> Result<parser::AST> {
     let tokens = lexer::tokenize(filepath)?;
 
-    println!("Tokens: \n\n{tokens}\n\n");
+    // println!("Tokens: \n\n{tokens}\n\n");
 
-    let syntax_tree = ast::parse_ast(tokens)?;
+    let ast = parser::parse_ast(tokens)?;
 
     // TODO: Recursive compilation to resolve imports
 
-    return Ok(syntax_tree);
+    return Ok(ast);
 }
 
