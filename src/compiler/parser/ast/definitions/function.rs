@@ -31,7 +31,7 @@ pub enum DefFnImpl {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum FnImplDirect {
-    Expression(Expression), // TODO: Only need RHS
+    Expression(Expression),
     Statement(Statement),
 }
 
