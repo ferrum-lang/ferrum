@@ -1,4 +1,4 @@
-use super::lexical::Tokens;
+use super::lexer::Tokens;
 
 use anyhow::Result;
 

@@ -1,12 +1,11 @@
 use crate::config::Config;
 
-use std::fs;
+use std::{fs, path};
 
 use anyhow::Result;
 
-pub fn read_input_contents(config: &Config) -> Result<String> {
-    let contents = fs::read_to_string(&config.input_filepath)?;
-    
+pub fn read_file_contents(filepath: &path::PathBuf) -> Result<String> {
+    let contents = fs::read_to_string(filepath)?;
     return Ok(contents);
 }
 

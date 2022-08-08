@@ -12,9 +12,7 @@ fn main() -> Result<()> {
     
     let config = config::build(args);
 
-    let input_contents = io::read_input_contents(&config)?;
-
-    let output_contents = compiler::compile(input_contents)?;
+    let output_contents = compiler::compile(&config.input_filepath)?;
 
     io::write_to_build_dir(&config, output_contents)?;
 
