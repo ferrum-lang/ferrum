@@ -1,4 +1,4 @@
-use super::{Generic, Type, Instruction, Expression, Statement};
+use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct DefFn {
@@ -25,18 +25,12 @@ pub struct DefFnParam {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum DefFnImpl {
-    Direct(FnImplDirect),
+    Direct(Expression),
     Body(FnImplBody),
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum FnImplDirect {
-    Expression(Expression),
-    Statement(Statement),
-}
-
-#[derive(Clone, Debug, PartialEq)]
 pub struct FnImplBody {
-    pub instructions: Vec<Instruction>,
+    pub statements: Vec<Statement>,
 }
 

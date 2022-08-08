@@ -1,8 +1,10 @@
 mod definitions;
+mod statements;
 mod import;
 mod r#static;
 
 pub use definitions::*;
+pub use statements::*;
 pub use import::*;
 pub use r#static::*;
 
@@ -16,22 +18,7 @@ pub struct AST {
 #[derive(Clone, Debug, PartialEq)]
 pub enum RootNode {
     Definition(Definition),
-    Instruction(Instruction),
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum Definition {
-    Type(DefType),
-    Function(DefFn),
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum DefType {
-    Struct(DefStruct),
-    Class(DefClass),
-    Interface(DefInterface),
-    Enum(DefEnum),
-    Errors(DefErrors),
+    Statement(Statement),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -41,18 +28,5 @@ pub struct Generic {}
 pub struct Type {}
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Instruction {
-    Assignment(Assignment),
-    Statement(Statement),
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct Assignment {}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct Expression {}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct Statement {}
-
+pub struct Condition {}
 
