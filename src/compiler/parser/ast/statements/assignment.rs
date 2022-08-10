@@ -40,7 +40,7 @@ pub struct AssignTrgtDestructObjectSpreadField {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AssignTrgtDestructTuple {
-    items: Vec<AssignTrgtDestructTupleItem>,
+    pub items: Vec<AssignTrgtDestructTupleItem>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -62,7 +62,7 @@ pub struct AssignTrgtDestructTupleSpreadField {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AssignTrgtDestructList {
-    items: Vec<AssignTrgtDestructListItem>,
+    pub items: Vec<AssignTrgtDestructListItem>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

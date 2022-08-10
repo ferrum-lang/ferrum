@@ -28,8 +28,3 @@ pub enum DefFnImpl {
     Block(Block),
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct FnImplBody {
-    pub statements: Vec<Statement>,
-}
-

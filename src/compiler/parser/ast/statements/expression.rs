@@ -8,7 +8,8 @@ pub enum Expression {
     Reference(Reference),    // example, some.example, some::example
     Loop(Loop),   // loop, loop-while, while, for
     Branch(Branch),       // if/else, match, ternary
-    Operation(Operation),    // 1 + 2, 1 >= 2
+    BinaryOperation(BinaryOperation),    // 1 + 2, 1 >= 2
+    Matches(Matches),
     Closure(Closure),      // () => {}
     Literal(Literal),      // 1, "hello"
     Range(Range),        // 1..=10
@@ -98,19 +99,16 @@ pub struct BranchIfElse {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct BranchMatch {
-    pub condition: Box<Expression>,
+    pub value: Box<Expression>,
     pub arms: Vec<BranchMatchArm>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct BranchMatchArm {
     pub pattern: Pattern,
-    pub guard: Option<BranchMatchGuard>,
+    pub guard: Option<Box<Expression>>,
     pub body: Box<Block>,
 }
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct BranchMatchGuard {}
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Pattern {
@@ -152,16 +150,109 @@ pub struct BranchTernary {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Operation {}
+pub struct BinaryOperation {
+    pub left: Box<Expression>,
+    pub right: Box<Expression>,
+    pub operator: BinaryOperator,
+}
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Closure {}
+pub enum BinaryOperator {
+    Plus,
+    Minus,
+    Multiply,
+    Divide,
+    Mod,
+    Pow,
+
+    And,
+    Or,
+    
+    Equals,
+    NotEquals,
+    GreaterThan,
+    GreatherThanOrEquals,
+    LessThan,
+    LessThanOrEquals,
+}
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Literal {}
+pub struct Matches {
+    pub value: Box<Expression>,
+    pub pattern: Pattern,
+}
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Range {}
+pub struct Closure {
+    pub signature: DefFnSignature,
+    pub r#impl: Box<DefFnImpl>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ClosureSignature {
+    pub generics: Option<DefGenerics>,
+    pub params: Vec<DefFnParam>,
+    pub return_type: Option<Type>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Literal {
+    Number(LiteralNumber),
+    String(LiteralString),
+    Char(char),
+    Bool(bool),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum LiteralNumber {
+    Uint8(u8),
+    Uint16(u16),
+    Uint32(u32),
+    Uint64(u64),
+    Uint128(u128),
+    Uint(usize),
+    // BigUint,
+
+    Int8(i8),
+    Int16(i16),
+    Int32(i32),
+    Int64(i64),
+    Int128(i128),
+    Int(isize),
+    // BigInt,
+
+    Bit(bool),
+    Byte(u8),
+
+    Float32(f32),
+    Float64(f64),
+    Float(f64),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum LiteralString {
+    Plain(String),
+    Template(TemplateString),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct TemplateString {
+    start: String,
+    parts: Vec<TemplateStringPart>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct TemplateStringPart {
+    expression: Box<Expression>,
+    post_string: String,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Range {
+    from: LiteralNumber,
+    to: LiteralNumber,
+    inclusive: bool,
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct BlockExpr {
