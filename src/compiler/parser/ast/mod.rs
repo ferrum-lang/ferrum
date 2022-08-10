@@ -22,9 +22,6 @@ pub enum RootNode {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Generic {}
-
-#[derive(Clone, Debug, PartialEq)]
 pub struct Type {}
 
 #[derive(Clone, Debug, PartialEq)]

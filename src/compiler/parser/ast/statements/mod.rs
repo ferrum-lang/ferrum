@@ -9,9 +9,13 @@ pub use r#loop::*;
 use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct Block {
+    statements: Vec<Statement>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum Statement {
     Assignment(Assignment),
     Expression(Expression),
-    Loop(Loop),
 }
 

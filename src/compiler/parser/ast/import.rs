@@ -7,7 +7,7 @@ pub struct Import {
 #[derive(Clone, Debug, PartialEq)]
 pub enum ImportAssignment {
     Direct(ImportAssignmentDirect),
-    Destructured(ImportAssignmentDestructured)
+    Destructured(ImportAssignmentDestruct)
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -16,14 +16,24 @@ pub struct ImportAssignmentDirect {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct ImportAssignmentDestructured {
-    pub fields: Vec<ImportAssignmentDestructuredField>,
+pub struct ImportAssignmentDestruct {
+    pub items: Vec<ImportAssignDestructItem>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct ImportAssignmentDestructuredField {
+pub enum ImportAssignDestructItem {
+    Field(ImportAssignDestructField),
+    Spread(ImportAssignDestructSpread),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ImportAssignDestructField {
     pub name: String,
     pub alias: Option<String>,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct ImportAssignDestructSpread {
+    pub name: String,
+}
 

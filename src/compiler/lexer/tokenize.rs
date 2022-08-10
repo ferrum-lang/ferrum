@@ -36,7 +36,7 @@ pub fn tokenize(filepath: &std::path::PathBuf) -> Result<Tokens> {
                         break;
                     }
                 }
-            }
+            },
             '/' if chars.peek() == Some(&'/') => {
                 chars.pop();
 
@@ -46,7 +46,7 @@ pub fn tokenize(filepath: &std::path::PathBuf) -> Result<Tokens> {
 
                 // Note: Literal::LineComment's representation doesn't include the new-line char
                 // ending the comment
-            }
+            },
 
             '"' => {
                 // Note: Need to account for both plain and template strings
@@ -91,7 +91,7 @@ pub fn tokenize(filepath: &std::path::PathBuf) -> Result<Tokens> {
                         source_meta: source_meta(start_line, current_line),
                     });
                 }
-            }
+            },
             '}' if is_in_strings_template => {
                 let mut value = String::new();
 
@@ -133,7 +133,7 @@ pub fn tokenize(filepath: &std::path::PathBuf) -> Result<Tokens> {
                         source_meta: source_meta(start_line, current_line),
                     });
                 }
-            }
+            },
 
             '\'' => {
                 let mut value = String::new();
@@ -157,7 +157,7 @@ pub fn tokenize(filepath: &std::path::PathBuf) -> Result<Tokens> {
                     value: Token::Literal(Literal::Char(value)),
                     source_meta: source_meta(current_line, current_line),
                 });
-            }
+            },
 
             '\n' => {
                 tokens.push(TokenData {
@@ -165,7 +165,7 @@ pub fn tokenize(filepath: &std::path::PathBuf) -> Result<Tokens> {
                     source_meta: source_meta(current_line, current_line),
                 });
                 current_line += 1;
-            }
+            },
 
             _ if c.is_whitespace() => {
                 while let Some(&peek) = chars.peek() {
@@ -175,7 +175,7 @@ pub fn tokenize(filepath: &std::path::PathBuf) -> Result<Tokens> {
 
                     chars.pop();
                 }
-            }
+            },
             _ if c.is_numeric() => {
                 let mut buffer = c.to_string();
 
@@ -192,7 +192,7 @@ pub fn tokenize(filepath: &std::path::PathBuf) -> Result<Tokens> {
                     value: Token::Literal(Literal::Number(buffer)),
                     source_meta: source_meta(current_line, current_line),
                 });
-            }
+            },
             _ if c.is_alphabetic() => {
                 let mut buffer = c.to_string();
 
@@ -229,8 +229,11 @@ pub fn tokenize(filepath: &std::path::PathBuf) -> Result<Tokens> {
                     "construct" => Token::Keyword(Keyword::Construct),
                     "impl" => Token::Keyword(Keyword::Impl),
                     "return" => Token::Keyword(Keyword::Return),
+                    "yield" => Token::Keyword(Keyword::Yield),
                     "if" => Token::Keyword(Keyword::If),
                     "else" => Token::Keyword(Keyword::Else),
+                    "match" => Token::Keyword(Keyword::Match),
+                    "matches" => Token::Keyword(Keyword::Matches),
                     "loop" => Token::Keyword(Keyword::Loop),
                     "while" => Token::Keyword(Keyword::While),
                     "for" => Token::Keyword(Keyword::For),
@@ -266,7 +269,7 @@ pub fn tokenize(filepath: &std::path::PathBuf) -> Result<Tokens> {
                     value: token,
                     source_meta: source_meta(current_line, current_line),
                 });
-            }
+            },
 
             '{' => tokens.push(TokenData {
                 value: Token::OpenBrace,
@@ -300,70 +303,238 @@ pub fn tokenize(filepath: &std::path::PathBuf) -> Result<Tokens> {
                 value: Token::Semicolon,
                 source_meta: source_meta(current_line, current_line),
             }),
-            ':' => tokens.push(TokenData {
-                value: Token::Colon,
-                source_meta: source_meta(current_line, current_line),
-            }),
+
+            ':' => {
+                let token = match chars.peek() {
+                    Some(&':') => {
+                        chars.pop();
+                        Token::DoubleColon
+                    },
+                    _ => Token::Colon,
+                };
+
+                tokens.push(TokenData {
+                    value: token,
+                    source_meta: source_meta(current_line, current_line),
+                });
+            },
+
             '~' => tokens.push(TokenData {
                 value: Token::Tilde,
                 source_meta: source_meta(current_line, current_line),
             }),
-            '?' => tokens.push(TokenData {
-                value: Token::QuestionMark,
-                source_meta: source_meta(current_line, current_line),
-            }),
-            '\\' => tokens.push(TokenData {
-                value: Token::Backslash,
-                source_meta: source_meta(current_line, current_line),
-            }),
-            '.' => tokens.push(TokenData {
-                value: Token::Period,
-                source_meta: source_meta(current_line, current_line),
-            }),
-            '=' => tokens.push(TokenData {
-                value: Token::Equals,
-                source_meta: source_meta(current_line, current_line),
-            }),
-            '!' => tokens.push(TokenData {
-                value: Token::ExclamationMark,
-                source_meta: source_meta(current_line, current_line),
-            }),
-            '&' => tokens.push(TokenData {
-                value: Token::Ampersand,
-                source_meta: source_meta(current_line, current_line),
-            }),
-            '|' => tokens.push(TokenData {
-                value: Token::Pipe,
-                source_meta: source_meta(current_line, current_line),
-            }),
-            '<' => tokens.push(TokenData {
-                value: Token::LessThan,
-                source_meta: source_meta(current_line, current_line),
-            }),
-            '>' => tokens.push(TokenData {
-                value: Token::GreaterThan,
-                source_meta: source_meta(current_line, current_line),
-            }),
-            '+' => tokens.push(TokenData {
-                value: Token::Plus,
-                source_meta: source_meta(current_line, current_line),
-            }),
-            '-' => tokens.push(TokenData {
-                value: Token::Minus,
-                source_meta: source_meta(current_line, current_line),
-            }),
-            '*' => tokens.push(TokenData {
-                value: Token::Asterisk,
-                source_meta: source_meta(current_line, current_line),
-            }),
-            '/' => tokens.push(TokenData {
-                value: Token::ForwardSlash,
-                source_meta: source_meta(current_line, current_line),
-            }),
-            '%' => tokens.push(TokenData {
-                value: Token::Percent,
-                source_meta: source_meta(current_line, current_line),
-            }),
+
+            '?' => {
+                let token = match chars.peek() {
+                    Some(&'?') => {
+                        chars.pop();
+                        Token::DoubleQuestionMark
+                    },
+                    _ => Token::QuestionMark,
+                };
+
+                tokens.push(TokenData {
+                    value: token,
+                    source_meta: source_meta(current_line, current_line),
+                });
+            },
+
+            '.' => {
+                let token = match chars.peek() {
+                    Some(&'.') => {
+                        chars.pop();
+                        
+                        match chars.peek() {
+                            Some(&'=') => {
+                                chars.pop();
+
+                                Token::DoublePeriodEquals
+                            },
+                            _ => Token::DoublePeriod,
+                        }
+                    },
+                    _ => Token::Period,
+                };
+
+                tokens.push(TokenData {
+                    value: token,
+                    source_meta: source_meta(current_line, current_line),
+                });
+            }
+
+            '=' => {
+                let token = match chars.peek() {
+                    Some(&'=') => {
+                        chars.pop();
+                        Token::DoubleEquals
+                    },
+                    Some(&'>') => {
+                        chars.pop();
+                        Token::FatArrow
+                    },
+                    _ => Token::Equals,
+                };
+
+                tokens.push(TokenData {
+                    value: token,
+                    source_meta: source_meta(current_line, current_line),
+                });
+            }
+
+            '!' => {
+                let token = match chars.peek() {
+                    Some(&'=') => {
+                        chars.pop();
+                        Token::NotEquals
+                    },
+                    _ => Token::ExclamationMark,
+                };
+
+                tokens.push(TokenData {
+                    value: token,
+                    source_meta: source_meta(current_line, current_line),
+                });
+            }
+
+            '&' => {
+                let token = match chars.peek() {
+                    Some(&'&') => {
+                        chars.pop();
+                        Token::DoubleAmpersand
+                    },
+                    _ => Token::Ampersand,
+                };
+
+                tokens.push(TokenData {
+                    value: token,
+                    source_meta: source_meta(current_line, current_line),
+                });
+            }
+
+            '|' => {
+                let token = match chars.peek() {
+                    Some(&'|') => {
+                        chars.pop();
+                        Token::DoublePipe
+                    },
+                    _ => Token::Pipe,
+                };
+
+                tokens.push(TokenData {
+                    value: token,
+                    source_meta: source_meta(current_line, current_line),
+                });
+            }
+
+            '<' => {
+                let token = match chars.peek() {
+                    Some(&'=') => {
+                        chars.pop();
+                        Token::LessThanEquals
+                    },
+                    _ => Token::LessThan,
+                };
+
+                tokens.push(TokenData {
+                    value: token,
+                    source_meta: source_meta(current_line, current_line),
+                });
+            }
+
+            '>' => {
+                let token = match chars.peek() {
+                    Some(&'=') => {
+                        chars.pop();
+                        Token::GreaterThanEquals
+                    },
+                    _ => Token::GreaterThan,
+                };
+
+                tokens.push(TokenData {
+                    value: token,
+                    source_meta: source_meta(current_line, current_line),
+                });
+            }
+
+            '+' => {
+                let token = match chars.peek() {
+                    Some(&'=') => {
+                        chars.pop();
+                        Token::PlusEquals
+                    },
+                    _ => Token::Plus,
+                };
+
+                tokens.push(TokenData {
+                    value: token,
+                    source_meta: source_meta(current_line, current_line),
+                });
+            }
+
+            '-' => {
+                let token = match chars.peek() {
+                    Some(&'=') => {
+                        chars.pop();
+                        Token::MinusEquals
+                    },
+                    Some(&'>') => {
+                        chars.pop();
+                        Token::SkinnyArrow
+                    },
+                    _ => Token::Minus,
+                };
+
+                tokens.push(TokenData {
+                    value: token,
+                    source_meta: source_meta(current_line, current_line),
+                });
+            }
+
+            '*' => {
+                let token = match chars.peek() {
+                    Some(&'=') => {
+                        chars.pop();
+                        Token::AsteriskEquals
+                    },
+                    _ => Token::Asterisk,
+                };
+
+                tokens.push(TokenData {
+                    value: token,
+                    source_meta: source_meta(current_line, current_line),
+                });
+            }
+
+            '/' => {
+                let token = match chars.peek() {
+                    Some(&'=') => {
+                        chars.pop();
+                        Token::ForwardSlashEquals
+                    },
+                    _ => Token::ForwardSlash,
+                };
+
+                tokens.push(TokenData {
+                    value: token,
+                    source_meta: source_meta(current_line, current_line),
+                });
+            }
+
+            '%' => {
+                let token = match chars.peek() {
+                    Some(&'=') => {
+                        chars.pop();
+                        Token::PercentEquals
+                    },
+                    _ => Token::Percent,
+                };
+
+                tokens.push(TokenData {
+                    value: token,
+                    source_meta: source_meta(current_line, current_line),
+                });
+            }
+
             '$' => tokens.push(TokenData {
                 value: Token::Dollar,
                 source_meta: source_meta(current_line, current_line),

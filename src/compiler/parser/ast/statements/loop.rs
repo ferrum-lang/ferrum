@@ -9,18 +9,20 @@ pub enum Loop {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct LoopLoop {
-    pub statements: Vec<Statement>,
-    pub post_while_condition: Option<Condition>,
+    pub block: Box<Block>,
+    pub post_while_condition: Option<Box<Condition>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct WhileLoop {
-    pub condition: Condition,
-    pub statements: Vec<Statement>,
+    pub condition: Box<Condition>,
+    pub block: Box<Block>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ForLoop {
-    // TODO
+    pub item: AssignmentTarget,
+    pub expression: Box<Expression>,
+    pub block: Box<Block>,
 }
 
