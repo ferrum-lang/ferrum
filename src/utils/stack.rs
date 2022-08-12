@@ -21,12 +21,20 @@ impl<T> Stack<T> {
         return self.values.pop();
     }
 
+    pub fn push(&mut self, value: T) {
+        self.values.push(value);
+    }
+
     pub fn peek(&self) -> Option<&T> {
         return self.values.last();
     }
 
     pub fn is_empty(&self) -> bool {
         return self.values.is_empty();
+    }
+
+    pub fn len(&self) -> usize {
+        return self.values.len();
     }
 }
 

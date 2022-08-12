@@ -10,12 +10,12 @@ pub enum Loop {
 #[derive(Clone, Debug, PartialEq)]
 pub struct LoopLoop {
     pub block: Box<Block>,
-    pub post_while_condition: Option<Box<Condition>>,
+    pub post_while_condition: Option<Box<Expression>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct WhileLoop {
-    pub condition: Box<Condition>,
+    pub condition: Box<Expression>,
     pub block: Box<Block>,
 }
 

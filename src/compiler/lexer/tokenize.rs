@@ -216,6 +216,7 @@ pub fn tokenize(filepath: &std::path::PathBuf) -> Result<Tokens> {
                     "import" => Token::Keyword(Keyword::Import),
                     "from" => Token::Keyword(Keyword::From),
                     "pub" => Token::Keyword(Keyword::Pub),
+                    "static" => Token::Keyword(Keyword::Static),
                     "fn" => Token::Keyword(Keyword::Fn),
                     "const" => Token::Keyword(Keyword::Const),
                     "let" => Token::Keyword(Keyword::Let),

@@ -1,9 +1,2 @@
-const x: Set<string> = mut Set::from("a", "b", "c") // ignored
-
-// ignored
-/*
-
-*/
-
-log.info(/* ignored */ "Hello world: {set}, {set.length}")
+log.info("Hello {name}")
 

@@ -20,6 +20,7 @@ pub struct DefFnParam {
     pub is_mutable: bool,
     pub name: String,
     pub r#type: Type,
+    pub default: Option<Box<Expression>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

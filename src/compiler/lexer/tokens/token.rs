@@ -12,8 +12,8 @@ pub enum Token {
 
     Identifier(String), // some_identifier_1
 
-    OpenBrace,          // }
-    CloseBrace,         // {
+    OpenBrace,          // {
+    CloseBrace,         // }
     OpenBracket,        // [
     CloseBracket,       // ]
     OpenParenthesis,    // (

@@ -2,10 +2,17 @@ use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Assignment {
+    pub local_var: Option<AssignmentLocalVar>,
     pub is_const: Option<bool>,
     pub explicit_type: Option<Type>,
     pub target: AssignmentTarget,
     pub expression: Expression,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum AssignmentLocalVar {
+    Const,
+    Let,
 }
 
 #[derive(Clone, Debug, PartialEq)]

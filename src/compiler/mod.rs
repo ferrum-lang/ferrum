@@ -1,6 +1,6 @@
-mod parser;
 mod generator;
 mod lexer;
+mod parser;
 mod semantics;
 
 use std::path;

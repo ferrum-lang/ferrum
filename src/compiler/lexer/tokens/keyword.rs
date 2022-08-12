@@ -3,6 +3,7 @@ pub enum Keyword {
     Import,
     From,
     Pub,
+    Static,
     Fn,
     Const,
     Let,

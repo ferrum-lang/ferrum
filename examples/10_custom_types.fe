@@ -5,7 +5,7 @@ struct PersonId {
 }
 
 class Person {
-  state {
+  self {
     public const id: PersonId,
     let first_name: string,
     let last_name: string,
@@ -26,7 +26,7 @@ interface PersonRepository {
 }
 
 class LocalPersonRepository {
-  state {
+  self {
     // `const` prevents re-assignment after construction
     // `mut` allows Map to be mutated as long as `Self` is mutable
     // `= Map::new()` is a default value if no initial value given

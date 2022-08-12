@@ -1,14 +1,13 @@
 use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct DefInterface {
-    pub methods: Vec<DefInterfaceMethod>,
+pub struct Closure {
+    pub signature: DefFnSignature,
+    pub r#impl: Box<DefFnImpl>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct DefInterfaceMethod {
-    pub requires_mutable: bool,
-    pub name: String,
+pub struct ClosureSignature {
     pub generics: Option<DefGenerics>,
     pub params: Vec<DefFnParam>,
     pub return_type: Option<Type>,
