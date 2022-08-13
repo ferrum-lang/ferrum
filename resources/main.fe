@@ -1,2 +1,2 @@
-log.info("Hello {name}")
+log.info("Hello world")
 

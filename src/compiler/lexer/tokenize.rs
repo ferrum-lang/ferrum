@@ -179,9 +179,29 @@ pub fn tokenize(filepath: &std::path::PathBuf) -> Result<Tokens> {
             _ if c.is_numeric() => {
                 let mut buffer = c.to_string();
 
+                let mut allow_period = true;
+                let mut allow_e = true;
+                let mut prev_was_period = false;
+
                 while let Some(&peek) = chars.peek() {
                     if !peek.is_numeric() {
-                        break;
+                        match (peek, allow_period, allow_e) {
+                            ('.', false, _) => break,
+                            ('e', _, false) => break,
+
+                            ('.', _, _) => {
+                                allow_period = false;
+                                prev_was_period = true;
+                            },
+                            ('e', _, _) if !prev_was_period => {
+                                allow_period = false;
+                                allow_e = false;
+                            },
+
+                            _ => break,
+                        }
+                    } else {
+                        prev_was_period = false;
                     }
 
                     buffer.push(peek);

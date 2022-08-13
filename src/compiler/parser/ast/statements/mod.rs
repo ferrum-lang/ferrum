@@ -5,12 +5,14 @@ mod branch;
 mod call;
 mod closure;
 mod construction;
+mod list;
 mod literal;
+mod r#loop;
 mod matches;
 mod pattern;
-mod r#loop;
 mod range;
 mod reference;
+mod tuple;
 
 pub use assignment::*;
 pub use binary_operation::*;
@@ -19,12 +21,14 @@ pub use branch::*;
 pub use call::*;
 pub use closure::*;
 pub use construction::*;
+pub use list::*;
 pub use literal::*;
 pub use matches::*;
 pub use pattern::*;
 pub use r#loop::*;
 pub use range::*;
 pub use reference::*;
+pub use tuple::*;
 
 use super::*;
 
@@ -43,15 +47,31 @@ pub enum Statement {
 pub enum Expression {
     FunctionCall(FunctionCall),
     MethodCall(MethodCall),
-    Construction(Construction), // Example { a, b }
-    Reference(Reference),    // example, some.example, some::example
-    Loop(Loop),   // loop, loop-while, while, for
-    Branch(Branch),       // if/else, match, ternary
-    BinaryOperation(BinaryOperation),    // 1 + 2, 1 >= 2
+    Construction(Construction),       // Example { a, b }
+    Reference(Reference),             // example, some.example, some::example
+    Loop(Loop),                       // loop, loop-while, while, for
+    Branch(Branch),                   // if/else, match, ternary
+    BinaryOperation(BinaryOperation), // 1 + 2, 1 >= 2
     Matches(Matches),
-    Closure(Closure),      // () => {}
-    Literal(Literal),      // 1, "hello"
-    Range(Range),        // 1..=10
+    Closure(Closure), // () => {}
+    Literal(Literal), // 1, "hello"
+    Tuple(Tuple),     // (1, 2, 3)
+    List(List),       // [1, 2, 3]
+    Option(ExprOption),
+    Result(ExprResult),
+    Range(Range),     // 1..=10
     Block(BlockExpr),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum ExprOption {
+    Some(Option<Box<Expression>>),
+    None,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ExprResult {
+    pub is_ok: bool,
+    pub value: Option<Box<Expression>>,
 }
 

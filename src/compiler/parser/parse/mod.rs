@@ -26,22 +26,37 @@ pub fn parse_ast(tokens: Tokens) -> Result<AST> {
         nodes: vec![],
     };
 
-    println!("\n\n{tokens:?}");
+    println!("\n{tokens:?}\n");
 
     parse_imports(&mut ast, &mut tokens)?;
     
-    println!("\n\n{tokens:?}");
+    println!("\n{tokens:?}\n");
     
     parse_static_consts(&mut ast, &mut tokens)?;
     
-    println!("\n\n{tokens:?}");
+    println!("\n{tokens:?}\n");
     
     parse_nodes(&mut ast, &mut tokens)?;
     
-    println!("\n\n{tokens:?}");
+    println!("\n{tokens:?}\n");
 
-    todo!("\n\n{ast:?}");
+    todo!("\n{ast:?}\n");
     // return Ok(ast);
+}
+
+pub fn ignore_new_lines(tokens: &mut Stack<TokenData>) -> Option<TokenData> {
+    let mut new_line = None;
+
+    while let Some(token) = tokens.peek() {
+        match token.value {
+            Token::NewLine => {
+                new_line = tokens.pop();
+            }
+            _ => break,
+        }
+    }
+
+    return new_line;
 }
 
 fn parse_nodes(
