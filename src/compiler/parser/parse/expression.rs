@@ -76,9 +76,9 @@ fn add_reciever_to_expr(expr: Expression, receiver: Expression) -> Result<Expres
 }
 
 fn build_expr_from_ident(tokens: &mut Stack<TokenData>, ident: String) -> Result<Expression> {
-    ignore_new_lines(tokens);
+    let new_line = ignore_new_lines(tokens);
 
-    match tokens.pop() {
+    let expr = match tokens.pop() {
         Some(TokenData { value: Token::Period, .. }) => {
             let receiver = Expression::Reference(Reference::Instance(ReferenceInstance {
                 name: ident,
@@ -87,15 +87,14 @@ fn build_expr_from_ident(tokens: &mut Stack<TokenData>, ident: String) -> Result
 
             let ident = match tokens.pop() {
                 Some(TokenData { value: Token::Identifier(ident), .. }) => ident,
+                Some(TokenData { value: Token::Literal(lexer::Literal::Number(value)), .. }) => value, // number for accessing tuple values
                 Some(token) => Err(ParseError::UnexpectedToken(token.clone()))?,
                 None => Err(ParseError::MissingExpectedToken(Some(Token::Identifier(String::new()))))?,
             };
 
             let expr = build_expr_from_ident(tokens, ident.to_string())?;
 
-            let expr = add_reciever_to_expr(expr, receiver)?;
-
-            return Ok(expr);
+            add_reciever_to_expr(expr, receiver)?
         },
         Some(TokenData { value: Token::OpenParenthesis, .. }) => {
             let mut args = vec![];
@@ -113,28 +112,30 @@ fn build_expr_from_ident(tokens: &mut Stack<TokenData>, ident: String) -> Result
                 }
             }
 
-            let expr = Expression::FunctionCall(FunctionCall {
+            Expression::FunctionCall(FunctionCall {
                 name: ident,
                 args,
                 reciever: None,
-            });
-
-            return Ok(expr);
+            })
         },
         Some(token) => {
             tokens.push(token);
-            return Ok(Expression::Reference(Reference::Instance(ReferenceInstance {
+            Expression::Reference(Reference::Instance(ReferenceInstance {
                 name: ident,
                 receiver: None,
-            })));
+            }))
         },
-        None => {
-            return Ok(Expression::Reference(Reference::Instance(ReferenceInstance {
-                name: ident,
-                receiver: None,
-            })));
-        },
+        None => Expression::Reference(Reference::Instance(ReferenceInstance {
+            name: ident,
+            receiver: None,
+        })),
+    };
+
+    if let Some(new_line) = new_line {
+        tokens.push(new_line);
     }
+
+    return Ok(expr);
 }
 
 fn build_expr_from_literal(tokens: &mut Stack<TokenData>, literal: lexer::Literal) -> Result<Expression> {

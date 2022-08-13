@@ -30,19 +30,19 @@ pub fn parse_ast(tokens: Tokens) -> Result<AST> {
         nodes: vec![],
     };
 
-    println!("\n{tokens:?}\n");
+    // println!("\n{tokens:?}\n");
 
     parse_imports(&mut ast, &mut tokens)?;
     
-    println!("\n{tokens:?}\n");
+    // println!("\n{tokens:?}\n");
     
     parse_static_consts(&mut ast, &mut tokens)?;
     
-    println!("\n{tokens:?}\n");
+    // println!("\n{tokens:?}\n");
     
     parse_nodes(&mut ast, &mut tokens)?;
     
-    println!("\n{tokens:?}\n");
+    // println!("\n{tokens:?}\n");
 
     todo!("\n{ast:?}\n");
     // return Ok(ast);

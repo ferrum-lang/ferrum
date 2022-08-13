@@ -42,7 +42,7 @@ pub fn parse_statement(
     match tokens.pop() {
         Some(TokenData { value: Token::NewLine, .. }) => {},
         None => {},
-        token => todo!("{token:?}"),
+        token => todo!("{token:?}\n{ast:?}"),
         // Some(token) => Err(ParseError::UnexpectedToken(token))?,
     }
 
