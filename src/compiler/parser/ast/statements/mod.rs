@@ -57,11 +57,13 @@ pub enum Expression {
     Literal(Literal), // 1, "hello"
     Tuple(Tuple),     // (1, 2, 3)
     List(List),       // [1, 2, 3]
+    ListIndexedItem(ListIndexedItem),
     Option(ExprOption),
     Result(ExprResult),
     Range(Range),     // 1..=10
     Block(BlockExpr),
     Mut(Box<Expression>),
+    ListValueSpread(Box<Expression>),
 }
 
 #[derive(Clone, Debug, PartialEq)]

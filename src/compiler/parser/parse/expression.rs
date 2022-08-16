@@ -90,6 +90,22 @@ fn wrap_expression(tokens: &mut Stack<TokenData>, expr: Expression) -> Result<Ex
                     reciever: Some(Box::new(expr)),
                 }))
             },
+            Some(TokenData { value: Token::OpenBracket, .. }) => {
+                tokens.pop();
+
+                let index = build_expression(tokens)?;
+
+                match tokens.pop() {
+                    Some(TokenData { value: Token::CloseBracket, .. }) => {},
+                    Some(token) => Err(ParseError::UnexpectedToken(token))?,
+                    None => Err(ParseError::MissingExpectedToken(Some(Token::CloseBracket)))?,
+                }
+
+                Expression::ListIndexedItem(ListIndexedItem {
+                    receiver: Box::new(expr),
+                    index: Box::new(index),
+                })
+            },
             _ => break,
         };
     }
@@ -806,29 +822,64 @@ fn build_expr_list(tokens: &mut Stack<TokenData>) -> Result<Expression> {
         None => Err(ParseError::MissingExpectedToken(Some(Token::OpenBracket)))?,
     }
 
-    let first_expr = build_expression(tokens)?;
+    ignore_new_lines(tokens);
+
+    let first_expr = match tokens.peek() {
+        Some(TokenData { value: Token::DoublePeriod, .. }) => {
+            tokens.pop();
+            Expression::ListValueSpread(Box::new(build_expression(tokens)?))
+        },
+        _ => build_expression(tokens)?,
+    };
+
+    ignore_new_lines(tokens);
 
     let list = match tokens.pop() {
+        Some(TokenData { value: Token::CloseBracket, .. }) => List::Explicit(ListExplicit { values: vec![Box::new(first_expr)] }),
         Some(TokenData { value: Token::Comma, .. }) => {
             let mut exprs = vec![Box::new(first_expr)];
 
             loop {
-                let expr = build_expression(tokens)?;
+                let expr = match tokens.peek() {
+                    Some(TokenData { value: Token::DoublePeriod, .. }) => {
+                        tokens.pop();
+                        Expression::ListValueSpread(Box::new(build_expression(tokens)?))
+                    },
+                    _ => build_expression(tokens)?,
+                };
 
                 exprs.push(Box::new(expr));
 
                 match tokens.pop() {
-                    Some(TokenData { value: Token::Comma, .. }) => {},
+                    Some(TokenData { value: Token::Comma, .. }) => {
+                        let new_line = ignore_new_lines(tokens);
+
+                        match tokens.peek() {
+                            Some(TokenData { value: Token::CloseBracket, .. }) => {
+                                tokens.pop();
+                                break;
+                            },
+                            _ => {}
+                        }
+
+                        if let Some(new_line) = new_line {
+                            tokens.push(new_line);
+                        }
+                    },
                     Some(TokenData { value: Token::CloseBracket, .. }) => break,
                     Some(token) => Err(ParseError::UnexpectedToken(token.clone()))?,
                     None => Err(ParseError::MissingExpectedToken(Some(Token::CloseBracket)))?,
                 }
+
+                ignore_new_lines(tokens);
             }
 
             List::Explicit(ListExplicit { values: exprs })
         },
         Some(TokenData { value: Token::Keyword(Keyword::For), .. }) => {
             let item = build_assignment_target(tokens)?;
+
+            ignore_new_lines(tokens);
             
             match tokens.pop() {
                 Some(TokenData { value: Token::Keyword(Keyword::In), .. }) => {},
@@ -836,7 +887,11 @@ fn build_expr_list(tokens: &mut Stack<TokenData>) -> Result<Expression> {
                 None => Err(ParseError::MissingExpectedToken(Some(Token::Keyword(Keyword::In))))?,
             }
 
+            ignore_new_lines(tokens);
+
             let r#in = Box::new(build_expression(tokens)?);
+
+            ignore_new_lines(tokens);
 
             match tokens.pop() {
                 Some(TokenData { value: Token::CloseBracket, .. }) => {},

@@ -18,3 +18,9 @@ pub struct ListFnFor {
     pub expression: Box<Expression>,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct ListIndexedItem {
+    pub receiver: Box<Expression>,
+    pub index: Box<Expression>,
+}
+
