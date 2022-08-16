@@ -92,13 +92,79 @@ pub fn build_assignment_target(tokens: &mut Stack<TokenData>) -> Result<ast::Ass
     let target = match tokens.pop() {
         Some(TokenData { value: Token::Identifier(ident), .. }) => ast::AssignmentTarget::Direct(ident),
         Some(TokenData { value: Token::OpenBrace, .. }) => todo!(),
-        Some(TokenData { value: Token::OpenParenthesis, .. }) => todo!(),
+        Some(token) if token.value == Token::OpenParenthesis => {
+            tokens.push(token);
+            build_destruct_tuple_assignment_target(tokens)?
+        },
         Some(TokenData { value: Token::OpenBracket, .. }) => todo!(),
         Some(token) => Err(ParseError::UnexpectedToken(token))?,
         None => Err(ParseError::MissingExpectedToken(Some(Token::Identifier(String::new()))))?,
     };
 
     return Ok(target);
+}
+
+fn build_destruct_tuple_assignment_target(tokens: &mut Stack<TokenData>) -> Result<ast::AssignmentTarget> {
+    match tokens.pop() {
+        Some(TokenData { value: Token::OpenParenthesis, .. }) => {},
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::OpenParenthesis)))?,
+    }
+
+    let mut items = vec![];
+
+    loop {
+        ignore_new_lines(tokens);
+
+        let is_spread = match tokens.peek() {
+            Some(TokenData { value: Token::CloseParenthesis, .. }) => {
+                tokens.pop();
+                break;
+            },
+            Some(TokenData { value: Token::DoublePeriod, .. }) => true,
+            Some(_) => false,
+            None => Err(ParseError::MissingExpectedToken(Some(Token::CloseParenthesis)))?,
+        };
+
+        if is_spread {
+            match tokens.pop() {
+                Some(TokenData { value: Token::DoublePeriod, .. }) => {},
+                Some(token) => Err(ParseError::UnexpectedToken(token))?,
+                None => Err(ParseError::MissingExpectedToken(Some(Token::DoublePeriod)))?,
+            }
+
+            let item = match tokens.peek() {
+                Some(TokenData { value: Token::Identifier(ident), .. }) => {
+                    let name = ident.to_string();
+                    tokens.pop();
+                    
+                    AssignTrgtDestructTupleItem::SpreadField(AssignTrgtDestructTupleSpreadField {
+                        name,
+                    })
+                },
+                _ => AssignTrgtDestructTupleItem::Spread,
+            };
+
+            items.push(item);
+        } else {
+            let inner = build_assignment_target(tokens)?;
+
+            items.push(AssignTrgtDestructTupleItem::Field(AssignTrgtDestructTupleField {
+                value: Box::new(inner),
+            }));
+        }
+
+        match tokens.pop() {
+            Some(TokenData { value: Token::Comma, .. }) => {},
+            Some(TokenData { value: Token::CloseParenthesis, .. }) => break,
+            Some(token) => Err(ParseError::UnexpectedToken(token))?,
+            None => Err(ParseError::MissingExpectedToken(Some(Token::CloseParenthesis)))?,
+        }
+    }
+
+    return Ok(ast::AssignmentTarget::DestructureTuple(AssignTrgtDestructTuple {
+        items,
+    }));
 }
 
 fn build_assignment_expression(tokens: &mut Stack<TokenData>) -> Result<ast::Expression> {

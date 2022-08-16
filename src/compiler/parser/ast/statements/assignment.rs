@@ -58,7 +58,7 @@ pub enum AssignTrgtDestructTupleItem {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AssignTrgtDestructTupleField {
-    pub name: String,
+    pub value: Box<AssignmentTarget>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

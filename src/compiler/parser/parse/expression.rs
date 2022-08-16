@@ -646,6 +646,7 @@ fn build_expr_tuple_or_closure(tokens: &mut Stack<TokenData>) -> Result<Expressi
             },
             Some(token) if token.value == Token::CloseParenthesis => {
                 inner_count -= 1;
+                stack.push(token);
 
                 if inner_count <= 0 {
                     let new_line = ignore_new_lines(tokens);
@@ -664,7 +665,6 @@ fn build_expr_tuple_or_closure(tokens: &mut Stack<TokenData>) -> Result<Expressi
                     if let Some(new_line) = new_line {
                         tokens.push(new_line);
                     }
-                    tokens.push(token);
 
                     while let Some(token) = stack.pop() {
                         tokens.push(token);
@@ -768,16 +768,36 @@ fn build_expr_tuple(tokens: &mut Stack<TokenData>) -> Result<Expression> {
         None => Err(ParseError::MissingExpectedToken(Some(Token::OpenParenthesis)))?,
     }
 
+    ignore_new_lines(tokens);
+
     let first_expr = build_expression(tokens)?;
 
+    ignore_new_lines(tokens);
+
     let tuple = match tokens.pop() {
+        Some(TokenData { value: Token::CloseParenthesis, .. }) => Tuple::Explicit(TupleExplicit {
+            values: vec![Box::new(first_expr)],
+        }),
         Some(TokenData { value: Token::Comma, .. }) => {
             let mut exprs = vec![Box::new(first_expr)];
 
             loop {
+                ignore_new_lines(tokens);
+
+                match tokens.peek() {
+                    Some(TokenData { value: Token::CloseParenthesis, .. }) => {
+                        tokens.pop();
+                        break;
+                    },
+                    Some(_) => {},
+                    None => Err(ParseError::MissingExpectedToken(Some(Token::CloseParenthesis)))?,
+                }
+
                 let expr = build_expression(tokens)?;
 
                 exprs.push(Box::new(expr));
+
+                ignore_new_lines(tokens);
 
                 match tokens.pop() {
                     Some(TokenData { value: Token::Comma, .. }) => {},
@@ -785,6 +805,8 @@ fn build_expr_tuple(tokens: &mut Stack<TokenData>) -> Result<Expression> {
                     Some(token) => Err(ParseError::UnexpectedToken(token.clone()))?,
                     None => Err(ParseError::MissingExpectedToken(Some(Token::CloseParenthesis)))?,
                 }
+
+                ignore_new_lines(tokens);
             }
 
             Tuple::Explicit(TupleExplicit { values: exprs })
@@ -808,7 +830,7 @@ fn build_expr_tuple(tokens: &mut Stack<TokenData>) -> Result<Expression> {
             })
         },
         Some(token) => Err(ParseError::UnexpectedToken(token.clone()))?,
-        None => Err(ParseError::MissingExpectedToken(Some(Token::Comma)))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::CloseParenthesis)))?,
     };
 
 
