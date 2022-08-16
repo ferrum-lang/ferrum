@@ -1,9 +1,9 @@
 if true {
-  log.info("true")
+    log.info("true")
 } else if false {
-  log.info("false")
+    log.info("false")
 } else {
-  log.info("else")
+    log.info("else")
 }
 
 const x = 1
@@ -11,25 +11,37 @@ const y = 2
 const z = "Adam"
 
 if (x == 0 || y == 0) && z.length > 0 {
-  log.info(1)
+    log.info(1)
 }
 
 const x = some(123)
 
-if some(y) matches x {
-  log.info(y)
+if x matches some(y) {
+    log.info(y)
+}
+
+if get_input() matches some(input) {
+
+}
+
+const is_x = x matches some(input)
+
+const is_valid = get_input() matches ok(some(Input::Plain(_)))
+
+if get_input() matches ok(some(Input::Plain(input))) {
+    log.info(input)
 }
 
 match x {
-  none => log.info(2),
-  _ => log.info(3),
+    none => log.info(2),
+    _ => log.info(3),
 }
 
 match "Adam" {
-  "Bates" => log.info(4),
-  "" => log.info(5),
-  x if x.length > 3 => log.info("{x}: 6"),
-  _ => log.info(7),
+    "Bates" => log.info(4),
+    "" => log.info(5),
+    x if x.length > 3 => log.info("{x}: 6"),
+    _ => log.info(7),
 }
 
 const x = true
@@ -41,8 +53,7 @@ log.info(x) // prints "some(true)", "some(false)", or "none"
 
 log.info(x ?? "none") // prints "true", "false", or "none"
 
-// Won't compile as too ambiguous without parenthesis
-// log.info(x ? x ? "true" : "false" : "none")
+log.info(x ? x ? "true" : "false" : "none")
 
-log.info(x ? (x ? "true : "false") : "none")
+log.info(x ? (x ? "true" : "false") : "none")
 

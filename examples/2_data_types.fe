@@ -96,7 +96,7 @@ const x: bool = ok(123).is_err()
 const x: int? = ok(123).get_ok()
 const x: std::Error? = ok(123).get_err()
 
-let my_func = (): ! => {
+let my_func = () -> ! => {
   const x: int! = ok(123)
   const x: int = x!
 }

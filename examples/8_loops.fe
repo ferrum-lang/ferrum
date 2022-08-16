@@ -13,6 +13,12 @@ loop {
 }
 
 let i = 0
+loop {
+    log.info("do-while")
+    i += 1
+} while i < 10
+
+let i = 0
 while i < 10 {
   log.info("while: {i}")
   i += 1

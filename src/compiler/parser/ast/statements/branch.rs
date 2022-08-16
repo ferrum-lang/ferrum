@@ -8,16 +8,10 @@ pub enum Branch {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct BranchIf {
-    pub condition: Box<Expression>,
-    pub then: Box<Block>,
-    pub r#else: Option<BranchIfElse>,
-}
-
-#[derive(Clone, Debug, PartialEq)]
 pub struct BranchIfElse {
     pub condition: Box<Expression>,
     pub then: Box<Block>,
+    pub r#else: Option<Box<Expression>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

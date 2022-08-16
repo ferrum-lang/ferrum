@@ -29,7 +29,7 @@ pub enum BinaryOperator {
     Equals,
     NotEquals,
     GreaterThan,
-    GreatherThanOrEquals,
+    GreaterThanOrEquals,
     LessThan,
     LessThanOrEquals,
 

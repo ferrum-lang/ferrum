@@ -223,7 +223,7 @@ pub fn tokenize(filepath: &std::path::PathBuf) -> Result<Tokens> {
                     source_meta: source_meta(current_line, current_line),
                 });
             },
-            _ if c.is_alphabetic() => {
+            _ if c.is_alphabetic() || c == '_' => {
                 let mut buffer = c.to_string();
 
                 while let Some(&peek) = chars.peek() {

@@ -1,26 +1,27 @@
 use std::fmt;
 use std::fmt::Debug;
 
-pub struct Stack<T> {
+#[derive(Clone)]
+pub struct Stack<T>
+    where T: Clone,
+{
     values: Vec<T>,
 }
 
 impl<T> Stack<T>
     where T: Clone,
 {
+    pub fn new() -> Self {
+        return Self {
+            values: vec![],
+        };
+    }
+
     pub fn from_top_to_bottom_vec(vec: Vec<T>) -> Self {
         let mut values = vec.clone();
         values.reverse();
 
         return Self { values };
-    }
-}
-
-impl<T> Stack<T> {
-    pub fn new() -> Self {
-        return Self {
-            values: vec![],
-        };
     }
 
     pub fn pop(&mut self) -> Option<T> {

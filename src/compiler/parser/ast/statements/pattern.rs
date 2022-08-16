@@ -12,13 +12,32 @@ pub enum Pattern {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct PatternLiteral {}
+pub enum PatternLiteral {
+    Bool(bool),
+    Char(String),
+    Number(String),
+    String(String),
+}
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct PatternStruct {}
+pub struct PatternStruct {
+    pub name: String,
+    pub fields: Vec<PatternStructField>,
+    pub receiver: Option<PatternIdentity>,
+}
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct PatternTupleStruct {}
+pub struct PatternStructField {
+    pub name: String,
+    pub pattern: Option<Box<Pattern>>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct PatternTupleStruct {
+    pub name: String,
+    pub args: Vec<Box<Pattern>>,
+    pub receiver: Option<PatternIdentity>,
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PatternTuple {}
@@ -27,7 +46,10 @@ pub struct PatternTuple {}
 pub struct PatternList {}
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct PatternIdentity {}
+pub struct PatternIdentity {
+    pub name: String,
+    pub receiver: Option<Box<PatternIdentity>>,
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PatternWild {}
