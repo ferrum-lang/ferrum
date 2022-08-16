@@ -123,6 +123,240 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     operator: BinaryOperator::Plus,
                 })
             },
+            Some(TokenData { value: Token::Minus, .. }) => {
+                tokens.pop();
+
+                let left = Box::new(expr);
+
+                let right = Box::new(build_expression(tokens)?);
+
+                Expression::BinaryOperation(BinaryOperation {
+                    left,
+                    right,
+                    operator: BinaryOperator::Minus,
+                })
+            },
+            Some(TokenData { value: Token::Asterisk, .. }) => {
+                tokens.pop();
+
+                let left = Box::new(expr);
+
+                let right = Box::new(build_expression(tokens)?);
+
+                Expression::BinaryOperation(BinaryOperation {
+                    left,
+                    right,
+                    operator: BinaryOperator::Multiply,
+                })
+            },
+            Some(TokenData { value: Token::ForwardSlash, .. }) => {
+                tokens.pop();
+
+                let left = Box::new(expr);
+
+                let right = Box::new(build_expression(tokens)?);
+
+                Expression::BinaryOperation(BinaryOperation {
+                    left,
+                    right,
+                    operator: BinaryOperator::Divide,
+                })
+            },
+            Some(TokenData { value: Token::Percent, .. }) => {
+                tokens.pop();
+
+                let left = Box::new(expr);
+
+                let right = Box::new(build_expression(tokens)?);
+
+                Expression::BinaryOperation(BinaryOperation {
+                    left,
+                    right,
+                    operator: BinaryOperator::Mod,
+                })
+            },
+            Some(TokenData { value: Token::Caret, .. }) => {
+                tokens.pop();
+
+                let left = Box::new(expr);
+
+                let right = Box::new(build_expression(tokens)?);
+
+                Expression::BinaryOperation(BinaryOperation {
+                    left,
+                    right,
+                    operator: BinaryOperator::Pow,
+                })
+            },
+            Some(TokenData { value: Token::PlusEquals, .. }) => {
+                tokens.pop();
+
+                let left = Box::new(expr);
+
+                let right = Box::new(build_expression(tokens)?);
+
+                Expression::BinaryOperation(BinaryOperation {
+                    left,
+                    right,
+                    operator: BinaryOperator::PlusEquals,
+                })
+            },
+            Some(TokenData { value: Token::MinusEquals, .. }) => {
+                tokens.pop();
+
+                let left = Box::new(expr);
+
+                let right = Box::new(build_expression(tokens)?);
+
+                Expression::BinaryOperation(BinaryOperation {
+                    left,
+                    right,
+                    operator: BinaryOperator::MinusEquals,
+                })
+            },
+            Some(TokenData { value: Token::AsteriskEquals, .. }) => {
+                tokens.pop();
+
+                let left = Box::new(expr);
+
+                let right = Box::new(build_expression(tokens)?);
+
+                Expression::BinaryOperation(BinaryOperation {
+                    left,
+                    right,
+                    operator: BinaryOperator::MultiplyEquals,
+                })
+            },
+            Some(TokenData { value: Token::ForwardSlashEquals, .. }) => {
+                tokens.pop();
+
+                let left = Box::new(expr);
+
+                let right = Box::new(build_expression(tokens)?);
+
+                Expression::BinaryOperation(BinaryOperation {
+                    left,
+                    right,
+                    operator: BinaryOperator::DivideEquals,
+                })
+            },
+            Some(TokenData { value: Token::PercentEquals, .. }) => {
+                tokens.pop();
+
+                let left = Box::new(expr);
+
+                let right = Box::new(build_expression(tokens)?);
+
+                Expression::BinaryOperation(BinaryOperation {
+                    left,
+                    right,
+                    operator: BinaryOperator::ModEquals,
+                })
+            },
+            Some(TokenData { value: Token::CaretEquals, .. }) => {
+                tokens.pop();
+
+                let left = Box::new(expr);
+
+                let right = Box::new(build_expression(tokens)?);
+
+                Expression::BinaryOperation(BinaryOperation {
+                    left,
+                    right,
+                    operator: BinaryOperator::PowEquals,
+                })
+            },
+            Some(TokenData { value: Token::DoubleEquals, .. }) => {
+                tokens.pop();
+
+                let left = Box::new(expr);
+
+                let right = Box::new(build_expression(tokens)?);
+
+                Expression::BinaryOperation(BinaryOperation {
+                    left,
+                    right,
+                    operator: BinaryOperator::Equals,
+                })
+            },
+            Some(TokenData { value: Token::NotEquals, .. }) => {
+                tokens.pop();
+
+                let left = Box::new(expr);
+
+                let right = Box::new(build_expression(tokens)?);
+
+                Expression::BinaryOperation(BinaryOperation {
+                    left,
+                    right,
+                    operator: BinaryOperator::NotEquals,
+                })
+            },
+            Some(TokenData { value: Token::GreaterThan, .. }) => {
+                tokens.pop();
+
+                let left = Box::new(expr);
+
+                let right = Box::new(build_expression(tokens)?);
+
+                Expression::BinaryOperation(BinaryOperation {
+                    left,
+                    right,
+                    operator: BinaryOperator::GreaterThan,
+                })
+            },
+            Some(TokenData { value: Token::LessThan, .. }) => {
+                tokens.pop();
+
+                let left = Box::new(expr);
+
+                let right = Box::new(build_expression(tokens)?);
+
+                Expression::BinaryOperation(BinaryOperation {
+                    left,
+                    right,
+                    operator: BinaryOperator::LessThan,
+                })
+            },
+            Some(TokenData { value: Token::LessThanEquals, .. }) => {
+                tokens.pop();
+
+                let left = Box::new(expr);
+
+                let right = Box::new(build_expression(tokens)?);
+
+                Expression::BinaryOperation(BinaryOperation {
+                    left,
+                    right,
+                    operator: BinaryOperator::LessThanOrEquals,
+                })
+            },
+            Some(TokenData { value: Token::DoublePipe, .. }) => {
+                tokens.pop();
+
+                let left = Box::new(expr);
+
+                let right = Box::new(build_expression(tokens)?);
+
+                Expression::BinaryOperation(BinaryOperation {
+                    left,
+                    right,
+                    operator: BinaryOperator::Or,
+                })
+            },
+            Some(TokenData { value: Token::DoubleAmpersand, .. }) => {
+                tokens.pop();
+
+                let left = Box::new(expr);
+
+                let right = Box::new(build_expression(tokens)?);
+
+                Expression::BinaryOperation(BinaryOperation {
+                    left,
+                    right,
+                    operator: BinaryOperator::And,
+                })
+            },
             Some(TokenData { value: Token::DoubleQuestionMark, .. }) => {
                 tokens.pop();
 
@@ -130,9 +364,10 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
 
                 let right = Box::new(build_expression(tokens)?);
 
-                Expression::NoneCoalesce(NoneCoalesce {
+                Expression::BinaryOperation(BinaryOperation {
                     left,
                     right,
+                    operator: BinaryOperator::NullCoalesce
                 })
             },
             Some(TokenData { value: Token::DoublePeriod, .. }) => {

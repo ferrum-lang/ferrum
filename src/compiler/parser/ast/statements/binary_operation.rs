@@ -16,6 +16,13 @@ pub enum BinaryOperator {
     Mod,
     Pow,
 
+    PlusEquals,
+    MinusEquals,
+    MultiplyEquals,
+    DivideEquals,
+    ModEquals,
+    PowEquals,
+
     And,
     Or,
     
@@ -25,5 +32,7 @@ pub enum BinaryOperator {
     GreatherThanOrEquals,
     LessThan,
     LessThanOrEquals,
+
+    NullCoalesce,
 }
 

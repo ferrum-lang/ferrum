@@ -61,7 +61,6 @@ pub enum Expression {
     Result(ExprResult),
     Range(Range),     // 1..=10
     Block(BlockExpr),
-    NoneCoalesce(NoneCoalesce),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -96,11 +95,5 @@ pub struct ExprResultDirect {
 #[derive(Clone, Debug, PartialEq)]
 pub struct ExprResultPassed {
     pub reciever: Option<Box<Expression>>,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct NoneCoalesce {
-    pub left: Box<Expression>,
-    pub right: Box<Expression>,
 }
 

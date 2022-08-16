@@ -566,12 +566,23 @@ pub fn tokenize(filepath: &std::path::PathBuf) -> Result<Tokens> {
                 });
             }
 
+            '^' => {
+                let token = match chars.peek() {
+                    Some(&'=') => {
+                        chars.pop();
+                        Token::CaretEquals
+                    },
+                    _ => Token::Caret,
+                };
+
+                tokens.push(TokenData {
+                    value: token,
+                    source_meta: source_meta(current_line, current_line),
+                });
+            }
+
             '$' => tokens.push(TokenData {
                 value: Token::Dollar,
-                source_meta: source_meta(current_line, current_line),
-            }),
-            '^' => tokens.push(TokenData {
-                value: Token::Caret,
                 source_meta: source_meta(current_line, current_line),
             }),
             '@' => tokens.push(TokenData {
