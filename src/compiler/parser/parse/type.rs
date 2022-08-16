@@ -78,14 +78,42 @@ pub fn build_type(tokens: &mut Stack<TokenData>) -> Result<ast::Type> {
 }
 
 fn build_custom_type(tokens: &mut Stack<TokenData>, receiver: Option<TypeCustom>) -> Result<ast::TypeCustom> {
-    let r#type = match tokens.pop() {
+    let mut r#type = match tokens.pop() {
         Some(TokenData { value: Token::Identifier(ident), .. }) => match receiver {
-            Some(receiver) => TypeCustom { name: ident, receiver: Some(Box::new(receiver)) },
-            None => TypeCustom { name: ident, receiver: None },
+            Some(receiver) => TypeCustom {
+                name: ident,
+                receiver: Some(Box::new(receiver)),
+                generics: vec![],
+            },
+            None => TypeCustom {
+                name: ident,
+                receiver: None,
+                generics: vec![],
+            },
         },
         Some(token) => Err(ParseError::UnexpectedToken(token))?,
         None => Err(ParseError::MissingExpectedToken(Some(Token::Identifier(String::new()))))?,
     };
+
+    match tokens.peek() {
+        Some(TokenData { value: Token::LessThan, .. }) => {
+            tokens.pop();
+
+            loop {
+                let generic_type = build_type(tokens)?;
+
+                r#type.generics.push(Box::new(generic_type));
+
+                match tokens.pop() {
+                    Some(TokenData { value: Token::Comma, .. }) => {},
+                    Some(TokenData { value: Token::GreaterThan, .. }) => break,
+                    Some(token) => Err(ParseError::UnexpectedToken(token))?,
+                    None => Err(ParseError::MissingExpectedToken(Some(Token::Comma)))?,
+                }
+            }
+        },
+        _ => {},
+    }
 
     let r#type = match tokens.peek() {
         Some(token) if token.value == Token::DoubleColon => {

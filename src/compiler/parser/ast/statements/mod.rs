@@ -61,6 +61,7 @@ pub enum Expression {
     Result(ExprResult),
     Range(Range),     // 1..=10
     Block(BlockExpr),
+    Mut(Box<Expression>),
 }
 
 #[derive(Clone, Debug, PartialEq)]

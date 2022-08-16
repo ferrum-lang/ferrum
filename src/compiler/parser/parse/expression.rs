@@ -9,6 +9,15 @@ use anyhow::Result;
 pub fn build_expression(tokens: &mut Stack<TokenData>) -> Result<ast::Expression> {
     ignore_new_lines(tokens);
 
+    match tokens.peek() {
+        Some(TokenData { value: Token::Keyword(Keyword::Mut), .. }) => {
+            tokens.pop();
+            let inner = Box::new(build_expression(tokens)?);
+            return Ok(ast::Expression::Mut(inner));
+        },
+        _ => {},
+    }
+
     let expr = match tokens.pop() {
         Some(TokenData { value: Token::Identifier(ident), .. }) =>
             build_expr_from_ident(tokens, ident.to_string())?,
@@ -92,6 +101,8 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
     let mut expr = expr;
 
     loop {
+        let new_line = ignore_new_lines(tokens);
+
         expr = match tokens.peek() {
             Some(TokenData { value: Token::Period, .. }) => {
                 tokens.pop();
@@ -383,7 +394,12 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     inclusive: false,
                 })
             },
-            _ => break,
+            _ => {
+                if let Some(new_line) = new_line {
+                    tokens.push(new_line);
+                }
+                break;
+            },
         };
     }
 
@@ -395,6 +411,14 @@ fn add_reciever_to_expr(expr: Expression, receiver: Expression) -> Result<Expres
         Expression::Reference(Reference::Instance(mut ref_instance)) => {
             ref_instance.receiver = Some(Box::new(receiver));
             Expression::Reference(Reference::Instance(ref_instance))
+        },
+        Expression::Reference(Reference::Static(mut ref_static)) => {
+            ref_static.receiver = Some(Box::new(match receiver {
+                Expression::Reference(Reference::Static(receiver)) => receiver,
+                _ => todo!(),
+            }));
+
+            Expression::Reference(Reference::Static(ref_static))
         },
         Expression::FunctionCall(fn_call) => Expression::MethodCall(MethodCall {
             name: fn_call.name,
@@ -456,6 +480,22 @@ fn build_expr_from_ident(tokens: &mut Stack<TokenData>, ident: String) -> Result
                 args,
                 reciever: None,
             })
+        },
+        Some(TokenData { value: Token::DoubleColon, .. }) => {
+            let receiver = Expression::Reference(Reference::Static(ReferenceStatic {
+                name: ident,
+                receiver: None,
+            }));
+
+            let ident = match tokens.pop() {
+                Some(TokenData { value: Token::Identifier(ident), .. }) => ident,
+                Some(token) => Err(ParseError::UnexpectedToken(token.clone()))?,
+                None => Err(ParseError::MissingExpectedToken(Some(Token::Identifier(String::new()))))?,
+            };
+
+            let expr = build_expr_from_ident(tokens, ident.to_string())?;
+
+            add_reciever_to_expr(expr, receiver)?
         },
         Some(token) => {
             tokens.push(token);

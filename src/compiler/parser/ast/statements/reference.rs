@@ -8,7 +8,7 @@ pub enum Reference {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ReferenceStatic {
-    pub reciever: Type,
+    pub receiver: Option<Box<ReferenceStatic>>,
     pub name: String,
 }
 

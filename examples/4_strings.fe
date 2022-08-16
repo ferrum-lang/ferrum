@@ -38,3 +38,4 @@ const z: [byte] = x.get_bytes()
 const z: std::Iterator<byte> = x.iter_bytes()
 
 const z: uint = x.length
+
