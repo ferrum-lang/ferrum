@@ -82,8 +82,7 @@ const x = none ?? () => err("uh oh!")
 const x: int! = none ?? err
 
 // Results
-const x: std::void! = ok()
-const x: ! = ok() // default result type is `std::void`
+const x: ! = ok()
 const x: ! = ok
 const x: ! = err
 
