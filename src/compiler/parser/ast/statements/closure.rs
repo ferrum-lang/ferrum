@@ -2,14 +2,19 @@ use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Closure {
-    pub signature: DefFnSignature,
-    pub r#impl: Box<DefFnImpl>,
+    pub signature: ClosureSignature,
+    pub r#impl: Box<Expression>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ClosureSignature {
-    pub generics: Option<DefGenerics>,
-    pub params: Vec<DefFnParam>,
+    pub params: Vec<ClosureParam>,
     pub return_type: Option<Type>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ClosureParam {
+    pub name: String,
+    pub r#type: Option<Type>,
 }
 

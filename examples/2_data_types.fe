@@ -47,7 +47,6 @@ const y: int = x.0
 const y: string = x.1
 const y: char = x.2
 
-/*
 // Lists
 const x: [int] = [1, 2, 3]
 const x: [int] = [i + 1 for i in 0..3]
@@ -64,7 +63,7 @@ const x: int = some(123).get_or_panic()
 const x: int = none.get_or(0)
 const x: int = none.get_or_else(() => 0)
 
-const x: int = some(123)! // propogates up error, or panics if top-level
+const x: int = some(123)? // propogates up none, or panics if top-level
 
 const x: int = none ?? 0
 const x: int = none ?? () => 0
@@ -80,7 +79,7 @@ const x: int! = none ?? err("uh oh!")
 const x: int! = none.ok_or_else(() => err("uh oh!"))
 const x = none ?? () => err("uh oh!")
 
-const x: int! = none ?? err;
+const x: int! = none ?? err
 
 // Results
 const x: std::void! = ok()

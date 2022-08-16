@@ -17,6 +17,12 @@ impl<T> Stack<T>
 }
 
 impl<T> Stack<T> {
+    pub fn new() -> Self {
+        return Self {
+            values: vec![],
+        };
+    }
+
     pub fn pop(&mut self) -> Option<T> {
         return self.values.pop();
     }

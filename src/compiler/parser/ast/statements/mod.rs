@@ -34,7 +34,7 @@ use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Block {
-    statements: Vec<Statement>,
+    pub statements: Vec<Statement>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -61,17 +61,46 @@ pub enum Expression {
     Result(ExprResult),
     Range(Range),     // 1..=10
     Block(BlockExpr),
+    NoneCoalesce(NoneCoalesce),
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ExprOption {
+    Direct(ExprOptionDirect),
+    Passed(ExprOptionPassed),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum ExprOptionDirect {
     Some(Option<Box<Expression>>),
     None,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct ExprResult {
+pub struct ExprOptionPassed {
+    pub reciever: Box<Expression>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum ExprResult {
+    Direct(ExprResultDirect),
+    Passed(ExprResultPassed),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ExprResultDirect {
     pub is_ok: bool,
     pub value: Option<Box<Expression>>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ExprResultPassed {
+    pub reciever: Option<Box<Expression>>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct NoneCoalesce {
+    pub left: Box<Expression>,
+    pub right: Box<Expression>,
 }
 

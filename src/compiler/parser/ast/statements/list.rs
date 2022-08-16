@@ -7,8 +7,14 @@ pub enum List {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct ListExplicit {}
+pub struct ListExplicit {
+    pub values: Vec<Box<Expression>>,
+}
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct ListFnFor {}
+pub struct ListFnFor {
+    pub item: AssignmentTarget,
+    pub r#in: Box<Expression>,
+    pub expression: Box<Expression>,
+}
 

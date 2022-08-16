@@ -44,6 +44,17 @@ pub fn build_type(tokens: &mut Stack<TokenData>) -> Result<ast::Type> {
             tokens.push(token);
             build_tuple_type(tokens)?
         },
+        Some(token) if token.value == Token::OpenBracket => {
+            tokens.push(token);
+            build_list_type(tokens)?
+        },
+        Some(TokenData { value: Token::Identifier(ident), source_meta }) => {
+            tokens.push(TokenData { value: Token::Identifier(ident), source_meta });
+            ast::Type::Custom(build_custom_type(tokens, None)?)
+        },
+        Some(TokenData { value: Token::ExclamationMark, .. }) => {
+            ast::Type::Result(None)
+        },
         Some(token) => todo!("{token:?}"),
         _ => todo!(),
         // None => Err(ParseError::MissingExpectedToken(None))?,
@@ -62,6 +73,27 @@ pub fn build_type(tokens: &mut Stack<TokenData>) -> Result<ast::Type> {
             _ => break,
         }
     }
+
+    return Ok(r#type);
+}
+
+fn build_custom_type(tokens: &mut Stack<TokenData>, receiver: Option<TypeCustom>) -> Result<ast::TypeCustom> {
+    let r#type = match tokens.pop() {
+        Some(TokenData { value: Token::Identifier(ident), .. }) => match receiver {
+            Some(receiver) => TypeCustom { name: ident, receiver: Some(Box::new(receiver)) },
+            None => TypeCustom { name: ident, receiver: None },
+        },
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::Identifier(String::new()))))?,
+    };
+
+    let r#type = match tokens.peek() {
+        Some(token) if token.value == Token::DoubleColon => {
+            tokens.pop();
+            build_custom_type(tokens, Some(r#type))?
+        },
+        _ => r#type,
+    };
 
     return Ok(r#type);
 }
@@ -117,6 +149,24 @@ fn build_tuple_type(tokens: &mut Stack<TokenData>) -> Result<ast::Type> {
     };
 
     return Ok(ast::Type::Tuple(tuple_type));
+}
+
+fn build_list_type(tokens: &mut Stack<TokenData>) -> Result<ast::Type> {
+    match tokens.pop() {
+        Some(TokenData { value: Token::OpenBracket, .. }) => {},
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::OpenBracket)))?,
+    }
+
+    let r#type = Box::new(build_type(tokens)?);
+
+    match tokens.pop() {
+        Some(TokenData { value: Token::CloseBracket, .. }) => {},
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::CloseBracket)))?,
+    }
+
+    return Ok(ast::Type::List(TypeList { r#type }));
 }
 
 

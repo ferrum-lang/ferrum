@@ -8,6 +8,9 @@ pub enum Type {
     Result(Option<Box<Type>>),
 
     Tuple(TypeTuple),
+    List(TypeList),
+
+    Custom(TypeCustom),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -57,5 +60,16 @@ pub struct TypeTupleRepeated {
 #[derive(Clone, Debug, PartialEq)]
 pub struct TypeTupleExplicit {
     pub types: Vec<Box<Type>>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct TypeList {
+    pub r#type: Box<Type>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct TypeCustom {
+    pub name: String,
+    pub receiver: Option<Box<TypeCustom>>,
 }
 

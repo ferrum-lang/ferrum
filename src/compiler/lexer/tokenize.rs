@@ -201,11 +201,21 @@ pub fn tokenize(filepath: &std::path::PathBuf) -> Result<Tokens> {
                             _ => break,
                         }
                     } else {
+                        if prev_was_period {
+                            buffer.push('.');
+                        }
+
                         prev_was_period = false;
                     }
 
-                    buffer.push(peek);
+                    if !prev_was_period {
+                        buffer.push(peek);
+                    }
                     chars.pop();
+                }
+
+                if prev_was_period {
+                    chars.push('.');
                 }
 
                 tokens.push(TokenData {

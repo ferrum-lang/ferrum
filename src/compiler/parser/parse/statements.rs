@@ -10,6 +10,14 @@ pub fn parse_statement(
     ast: &mut AST,
     tokens: &mut Stack<TokenData>,
 ) -> Result<()> {
+    let statement = build_statement(tokens)?;
+
+    ast.nodes.push(RootNode::Statement(statement));
+
+    return Ok(());
+}
+
+pub fn build_statement(tokens: &mut Stack<TokenData>) -> Result<Statement> {
     let is_assignment = match tokens.peek() {
         Some(TokenData { value: Token::Keyword(Keyword::Const), .. }) => true,
         Some(TokenData { value: Token::Keyword(Keyword::Let), .. }) => true,
@@ -31,22 +39,22 @@ pub fn parse_statement(
         // None => Err(ParseError::MissingExpectedToken(None))?,
     };
 
-    if is_assignment {
+    let statement = if is_assignment {
         let assignment = build_assignment(tokens)?;
-        ast.nodes.push(RootNode::Statement(Statement::Assignment(assignment)));
+        Statement::Assignment(assignment)
     } else {
         let expression = build_expression(tokens)?;
-        ast.nodes.push(RootNode::Statement(Statement::Expression(expression)));
-    }
+        Statement::Expression(expression)
+    };
 
     match tokens.pop() {
         Some(TokenData { value: Token::NewLine, .. }) => {},
         None => {},
-        token => todo!("{token:?}\n{ast:?}"),
+        token => todo!("\n\n{token:?}\n\n"),
         // Some(token) => Err(ParseError::UnexpectedToken(token))?,
     }
 
-    return Ok(());
+    return Ok(statement);
 }
 
 fn build_assignment(tokens: &mut Stack<TokenData>) -> Result<ast::Assignment> {
@@ -61,7 +69,7 @@ fn build_assignment(tokens: &mut Stack<TokenData>) -> Result<ast::Assignment> {
     };
 
     let target = build_assignment_target(tokens)?;
-    
+
     let explicit_type = match tokens.peek() {
         Some(TokenData { value: Token::Colon, .. }) => {
             tokens.pop();
@@ -80,7 +88,7 @@ fn build_assignment(tokens: &mut Stack<TokenData>) -> Result<ast::Assignment> {
     });
 }
 
-fn build_assignment_target(tokens: &mut Stack<TokenData>) -> Result<ast::AssignmentTarget> {
+pub fn build_assignment_target(tokens: &mut Stack<TokenData>) -> Result<ast::AssignmentTarget> {
     let target = match tokens.pop() {
         Some(TokenData { value: Token::Identifier(ident), .. }) => ast::AssignmentTarget::Direct(ident),
         Some(TokenData { value: Token::OpenBrace, .. }) => todo!(),
