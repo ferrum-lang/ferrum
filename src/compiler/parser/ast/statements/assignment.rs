@@ -5,7 +5,7 @@ pub struct Assignment {
     pub local_var: Option<AssignmentLocalVar>,
     pub explicit_type: Option<Type>,
     pub target: AssignmentTarget,
-    pub expression: Expression,
+    pub expression: Option<Expression>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

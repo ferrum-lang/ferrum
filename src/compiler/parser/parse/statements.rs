@@ -216,12 +216,23 @@ fn build_destruct_tuple_assignment_target(tokens: &mut Stack<TokenData>) -> Resu
     }));
 }
 
-fn build_assignment_expression(tokens: &mut Stack<TokenData>) -> Result<ast::Expression> {
+fn build_assignment_expression(tokens: &mut Stack<TokenData>) -> Result<Option<ast::Expression>> {
+    let new_line = ignore_new_lines(tokens);
+
     match tokens.pop() {
         Some(TokenData { value: Token::Equals, .. }) => {},
-        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        Some(token) => {
+            tokens.push(token);
+            
+            if let Some(new_line) = new_line {
+                tokens.push(new_line);
+            }
+
+            return Ok(None);
+        },
         None => Err(ParseError::MissingExpectedToken(Some(Token::Equals)))?,
     }
 
-    return build_expression(tokens);
+    return Ok(Some(build_expression(tokens)?));
 }
+

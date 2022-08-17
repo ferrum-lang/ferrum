@@ -1,7 +1,7 @@
 class Person {
-  state {
-    public const name: string,
-    public const age: uint,
+  self {
+    pub const name: string,
+    pub const age: uint,
   }
 }
 
@@ -17,7 +17,7 @@ fn get_oldest_person(person1: Person, person2: Person) -> Person? {
   return none
 }
 
-function test_lifetimes(
+fn test_lifetimes(
   person1: Person,
   person2: Person,
   person3: Person,
