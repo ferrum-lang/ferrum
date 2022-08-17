@@ -1,22 +1,22 @@
 class Person {
-  state {
+  self {
     pub let name: string,
     pub let age: uint,
   }
 
   pub self.requires_borrow() {}
 
-  pub mut self.requires_borrow_mut() -> mut Self {
+  pub mut self.requires_borrow_mut() -> Self {
     return self
   }
 }
 
 struct House {
-  owner: mut Person,
+  owner: Person,
 }
 
 class Child {
-  state {
+  self {
     const parents: (Person; 2),
   }
 }
