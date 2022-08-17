@@ -1,7 +1,7 @@
 
 class Person {
-  state {
-    public let name: string,
+  self {
+    pub let name: string,
   }
 }
 
@@ -52,10 +52,10 @@ fn test_person() {
 }
 
 class PartiallyMutableExample {
-  state {
-    public let first: string,
-    public const second: string,
-    public const third: mut Person,
+  self {
+    pub let first: string,
+    pub const second: string,
+    pub const third: mut Person,
 
     // Note: `const` but still `mutable`
     // This means `third` cannot be reassigned, but can still be mutated
@@ -94,9 +94,9 @@ fn test_partial_mutable_example() {
 }
 
 class MutableExample {
-  state {
-    public let first: string,
-    public let second: string,
+  self {
+    pub let first: string,
+    pub let second: string,
   }
 }
 
@@ -106,16 +106,16 @@ fn test_mutable_example() {
     second: "Bates",
   }
 
-  example.first = "ADAM";
-  example.second = "BATES";
+  example.first = "ADAM"
+  example.second = "BATES"
 
   const example = MutableExample { first: "Adam", second: "Bates" }
 }
 
-immutable class ImmutableExample {
-  state {
-    public const first: string, // `let` and `mutable` are not allowed here because of `immutable`
-    public const second: string,
+class ImmutableExample {
+  self {
+    pub const first: string,
+    pub const second: string,
   }
 }
 
@@ -127,9 +127,6 @@ fn test_immutable_example() {
 
   // Won't compile because not `mut`
   // example.first = "ADAM"
-
-  // Won't compile because `immutable`
-  // const example = mut ImmutableExample { ... }
 }
 
 pub fn main() {

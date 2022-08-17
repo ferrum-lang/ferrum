@@ -71,12 +71,12 @@ pub fn build_statement(tokens: &mut Stack<TokenData>) -> Result<Statement> {
         }
     };
 
-    // match tokens.pop() {
-    //     Some(TokenData { value: Token::NewLine, .. }) => {},
-    //     None => {},
-    //     token => todo!("\n\n{token:?}\n\n"),
-    //     // Some(token) => Err(ParseError::UnexpectedToken(token))?,
-    // }
+    match tokens.pop() {
+        Some(TokenData { value: Token::NewLine, .. }) => {},
+        None => {},
+        token => todo!("\n\n{token:?}\n\n"),
+        // Some(token) => Err(ParseError::UnexpectedToken(token))?,
+    }
 
     return Ok(statement);
 }
