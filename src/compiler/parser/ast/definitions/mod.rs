@@ -25,6 +25,7 @@ pub enum Definition {
 #[derive(Clone, Debug, PartialEq)]
 pub enum DefType {
     Struct(DefStruct),
+    TupleStruct(DefTupleStruct),
     Class(DefClass),
     Interface(DefInterface),
     Enum(DefEnum),

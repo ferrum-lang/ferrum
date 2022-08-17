@@ -19,6 +19,7 @@ pub enum Keyword {
     Return,
     Yield,
     If,
+    Not,
     Else,
     Match,
     Matches,

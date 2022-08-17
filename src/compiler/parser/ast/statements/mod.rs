@@ -62,6 +62,7 @@ pub enum Expression {
     Result(ExprResult),
     Range(Range),     // 1..=10
     Block(BlockExpr),
+    Not(Box<Expression>),
     Mut(Box<Expression>),
     TernaryElse(Box<Expression>),
     ValueSpread(Box<Expression>),

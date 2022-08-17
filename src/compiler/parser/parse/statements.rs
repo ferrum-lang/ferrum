@@ -43,8 +43,32 @@ pub fn build_statement(tokens: &mut Stack<TokenData>) -> Result<Statement> {
         let assignment = build_assignment(tokens)?;
         Statement::Assignment(assignment)
     } else {
-        let expression = build_expression(tokens)?;
-        Statement::Expression(expression)
+        match build_expression(tokens)? {
+            Expression::Reference(Reference::Instance(instance_ref)) => {
+                let new_line = ignore_new_lines(tokens);
+
+                match tokens.peek() {
+                    Some(TokenData { value: Token::Equals, .. }) => {
+                        let expression = build_assignment_expression(tokens)?;
+
+                        Statement::Assignment(Assignment {
+                            target: AssignmentTarget::Reference(instance_ref),
+                            expression,
+                            local_var: None,
+                            explicit_type: None,
+                        })
+                    },
+                    _ => {
+                        if let Some(new_line) = new_line {
+                            tokens.push(new_line);
+                        }
+
+                        Statement::Expression(Expression::Reference(Reference::Instance(instance_ref)))
+                    },
+                }
+            },
+            expression => Statement::Expression(expression),
+        }
     };
 
     // match tokens.pop() {

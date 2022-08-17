@@ -70,6 +70,7 @@ pub struct TypeList {
 #[derive(Clone, Debug, PartialEq)]
 pub struct TypeCustom {
     pub name: String,
+    pub is_interface_impl: bool,
     pub generics: Vec<Box<Type>>,
     pub receiver: Option<Box<TypeCustom>>,
 }

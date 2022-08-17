@@ -79,7 +79,7 @@ interface PersonService {
 }
 
 class StoredPersonService {
-  state {
+  self {
     const person_repository: mut ~PersonRepository,
   }
 
@@ -123,9 +123,9 @@ class StoredPersonService {
 }
 
 pub fn main() -> ! {
-  const person_repository = mut LocalPersonRepository;
+  const person_repository = mut LocalPersonRepository
   
-  const person_service: ~PersonService = mut StoredPersonService { person_repository, };
+  const person_service: ~PersonService = mut StoredPersonService { person_repository }
 
   const person1 = mut Person {
     id: PersonId { value: "123" },
@@ -136,7 +136,7 @@ pub fn main() -> ! {
 
   // Compiler warning: If using named-args in a constructor, consider using object-notation
   const person2 = Person(
-    id = PersonId(value: "124"),
+    id = PersonId(value = "124"),
     first_name = "Madison",
     last_name = "Colletti",
     age = 23,

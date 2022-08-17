@@ -17,6 +17,7 @@ pub enum AssignmentLocalVar {
 #[derive(Clone, Debug, PartialEq)]
 pub enum AssignmentTarget {
     Direct(String),
+    Reference(ReferenceInstance),
     DestructureObject(AssignTrgtDestructObject),
     DestructureTuple(AssignTrgtDestructTuple),
     DestructureList(AssignTrgtDestructList),

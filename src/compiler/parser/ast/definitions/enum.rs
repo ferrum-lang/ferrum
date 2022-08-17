@@ -2,6 +2,9 @@ use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct DefEnum {
+    pub is_public: bool,
+    pub name: String,
+    pub generics: Option<DefGenerics>,
     pub values: Vec<DefEnumField>,
 }
 
@@ -14,8 +17,8 @@ pub struct DefEnumField {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum DefEnumFieldData {
-    Struct(DefEnumFieldDataStruct),
-    Tuple(DefEnumFieldDataTuple),
+    Struct(Vec<DefStructField>),
+    Tuple(TypeTuple),
 }
 
 #[derive(Clone, Debug, PartialEq)]

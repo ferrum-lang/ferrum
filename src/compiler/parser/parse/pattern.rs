@@ -177,6 +177,7 @@ fn build_pattern_struct(tokens: &mut Stack<TokenData>, name: String, receiver: O
         match tokens.pop() {
             Some(TokenData { value: Token::CloseBrace, .. }) => break,
             Some(TokenData { value: Token::Comma, .. }) => {},
+            // token => todo!("{token:?}"),
             Some(token) => Err(ParseError::UnexpectedToken(token))?,
             None => Err(ParseError::MissingExpectedToken(Some(Token::CloseBrace)))?,
         }

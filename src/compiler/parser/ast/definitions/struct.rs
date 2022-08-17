@@ -15,3 +15,11 @@ pub struct DefStructField {
     pub default: Option<Expression>,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct DefTupleStruct {
+    pub name: String,
+    pub generics: Option<DefGenerics>,
+    pub tuple_type: TypeTuple,
+    pub is_public: bool,
+}
+

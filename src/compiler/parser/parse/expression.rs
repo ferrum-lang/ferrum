@@ -6,6 +6,8 @@ use super::super::super::lexer::{self, *};
 
 use anyhow::Result;
 
+const SELF_STR: &'static str = "self";
+
 pub fn build_expression(tokens: &mut Stack<TokenData>) -> Result<ast::Expression> {
     ignore_new_lines(tokens);
 
@@ -34,6 +36,9 @@ pub fn build_expression(tokens: &mut Stack<TokenData>) -> Result<ast::Expression
     }
 
     let expr = match tokens.pop() {
+        Some(TokenData { value: Token::Keyword(Keyword::Self_), .. }) => {
+            build_expr_from_ident(tokens, SELF_STR.to_string())?
+        },
         Some(TokenData { value: Token::Identifier(ident), .. }) => {
             build_expr_from_ident(tokens, ident.to_string())?
         },
@@ -508,23 +513,33 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
 fn add_reciever_to_expr(expr: Expression, receiver: Expression) -> Result<Expression> {
     let expr = match expr {
         Expression::Reference(Reference::Instance(mut ref_instance)) => {
-            ref_instance.receiver = Some(Box::new(receiver));
+            ref_instance.receiver = Some(Box::new(match ref_instance.receiver {
+                Some(r) => add_reciever_to_expr(*r, receiver)?,
+                None => receiver,
+            }));
+
             Expression::Reference(Reference::Instance(ref_instance))
         },
         Expression::Reference(Reference::Static(mut ref_static)) => {
-            ref_static.receiver = Some(Box::new(match receiver {
-                Expression::Reference(Reference::Static(receiver)) => receiver,
-                _ => todo!(),
-            }));
+            ref_static.receiver = match ref_static.receiver {
+                Some(r) => match add_reciever_to_expr(Expression::Reference(Reference::Static(*r)), receiver)? {
+                    Expression::Reference(Reference::Static(receiver)) => Some(Box::new(receiver)),
+                    expr => todo!("Unexpected: {expr:?}"),
+                },
+                None => match receiver {
+                    Expression::Reference(Reference::Static(receiver)) => Some(Box::new(receiver)),
+                    expr => todo!("Unexpected: {expr:?}"),
+                },
+            };
 
             Expression::Reference(Reference::Static(ref_static))
         },
         Expression::FunctionCall(fn_call) => Expression::MethodCall(MethodCall {
             name: fn_call.name,
             args: fn_call.args,
-            reciever: Box::new(receiver),
+            receiver: Box::new(receiver),
         }),
-        Expression::MethodCall(method_call) => match *method_call.reciever {
+        Expression::MethodCall(method_call) => match *method_call.receiver {
             Expression::Reference(Reference::Instance(mut ref_instance)) => {
                 ref_instance.receiver = Some(Box::new(receiver));
                 Expression::Reference(Reference::Instance(ref_instance))
@@ -612,7 +627,7 @@ fn build_expr_from_ident(tokens: &mut Stack<TokenData>, ident: String) -> Result
             Expression::FunctionCall(FunctionCall {
                 name: ident,
                 args,
-                reciever: None,
+                receiver: None,
             })
         },
         Some(TokenData { value: Token::DoubleColon, .. }) => {
@@ -630,6 +645,63 @@ fn build_expr_from_ident(tokens: &mut Stack<TokenData>, ident: String) -> Result
             let expr = build_expr_from_ident(tokens, ident.to_string())?;
 
             add_reciever_to_expr(expr, receiver)?
+        },
+        Some(token) if token.value == Token::OpenBrace => {
+            let get_res: Box<dyn FnOnce(&mut Stack<TokenData>) -> Result<Expression>> = Box::new(|tokens| {
+                let r#type = Type::Custom(TypeCustom {
+                    name: ident.clone(),
+                    is_interface_impl: false,
+                    generics: vec![],
+                    receiver: None,
+                });
+
+                let mut fields = vec![];
+
+                loop {
+                    ignore_new_lines(tokens);
+
+                    match tokens.peek() {
+                        Some(TokenData { value: Token::CloseBrace, .. }) => {
+                            tokens.pop();
+                            break;
+                        },
+                        _ => {},
+                    }
+
+                    let field = build_construction_field(tokens)?;
+                    fields.push(field);
+
+                    ignore_new_lines(tokens);
+
+                    match tokens.pop() {
+                        Some(TokenData { value: Token::CloseBrace, .. }) => break,
+                        Some(TokenData { value: Token::Comma, .. }) => {},
+                        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+                        None => Err(ParseError::MissingExpectedToken(Some(Token::CloseBrace)))?,
+                    }
+                }
+
+                Ok(Expression::Construction(Construction { r#type, fields }))
+            });
+
+            let mut tokens_clone = tokens.clone();
+
+            let res = get_res(&mut tokens_clone);
+
+            match res {
+                Ok(expr) => {
+                    *tokens = tokens_clone;
+                    expr
+                }
+                _ => {
+                    tokens.push(token);
+
+                    Expression::Reference(Reference::Instance(ReferenceInstance {
+                        name: ident,
+                        receiver: None,
+                    }))
+                }
+            }
         },
         Some(token) => {
             tokens.push(token);
@@ -649,6 +721,34 @@ fn build_expr_from_ident(tokens: &mut Stack<TokenData>, ident: String) -> Result
     }
 
     return Ok(expr);
+}
+
+fn build_construction_field(tokens: &mut Stack<TokenData>) -> Result<ConstructionField> {
+    let field = match tokens.pop() {
+        Some(TokenData { value: Token::Identifier(name), .. }) => {
+            let value = match tokens.peek() {
+                Some(TokenData { value: Token::Colon, .. }) => {
+                    tokens.pop();
+                    Some(Box::new(build_expression(tokens)?))
+                },
+                _ => None,
+            };
+
+            ConstructionField::Assign(ConstructionFieldAssign {
+                name,
+                value,
+            })
+        },
+        Some(TokenData { value: Token::DoublePeriod, .. }) => {
+            let value = Box::new(build_expression(tokens)?);
+
+            ConstructionField::Spread(ConstructionFieldSpread { value })
+        },
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::Identifier(String::new()))))?,
+    };
+
+    return Ok(field);
 }
 
 fn build_expr_from_literal(tokens: &mut Stack<TokenData>, literal: lexer::Literal) -> Result<Expression> {
@@ -753,6 +853,7 @@ fn build_expr_from_literal(tokens: &mut Stack<TokenData>, literal: lexer::Litera
 fn build_expr_keyword(tokens: &mut Stack<TokenData>) -> Result<Expression> {
     let expr = match tokens.peek() {
         Some(TokenData { value: Token::Keyword(Keyword::If), .. }) => build_expr_if_else(tokens)?,
+        Some(TokenData { value: Token::Keyword(Keyword::Not), .. }) => build_expr_not(tokens)?,
         Some(TokenData { value: Token::Keyword(Keyword::Match), .. }) => build_expr_match(tokens)?,
         Some(TokenData { value: Token::Keyword(Keyword::Loop), .. }) => build_expr_loop(tokens)?,
         Some(TokenData { value: Token::Keyword(Keyword::While), .. }) => build_expr_while(tokens)?,
@@ -796,6 +897,18 @@ fn build_expr_if_else(tokens: &mut Stack<TokenData>) -> Result<Expression> {
         then,
         r#else,
     })));
+}
+
+fn build_expr_not(tokens: &mut Stack<TokenData>) -> Result<Expression> {
+    match tokens.pop() {
+        Some(TokenData { value: Token::Keyword(Keyword::Not), .. }) => {},
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::Keyword(Keyword::Not))))?,
+    }
+
+    let expr = Box::new(build_expression(tokens)?);
+
+    return Ok(Expression::Not(expr));
 }
 
 fn build_expr_match(tokens: &mut Stack<TokenData>) -> Result<Expression> {

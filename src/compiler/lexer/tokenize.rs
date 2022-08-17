@@ -262,6 +262,7 @@ pub fn tokenize(filepath: &std::path::PathBuf) -> Result<Tokens> {
                     "return" => Token::Keyword(Keyword::Return),
                     "yield" => Token::Keyword(Keyword::Yield),
                     "if" => Token::Keyword(Keyword::If),
+                    "not" => Token::Keyword(Keyword::Not),
                     "else" => Token::Keyword(Keyword::Else),
                     "match" => Token::Keyword(Keyword::Match),
                     "matches" => Token::Keyword(Keyword::Matches),

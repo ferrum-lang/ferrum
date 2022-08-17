@@ -42,7 +42,7 @@ pub fn build_type(tokens: &mut Stack<TokenData>) -> Result<ast::Type> {
         },
         Some(token) if token.value == Token::OpenParenthesis => {
             tokens.push(token);
-            build_tuple_type(tokens)?
+            ast::Type::Tuple(build_tuple_type(tokens)?)
         },
         Some(token) if token.value == Token::OpenBracket => {
             tokens.push(token);
@@ -50,10 +50,13 @@ pub fn build_type(tokens: &mut Stack<TokenData>) -> Result<ast::Type> {
         },
         Some(TokenData { value: Token::Identifier(ident), source_meta }) => {
             tokens.push(TokenData { value: Token::Identifier(ident), source_meta });
-            ast::Type::Custom(build_custom_type(tokens, None)?)
+            ast::Type::Custom(build_custom_type(tokens, false, None)?)
         },
         Some(TokenData { value: Token::ExclamationMark, .. }) => {
             ast::Type::Result(None)
+        },
+        Some(token) if token.value == Token::Tilde => {
+            ast::Type::Custom(build_custom_type(tokens, true, None)?)
         },
         Some(token) => todo!("{token:?}"),
         _ => todo!(),
@@ -77,16 +80,18 @@ pub fn build_type(tokens: &mut Stack<TokenData>) -> Result<ast::Type> {
     return Ok(r#type);
 }
 
-fn build_custom_type(tokens: &mut Stack<TokenData>, receiver: Option<TypeCustom>) -> Result<ast::TypeCustom> {
+pub fn build_custom_type(tokens: &mut Stack<TokenData>, is_interface_impl: bool, receiver: Option<TypeCustom>) -> Result<ast::TypeCustom> {
     let mut r#type = match tokens.pop() {
         Some(TokenData { value: Token::Identifier(ident), .. }) => match receiver {
             Some(receiver) => TypeCustom {
                 name: ident,
+                is_interface_impl,
                 receiver: Some(Box::new(receiver)),
                 generics: vec![],
             },
             None => TypeCustom {
                 name: ident,
+                is_interface_impl,
                 receiver: None,
                 generics: vec![],
             },
@@ -118,7 +123,7 @@ fn build_custom_type(tokens: &mut Stack<TokenData>, receiver: Option<TypeCustom>
     let r#type = match tokens.peek() {
         Some(token) if token.value == Token::DoubleColon => {
             tokens.pop();
-            build_custom_type(tokens, Some(r#type))?
+            build_custom_type(tokens, is_interface_impl, Some(r#type))?
         },
         _ => r#type,
     };
@@ -126,7 +131,7 @@ fn build_custom_type(tokens: &mut Stack<TokenData>, receiver: Option<TypeCustom>
     return Ok(r#type);
 }
 
-fn build_tuple_type(tokens: &mut Stack<TokenData>) -> Result<ast::Type> {
+pub fn build_tuple_type(tokens: &mut Stack<TokenData>) -> Result<ast::TypeTuple> {
     match tokens.pop() {
         Some(TokenData { value: Token::OpenParenthesis, .. }) => {},
         Some(token) => Err(ParseError::UnexpectedToken(token))?,
@@ -136,6 +141,9 @@ fn build_tuple_type(tokens: &mut Stack<TokenData>) -> Result<ast::Type> {
     let first_type = build_type(tokens)?;
 
     let tuple_type = match tokens.pop() {
+        Some(TokenData { value: Token::CloseParenthesis, .. }) => ast::TypeTuple::Explicit(TypeTupleExplicit {
+            types: vec![Box::new(first_type)],
+        }),
         Some(TokenData { value: Token::Semicolon, .. }) => {
             let number = match tokens.pop() {
                 Some(TokenData { value: Token::Literal(lexer::Literal::Number(value)), .. }) => ast::LiteralNumber { value },
@@ -176,7 +184,7 @@ fn build_tuple_type(tokens: &mut Stack<TokenData>) -> Result<ast::Type> {
         None => Err(ParseError::MissingExpectedToken(Some(Token::Comma)))?,
     };
 
-    return Ok(ast::Type::Tuple(tuple_type));
+    return Ok(tuple_type);
 }
 
 fn build_list_type(tokens: &mut Stack<TokenData>) -> Result<ast::Type> {
