@@ -28,12 +28,22 @@ pub fn tokenize(filepath: &std::path::PathBuf) -> Result<Tokens> {
             '/' if chars.peek() == Some(&'*') => {
                 chars.pop();
 
+                let mut nested_block_count = 0;
+
                 while let Some(c) = chars.pop() {
                     if c == '\n' {
                         current_line += 1;
+                    } else if c == '/' && chars.peek() == Some(&'*') {
+                        chars.pop();
+                        nested_block_count += 1;
                     } else if c == '*' && chars.peek() == Some(&'/') {
                         chars.pop();
-                        break;
+
+                        if nested_block_count > 0 {
+                            nested_block_count -= 1;
+                        } else {
+                            break;
+                        }
                     }
                 }
             },

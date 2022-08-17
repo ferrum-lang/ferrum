@@ -134,4 +134,12 @@ pub fn main() {
   test_partial_mutable_example()
   test_mutable_example()
   test_immutable_example()
+  
+  /*
+    nested
+    /*
+      block
+      /* comment */
+    */
+  */
 }
