@@ -62,7 +62,9 @@ pub fn build_expression(tokens: &mut Stack<TokenData>) -> Result<ast::Expression
             tokens.push(TokenData { value: Token::Keyword(keyword), source_meta });
             build_expr_keyword(tokens)?
         },
-        token => todo!("{token:?}"),
+        // token => todo!("{token:?}"),
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(None))?,
     };
 
     let expr = wrap_expression(tokens, expr)?;
@@ -581,7 +583,10 @@ fn build_expr_from_ident(tokens: &mut Stack<TokenData>, ident: String) -> Result
                         ignore_new_lines(tokens);
 
                         match tokens.peek() {
-                            Some(TokenData { value: Token::Equals, .. }) => Some(ident),
+                            Some(TokenData { value: Token::Equals, .. }) => {
+                                tokens.pop();
+                                Some(ident)
+                            },
                             _ => {
                                 tokens.push(TokenData { value: Token::Identifier(ident), source_meta });
                                 None
@@ -753,7 +758,9 @@ fn build_expr_keyword(tokens: &mut Stack<TokenData>) -> Result<Expression> {
         Some(TokenData { value: Token::Keyword(Keyword::While), .. }) => build_expr_while(tokens)?,
         Some(TokenData { value: Token::Keyword(Keyword::For), .. }) => build_expr_for(tokens)?,
         Some(TokenData { value: Token::Keyword(Keyword::Return), .. }) => build_expr_return(tokens)?,
-        token => todo!("{token:?}"),
+        // token => todo!("{token:?}"),
+        Some(token) => Err(ParseError::UnexpectedToken(token.clone()))?,
+        None => Err(ParseError::MissingExpectedToken(None))?,
     };
 
     return Ok(expr);
@@ -1016,7 +1023,7 @@ fn build_expr_closure(tokens: &mut Stack<TokenData>) -> Result<Expression> {
     }
 
     let return_type = match tokens.peek() {
-        Some(TokenData { value: Token::Colon, .. }) => {
+        Some(TokenData { value: Token::SkinnyArrow, .. }) => {
             tokens.pop();
             Some(build_type(tokens)?)
         },

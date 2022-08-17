@@ -1,4 +1,3 @@
-
 // Booleans
 const x: bool = true
 const x: bool = false
