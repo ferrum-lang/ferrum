@@ -20,6 +20,11 @@ pub fn build_expression(tokens: &mut Stack<TokenData>) -> Result<ast::Expression
             let inner = Box::new(build_expression(tokens)?);
             return Ok(ast::Expression::TernaryElse(inner));
         },
+        Some(TokenData { value: Token::DoublePeriod, .. }) => {
+            tokens.pop();
+            let inner = Box::new(build_expression(tokens)?);
+            return Ok(ast::Expression::ValueSpread(inner));
+        },
         _ => {},
     }
 
@@ -549,8 +554,28 @@ fn build_expr_from_ident(tokens: &mut Stack<TokenData>, ident: String) -> Result
 
                 ignore_new_lines(tokens);
 
+                let name = match tokens.peek() {
+                    Some(TokenData { value: Token::Identifier(ident), .. }) => {
+                        let ident = ident.clone();
+                        tokens.pop();
+
+                        ignore_new_lines(tokens);
+
+                        match tokens.pop() {
+                            Some(TokenData { value: Token::Equals, .. }) => {},
+                            Some(token) => Err(ParseError::UnexpectedToken(token))?,
+                            None => Err(ParseError::MissingExpectedToken(Some(Token::Equals)))?,
+                        }
+
+                        ignore_new_lines(tokens);
+
+                        Some(ident)
+                    },
+                    _ => None,
+                };
+
                 let value = Box::new(build_expression(tokens)?);
-                args.push(FunctionCallArg { name: None, value });
+                args.push(FunctionCallArg { name, value });
 
                 match tokens.pop() {
                     Some(TokenData { value: Token::CloseParenthesis, .. }) => break,
@@ -708,6 +733,7 @@ fn build_expr_keyword(tokens: &mut Stack<TokenData>) -> Result<Expression> {
         Some(TokenData { value: Token::Keyword(Keyword::Loop), .. }) => build_expr_loop(tokens)?,
         Some(TokenData { value: Token::Keyword(Keyword::While), .. }) => build_expr_while(tokens)?,
         Some(TokenData { value: Token::Keyword(Keyword::For), .. }) => build_expr_for(tokens)?,
+        Some(TokenData { value: Token::Keyword(Keyword::Return), .. }) => build_expr_return(tokens)?,
         token => todo!("{token:?}"),
     };
 
@@ -890,31 +916,6 @@ fn build_expr_for(tokens: &mut Stack<TokenData>) -> Result<Expression> {
         expression,
         block,
     })));
-}
-
-fn build_statement_block(tokens: &mut Stack<TokenData>) -> Result<Block> {
-    match tokens.pop() {
-        Some(TokenData { value: Token::OpenBrace, .. }) => {},
-        Some(token) => Err(ParseError::UnexpectedToken(token))?,
-        None => Err(ParseError::MissingExpectedToken(Some(Token::Keyword(Keyword::If))))?,
-    }
-
-    let mut statements = vec![];
-
-    loop {
-        ignore_new_lines(tokens);
-
-        match tokens.peek() {
-            Some(token) if token.value == Token::CloseBrace => {
-                tokens.pop();
-                break;
-            },
-            Some(_) => statements.push(build_statement(tokens)?),
-            None => Err(ParseError::MissingExpectedToken(Some(Token::CloseBrace)))?,
-        }
-    }
-
-    return Ok(Block { statements });
 }
 
 fn build_expr_in_parens(tokens: &mut Stack<TokenData>) -> Result<Expression> {
@@ -1130,13 +1131,7 @@ fn build_expr_list(tokens: &mut Stack<TokenData>) -> Result<Expression> {
 
     ignore_new_lines(tokens);
 
-    let first_expr = match tokens.peek() {
-        Some(TokenData { value: Token::DoublePeriod, .. }) => {
-            tokens.pop();
-            Expression::ListValueSpread(Box::new(build_expression(tokens)?))
-        },
-        _ => build_expression(tokens)?,
-    };
+    let first_expr = build_expression(tokens)?;
 
     ignore_new_lines(tokens);
 
@@ -1149,7 +1144,7 @@ fn build_expr_list(tokens: &mut Stack<TokenData>) -> Result<Expression> {
                 let expr = match tokens.peek() {
                     Some(TokenData { value: Token::DoublePeriod, .. }) => {
                         tokens.pop();
-                        Expression::ListValueSpread(Box::new(build_expression(tokens)?))
+                        Expression::ValueSpread(Box::new(build_expression(tokens)?))
                     },
                     _ => build_expression(tokens)?,
                 };
@@ -1217,5 +1212,34 @@ fn build_expr_list(tokens: &mut Stack<TokenData>) -> Result<Expression> {
 
 
     return Ok(Expression::List(list));
+}
+
+fn build_expr_return(tokens: &mut Stack<TokenData>) -> Result<Expression> {
+    match tokens.pop() {
+        Some(TokenData { value: Token::Keyword(Keyword::Return), .. }) => {},
+        Some(token) => Err(ParseError::UnexpectedToken(token.clone()))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::Keyword(Keyword::Return))))?,
+    }
+
+    let new_line = ignore_new_lines(tokens);
+
+    let expr = match tokens.peek() {
+        Some(TokenData { value: Token::CloseBrace, ..}) => {
+            if let Some(new_line) = new_line {
+                tokens.push(new_line);
+            }
+
+            Expression::Return(None)
+        },
+        _ => {
+            if let Some(new_line) = new_line {
+                tokens.push(new_line);
+            }
+
+            Expression::Return(Some(Box::new(build_expression(tokens)?)))
+        }
+    };
+
+    return Ok(expr);
 }
 

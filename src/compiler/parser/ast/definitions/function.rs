@@ -18,6 +18,7 @@ pub struct DefFnSignature {
 #[derive(Clone, Debug, PartialEq)]
 pub struct DefFnParam {
     pub is_mutable: bool,
+    pub is_var_args: bool,
     pub name: String,
     pub r#type: Type,
     pub default: Option<Box<Expression>>,

@@ -64,7 +64,8 @@ pub enum Expression {
     Block(BlockExpr),
     Mut(Box<Expression>),
     TernaryElse(Box<Expression>),
-    ListValueSpread(Box<Expression>),
+    ValueSpread(Box<Expression>),
+    Return(Option<Box<Expression>>),
 }
 
 #[derive(Clone, Debug, PartialEq)]

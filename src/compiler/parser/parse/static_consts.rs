@@ -11,25 +11,30 @@ pub fn parse_static_consts(
     tokens: &mut Stack<TokenData>,
 ) -> Result<()> {
 
-    let mut is_public = false;
+    let mut public_token = None;
 
     while let Some(token) = tokens.pop() {
         match token.value {
             Token::Keyword(Keyword::Pub) => {
-                is_public = true;
+                public_token = Some(token);
                 continue;
             },
             Token::Keyword(Keyword::Static) => {
                 todo!();
             },
-            _ if !is_public => {
+            _ => {
                 tokens.push(token);
+
+                if let Some(public_token) = public_token {
+                    tokens.push(public_token);
+                }
+
                 return Ok(());
             },
             _ => todo!(),
         };
 
-        is_public = false;
+        public_token = None;
     }
 
     return Ok(());

@@ -57,6 +57,31 @@ pub fn build_statement(tokens: &mut Stack<TokenData>) -> Result<Statement> {
     return Ok(statement);
 }
 
+pub fn build_statement_block(tokens: &mut Stack<TokenData>) -> Result<Block> {
+    match tokens.pop() {
+        Some(TokenData { value: Token::OpenBrace, .. }) => {},
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::Keyword(Keyword::If))))?,
+    }
+
+    let mut statements = vec![];
+
+    loop {
+        ignore_new_lines(tokens);
+
+        match tokens.peek() {
+            Some(token) if token.value == Token::CloseBrace => {
+                tokens.pop();
+                break;
+            },
+            Some(_) => statements.push(build_statement(tokens)?),
+            None => Err(ParseError::MissingExpectedToken(Some(Token::CloseBrace)))?,
+        }
+    }
+
+    return Ok(Block { statements });
+}
+
 fn build_assignment(tokens: &mut Stack<TokenData>) -> Result<ast::Assignment> {
     let local_var = match tokens.pop() {
         Some(TokenData { value: Token::Keyword(Keyword::Const), .. }) => Some(AssignmentLocalVar::Const),

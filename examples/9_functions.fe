@@ -11,7 +11,10 @@ pub fn main() {
 
   two_args_no_return("Adam", 25)
 
-  const x = two_args_with_return("Adam", 25)
+  const x = two_args_with_return(
+    arg1 = "Adam",
+    25,
+  )
   log.info("Got: {x}")
 
   var_args("Adam", " ", "Bates", "!")
