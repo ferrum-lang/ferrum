@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct DefGenerics {
-    pub generics: DefGeneric,
+    pub generics: Vec<DefGeneric>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

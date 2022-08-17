@@ -16,19 +16,19 @@ if (x == 0 || y == 0) && z.length > 0 {
 
 const x = some(123)
 
-if x matches some(y) {
+if some(y) matches x {
     log.info(y)
 }
 
-if get_input() matches some(input) {
-
+if some(input) matches get_input() {
+    log.info(input)
 }
 
-const is_x = x matches some(input)
+const is_x = some(input) matches x
 
-const is_valid = get_input() matches ok(some(Input::Plain(_)))
+const is_valid = ok(some(Input::Plain(_))) matches get_input()
 
-if get_input() matches ok(some(Input::Plain(input))) {
+if ok(some(Input::Plain(input))) matches get_input() {
     log.info(input)
 }
 

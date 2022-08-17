@@ -1,4 +1,4 @@
-import { Map } from "std";
+import { Map } from "std"
 
 struct PersonId {
   value: string,
@@ -6,7 +6,7 @@ struct PersonId {
 
 class Person {
   self {
-    public const id: PersonId,
+    pub const id: PersonId,
     let first_name: string,
     let last_name: string,
     let age: uint,

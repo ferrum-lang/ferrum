@@ -4,6 +4,7 @@ use super::*;
 pub enum Pattern {
     Literal(PatternLiteral),
     Struct(PatternStruct),
+    Object(PatternObject),
     TupleStruct(PatternTupleStruct),
     Tuple(PatternTuple),
     List(PatternList),
@@ -27,6 +28,11 @@ pub struct PatternStruct {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct PatternObject {
+    pub fields: Vec<PatternStructField>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct PatternStructField {
     pub name: String,
     pub pattern: Option<Box<Pattern>>,
@@ -40,10 +46,14 @@ pub struct PatternTupleStruct {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct PatternTuple {}
+pub struct PatternTuple {
+    pub values: Vec<Box<Pattern>>,
+}
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct PatternList {}
+pub struct PatternList {
+    pub values: Vec<Box<Pattern>>,
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PatternIdentity {

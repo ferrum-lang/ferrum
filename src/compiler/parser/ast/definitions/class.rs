@@ -2,9 +2,13 @@ use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct DefClass {
+    pub is_public: bool,
+    pub name: String,
+    pub generics: Option<DefGenerics>,
     pub static_consts: Vec<StaticConst>,
     pub functions: Vec<DefFn>,
-    pub self_state: DefClassSelfState,
+    pub self_state: Option<DefClassSelfState>,
+    pub construct: Option<DefClassConstruct>,
     pub methods: Vec<DefClassMethod>,
 }
 
@@ -14,11 +18,17 @@ pub struct DefClassSelfState {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct DefClassConstruct {
+    // TODO
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct DefClassSelfStateField {
     pub is_public: bool,
+    pub is_const: bool,
     pub name: String,
     pub r#type: Type,
-    pub default: Option<Box<Expression>>,
+    pub default: Option<Expression>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

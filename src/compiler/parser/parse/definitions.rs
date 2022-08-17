@@ -25,7 +25,12 @@ pub fn build_definition(tokens: &mut Stack<TokenData>) -> Result<Definition> {
     };
 
     let definition = match tokens.peek() {
-        Some(TokenData { value: Token::Keyword(Keyword::Fn), .. }) => build_definition_fn(tokens, is_public)?,
+        Some(TokenData { value: Token::Keyword(Keyword::Fn), .. }) => Definition::Function(build_definition_fn(tokens, is_public)?),
+        Some(TokenData { value: Token::Keyword(Keyword::Struct), .. }) => build_definition_struct(tokens, is_public)?,
+        Some(TokenData { value: Token::Keyword(Keyword::Class), .. }) => build_definition_class(tokens, is_public)?,
+        Some(TokenData { value: Token::Keyword(Keyword::Interface), .. }) => build_definition_interface(tokens, is_public)?,
+        Some(TokenData { value: Token::Keyword(Keyword::Enum), .. }) => build_definition_enum(tokens, is_public)?,
+        Some(TokenData { value: Token::Keyword(Keyword::Errors), .. }) => build_definition_errors(tokens, is_public)?,
         _ => todo!(),
         // None => Err(ParseError::MissingExpectedToken(None))?,
     };
@@ -40,7 +45,7 @@ pub fn build_definition(tokens: &mut Stack<TokenData>) -> Result<Definition> {
     return Ok(definition);
 }
 
-fn build_definition_fn(tokens: &mut Stack<TokenData>, is_public: bool) -> Result<Definition> {
+fn build_definition_fn(tokens: &mut Stack<TokenData>, is_public: bool) -> Result<DefFn> {
     let signature = build_def_fn_signature(tokens, is_public)?;
 
     ignore_new_lines(tokens);
@@ -55,10 +60,14 @@ fn build_definition_fn(tokens: &mut Stack<TokenData>, is_public: bool) -> Result
         None => Err(ParseError::MissingExpectedToken(Some(Token::OpenBrace)))?,
     };
 
-    return Ok(Definition::Function(DefFn {
+    return Ok(DefFn {
         r#impl,
         signature,
-    }));
+    });
+}
+
+fn build_generics(tokens: &mut Stack<TokenData>) -> Result<DefGenerics> {
+    todo!();
 }
 
 fn build_def_fn_signature(tokens: &mut Stack<TokenData>, is_public: bool) -> Result<DefFnSignature> {
@@ -75,7 +84,7 @@ fn build_def_fn_signature(tokens: &mut Stack<TokenData>, is_public: bool) -> Res
     };
 
     let generics = match tokens.peek() {
-        Some(TokenData { value: Token::LessThan, .. }) => todo!(),
+        Some(TokenData { value: Token::LessThan, .. }) => Some(build_generics(tokens)?),
         _ => None,
     };
 
@@ -175,5 +184,335 @@ fn build_def_fn_param(tokens: &mut Stack<TokenData>) -> Result<DefFnParam> {
         is_var_args,
         default,
     });
+}
+
+fn build_definition_struct(tokens: &mut Stack<TokenData>, is_public: bool) -> Result<Definition> {
+    match tokens.pop() {
+        Some(TokenData { value: Token::Keyword(Keyword::Struct), .. }) => {},
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::Keyword(Keyword::Struct))))?,
+    }
+
+    let name = match tokens.pop() {
+        Some(TokenData { value: Token::Identifier(name), .. }) => name,
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::Identifier(String::new()))))?,
+    };
+
+    let generics = match tokens.peek() {
+        Some(TokenData { value: Token::LessThan, .. }) => Some(build_generics(tokens)?),
+        _ => None,
+    };
+
+    match tokens.pop() {
+        Some(TokenData { value: Token::OpenBrace, .. }) => {},
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::OpenBrace)))?,
+    }
+
+    let mut fields = vec![];
+
+    loop {
+        ignore_new_lines(tokens);
+
+        match tokens.peek() {
+            Some(TokenData { value: Token::CloseBrace, .. }) => {
+                tokens.pop();
+                break;
+            },
+            _ => {},
+        }
+
+        let field = build_def_struct_field(tokens)?;
+        fields.push(field);
+
+        match tokens.pop() {
+            Some(TokenData { value: Token::CloseBrace, .. }) => break,
+            Some(TokenData { value: Token::Comma, .. }) => {},
+            Some(token) => Err(ParseError::UnexpectedToken(token))?,
+            None => Err(ParseError::MissingExpectedToken(Some(Token::CloseBrace)))?,
+        }
+    }
+
+    return Ok(Definition::Type(DefType::Struct(DefStruct {
+        name,
+        fields,
+        generics,
+        is_public,
+    })));
+}
+
+fn build_def_struct_field(tokens: &mut Stack<TokenData>) -> Result<DefStructField> {
+    let name = match tokens.pop() {
+        Some(TokenData { value: Token::Identifier(ident), .. }) => ident,
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::Identifier(String::new()))))?,
+    };
+
+    match tokens.pop() {
+        Some(TokenData { value: Token::Colon, .. }) => {},
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::Colon)))?,
+    }
+
+    ignore_new_lines(tokens);
+
+    let r#type = build_type(tokens)?;
+
+    ignore_new_lines(tokens);
+
+    let r#default = match tokens.peek() {
+        Some(TokenData { value: Token::Equals, .. }) => {
+            tokens.pop();
+
+            Some(build_expression(tokens)?)
+        },
+        _ => None,
+    };
+
+    return Ok(DefStructField {
+        name,
+        r#type,
+        r#default,
+    });
+}
+
+fn build_definition_class(tokens: &mut Stack<TokenData>, is_public: bool) -> Result<Definition> {
+    match tokens.pop() {
+        Some(TokenData { value: Token::Keyword(Keyword::Class), .. }) => {},
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::Keyword(Keyword::Class))))?,
+    }
+
+    let name = match tokens.pop() {
+        Some(TokenData { value: Token::Identifier(name), .. }) => name,
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::Identifier(String::new()))))?,
+    };
+
+    let generics = match tokens.peek() {
+        Some(TokenData { value: Token::LessThan, .. }) => Some(build_generics(tokens)?),
+        _ => None,
+    };
+
+    ignore_new_lines(tokens);
+
+    match tokens.pop() {
+        Some(TokenData { value: Token::OpenBrace, .. }) => {},
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::OpenBrace)))?,
+    }
+
+    ignore_new_lines(tokens);
+
+    let mut static_consts = vec![];
+
+    loop {
+        let is_public = match tokens.peek() {
+            Some(TokenData { value: Token::Keyword(Keyword::Pub), .. }) => {
+                tokens.pop();
+                true
+            },
+            _ => false,
+        };
+
+        match tokens.peek() {
+            Some(TokenData { value: Token::Keyword(Keyword::Static), .. }) => {
+                let static_const = build_static_const(tokens, is_public)?;
+                static_consts.push(static_const);
+            },
+            _ => break,
+        }
+
+        ignore_new_lines(tokens);
+    }
+
+    ignore_new_lines(tokens);
+
+    let self_state = match tokens.peek() {
+        Some(TokenData { value: Token::Keyword(Keyword::Self_), .. }) => {
+            tokens.pop();
+
+            ignore_new_lines(tokens);
+
+            match tokens.pop() {
+                Some(TokenData { value: Token::OpenBrace, .. }) => {},
+                Some(token) => Err(ParseError::UnexpectedToken(token))?,
+                None => Err(ParseError::MissingExpectedToken(Some(Token::OpenBrace)))?,
+            }
+
+            let mut fields = vec![];
+
+            loop {
+                ignore_new_lines(tokens);
+
+                match tokens.peek() {
+                    Some(TokenData { value: Token::CloseBrace, .. }) => {
+                        tokens.pop();
+                        break;
+                    },
+                    _ => {},
+                }
+
+                ignore_new_lines(tokens);
+
+                let field = build_def_class_field(tokens)?;
+                fields.push(field);
+
+                match tokens.pop() {
+                    Some(TokenData { value: Token::CloseBrace, .. }) => break,
+                    Some(TokenData { value: Token::Comma, .. }) => {},
+                    Some(token) => Err(ParseError::UnexpectedToken(token))?,
+                    None => Err(ParseError::MissingExpectedToken(Some(Token::CloseBrace)))?,
+                }
+            }
+
+            Some(DefClassSelfState { fields })
+        },
+        _ => None,
+    };
+
+    ignore_new_lines(tokens);
+
+    let construct = match tokens.peek() {
+        Some(TokenData { value: Token::Keyword(Keyword::Construct), .. }) => todo!(),
+        _ => None,
+    };
+
+    let mut functions = vec![];
+    let mut methods = vec![];
+
+    loop {
+        ignore_new_lines(tokens);
+
+        match tokens.peek() {
+            Some(TokenData { value: Token::CloseBrace, .. }) => {
+                tokens.pop();
+                break
+            }
+            _ => {}
+        }
+
+        let is_public = match tokens.peek() {
+            Some(TokenData { value: Token::Keyword(Keyword::Pub), .. }) => {
+                tokens.pop();
+                true
+            }
+            _ => false,
+        };
+
+        let is_mut = match tokens.peek() {
+            Some(TokenData { value: Token::Keyword(Keyword::Mut), .. }) => {
+                tokens.pop();
+                true
+            }
+            _ => false,
+        };
+
+        match tokens.pop() {
+            Some(TokenData { value: Token::Keyword(Keyword::Fn), .. }) if !is_mut => {
+                let function = build_definition_fn(tokens, is_public)?;
+                functions.push(function);
+            },
+            Some(TokenData { value: Token::Keyword(Keyword::Self_), .. }) => {
+                let method = build_def_class_method(tokens, is_public, is_mut)?;
+                methods.push(method);
+            },
+            Some(token) => Err(ParseError::UnexpectedToken(token))?,
+            None => Err(ParseError::MissingExpectedToken(Some(Token::Keyword(Keyword::Self_))))?,
+        }
+
+        match tokens.pop() {
+            Some(TokenData { value: Token::CloseBrace, .. }) => break,
+            Some(TokenData { value: Token::NewLine, .. }) => {},
+            Some(token) => Err(ParseError::UnexpectedToken(token))?,
+            None => Err(ParseError::MissingExpectedToken(Some(Token::CloseBrace)))?,
+        }
+    }
+
+    Ok(Definition::Type(DefType::Class(DefClass {
+        is_public,
+        name,
+        static_consts,
+        generics,
+        functions,
+        self_state,
+        construct,
+        methods,
+    })))
+}
+
+fn build_def_class_field(tokens: &mut Stack<TokenData>) -> Result<DefClassSelfStateField> {
+    let is_public = match tokens.peek() {
+        Some(TokenData { value: Token::Keyword(Keyword::Pub), .. }) => {
+            tokens.pop();
+            true
+        },
+        _ => false,
+    };
+
+    let is_const = match tokens.pop() {
+        Some(TokenData { value: Token::Keyword(Keyword::Const), .. }) => true,
+        Some(TokenData { value: Token::Keyword(Keyword::Let), .. }) => false,
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::Keyword(Keyword::Const))))?,
+    };
+
+    ignore_new_lines(tokens);
+
+    let name = match tokens.pop() {
+        Some(TokenData { value: Token::Identifier(name), .. }) => name,
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::Identifier(String::new()))))?,
+    };
+
+    ignore_new_lines(tokens);
+
+    match tokens.pop() {
+        Some(TokenData { value: Token::Colon, .. }) => {},
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::Colon)))?,
+    }
+
+    ignore_new_lines(tokens);
+
+    let r#type = build_type(tokens)?;
+
+    ignore_new_lines(tokens);
+
+    let r#default = match tokens.peek() {
+        Some(TokenData { value: Token::Equals, .. }) => {
+            tokens.pop();
+
+            ignore_new_lines(tokens);
+
+            Some(build_expression(tokens)?)
+        },
+        _ => None,
+    };
+
+    return Ok(DefClassSelfStateField {
+        name,
+        is_const,
+        r#type,
+        r#default,
+        is_public,
+    });
+}
+
+fn build_def_class_method(tokens: &mut Stack<TokenData>, is_public: bool, is_mut: bool) -> Result<DefClassMethod> {
+    todo!();
+}
+
+fn build_definition_interface(tokens: &mut Stack<TokenData>, is_public: bool) -> Result<Definition> {
+    todo!();
+}
+
+fn build_definition_enum(tokens: &mut Stack<TokenData>, is_public: bool) -> Result<Definition> {
+    todo!();
+}
+
+fn build_definition_errors(tokens: &mut Stack<TokenData>, is_public: bool) -> Result<Definition> {
+    todo!();
 }
 

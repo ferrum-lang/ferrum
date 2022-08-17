@@ -28,6 +28,11 @@ pub fn build_expression(tokens: &mut Stack<TokenData>) -> Result<ast::Expression
         _ => {},
     }
 
+
+    if let Some(pattern_matches_expr) = build_expr_pattern_matches(tokens)? {
+        return Ok(pattern_matches_expr);
+    }
+
     let expr = match tokens.pop() {
         Some(TokenData { value: Token::Identifier(ident), .. }) => {
             build_expr_from_ident(tokens, ident.to_string())?
@@ -71,6 +76,31 @@ pub fn build_expression(tokens: &mut Stack<TokenData>) -> Result<ast::Expression
     }
 
     return Ok(expr);
+}
+
+fn build_expr_pattern_matches(tokens: &mut Stack<TokenData>) -> Result<Option<Expression>> {
+    let mut tokens_clone = tokens.clone();
+
+    let pattern = match build_pattern(&mut tokens_clone) {
+        Ok(pattern) => pattern,
+        _ => return Ok(None),
+    };
+
+    ignore_new_lines(&mut tokens_clone);
+
+    match tokens_clone.pop() {
+        Some(TokenData { value: Token::Keyword(Keyword::Matches), .. }) => {},
+        _ => return Ok(None),
+    }
+
+    *tokens = tokens_clone;
+
+    let value = Box::new(build_expression(tokens)?);
+
+    return Ok(Some(Expression::Matches(Matches {
+        pattern,
+        value,
+    })));
 }
 
 fn wrap_expression(tokens: &mut Stack<TokenData>, expr: Expression) -> Result<Expression> {
@@ -435,18 +465,6 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     operator: BinaryOperator::NullCoalesce
                 })
             },
-            Some(TokenData { value: Token::Keyword(Keyword::Matches), .. }) => {
-                tokens.pop();
-
-                let value = Box::new(expr);
-
-                let pattern = build_pattern(tokens)?;
-
-                Expression::Matches(Matches {
-                    value,
-                    pattern,
-                })
-            },
             Some(TokenData { value: Token::DoublePeriod, .. }) => {
                 tokens.pop();
 
@@ -555,24 +573,25 @@ fn build_expr_from_ident(tokens: &mut Stack<TokenData>, ident: String) -> Result
                 ignore_new_lines(tokens);
 
                 let name = match tokens.peek() {
-                    Some(TokenData { value: Token::Identifier(ident), .. }) => {
+                    Some(TokenData { value: Token::Identifier(ident), source_meta }) => {
                         let ident = ident.clone();
+                        let source_meta = source_meta.clone();
                         tokens.pop();
 
                         ignore_new_lines(tokens);
 
-                        match tokens.pop() {
-                            Some(TokenData { value: Token::Equals, .. }) => {},
-                            Some(token) => Err(ParseError::UnexpectedToken(token))?,
-                            None => Err(ParseError::MissingExpectedToken(Some(Token::Equals)))?,
+                        match tokens.peek() {
+                            Some(TokenData { value: Token::Equals, .. }) => Some(ident),
+                            _ => {
+                                tokens.push(TokenData { value: Token::Identifier(ident), source_meta });
+                                None
+                            }
                         }
-
-                        ignore_new_lines(tokens);
-
-                        Some(ident)
                     },
                     _ => None,
                 };
+
+                ignore_new_lines(tokens);
 
                 let value = Box::new(build_expression(tokens)?);
                 args.push(FunctionCallArg { name, value });

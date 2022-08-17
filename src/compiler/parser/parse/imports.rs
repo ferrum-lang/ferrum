@@ -52,16 +52,75 @@ fn build_import_assignment(tokens: &mut Stack<TokenData>) -> Result<ImportAssign
     let import_assignment = match tokens.pop() {
         Some(TokenData { value: Token::Identifier(identifier),  .. }) => ImportAssignment::Direct(ImportAssignmentDirect { name: identifier.to_string() }),
         Some(TokenData { value: Token::OpenBrace,  .. }) => {
-            let assignment = ImportAssignment::Destructured(ImportAssignmentDestruct {
-                items: vec![],
-            });
+            let mut items = vec![];
 
-            todo!("{assignment:?}");
+            loop {
+                ignore_new_lines(tokens);
+
+                match tokens.peek() {
+                    Some(TokenData { value: Token::CloseBrace, .. }) => {
+                        tokens.pop();
+                        break;
+                    },
+                    _ => {}
+                }
+
+                let item = build_import_destruct_item(tokens)?;
+                items.push(item);
+
+                ignore_new_lines(tokens);
+
+                match tokens.pop() {
+                    Some(TokenData { value: Token::CloseBrace, .. }) => break,
+                    Some(TokenData { value: Token::Comma, .. }) => {},
+                    Some(token) => Err(ParseError::UnexpectedToken(token))?,
+                    None => Err(ParseError::MissingExpectedToken(Some(Token::CloseBrace)))?,
+                }
+            }
+
+            ImportAssignment::Destructured(ImportAssignmentDestruct {
+                items,
+            })
         },
         Some(token) => Err(ParseError::UnexpectedToken(token.clone()))?,
         None => Err(ParseError::MissingExpectedToken(Some(Token::Identifier("some_identifier".to_string()))))?,
     };
 
     return Ok(import_assignment);
+}
+
+fn build_import_destruct_item(tokens: &mut Stack<TokenData>) -> Result<ImportAssignDestructItem> {
+    let item = match tokens.pop() {
+        Some(TokenData { value: Token::Identifier(ident), .. }) => {
+            let alias = match tokens.peek() {
+                Some(TokenData { value: Token::Colon, .. }) => match tokens.pop() {
+                    Some(TokenData { value: Token::Identifier(alias), .. }) => Some(alias),
+                    Some(token) => Err(ParseError::UnexpectedToken(token))?,
+                    None => Err(ParseError::MissingExpectedToken(Some(Token::Identifier(String::new()))))?,
+                },
+                _ => None,
+            };
+
+            ImportAssignDestructItem::Field(ImportAssignDestructField {
+                name: ident,
+                alias,
+            })
+        },
+        Some(TokenData { value: Token::DoublePeriod, .. }) => {
+            let name = match tokens.pop() {
+                Some(TokenData { value: Token::Identifier(ident), .. }) => ident,
+                Some(token) => Err(ParseError::UnexpectedToken(token))?,
+                None => Err(ParseError::MissingExpectedToken(Some(Token::Identifier(String::new()))))?,
+            };
+
+            ImportAssignDestructItem::Spread(ImportAssignDestructSpread {
+                name,
+            })
+        },
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::Identifier(String::new()))))?,
+    };
+
+    return Ok(item);
 }
 

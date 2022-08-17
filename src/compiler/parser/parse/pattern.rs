@@ -17,13 +17,24 @@ pub fn build_pattern(tokens: &mut Stack<TokenData>) -> Result<Pattern> {
         Some(TokenData { value: Token::Identifier(ident), .. }) => {
             build_pattern_from_ident(tokens, ident, None)?
         },
-        Some(TokenData { value: Token::Literal(literal), .. }) => {
-            build_pattern_from_literal(tokens, literal)?
+        Some(TokenData { value: Token::Literal(literal), source_meta }) => {
+            let token = TokenData { value: Token::Literal(literal.clone()), source_meta };
+            build_pattern_from_literal(tokens, literal, token)?
         },
-        Some(TokenData { value: Token::OpenParenthesis, .. }) => todo!(),
-        Some(TokenData { value: Token::OpenBracket, .. }) => todo!(),
-        Some(TokenData { value: Token::OpenBrace, .. }) => todo!(),
-        token => todo!("{token:?}"),
+        Some(token) if token.value == Token::OpenParenthesis => {
+            tokens.push(token);
+            build_pattern_tuple(tokens)?
+        },
+        Some(token) if token.value == Token::OpenBracket => {
+            tokens.push(token);
+            build_pattern_list(tokens)?
+        },
+        Some(token) if token.value == Token::OpenBrace => {
+            tokens.push(token);
+            build_pattern_object(tokens)?
+        },
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::Identifier("_".to_string()))))?,
     };
 
     return Ok(pattern);
@@ -39,8 +50,7 @@ fn build_pattern_from_ident(
             Pattern::TupleStruct(build_pattern_tuple_struct(tokens, ident, receiver)?)
         },
         Some(TokenData { value: Token::OpenBrace, .. }) => {
-            tokens.pop();
-            todo!();
+            Pattern::Struct(build_pattern_struct(tokens, ident, receiver)?)
         },
         Some(TokenData { value: Token::DoubleColon, .. }) => {
            tokens.pop();
@@ -67,7 +77,7 @@ fn build_pattern_from_ident(
     return Ok(pattern);
 }
 
-fn build_pattern_from_literal(tokens: &mut Stack<TokenData>, literal: lexer::Literal) -> Result<Pattern> {
+fn build_pattern_from_literal(tokens: &mut Stack<TokenData>, literal: lexer::Literal, token: TokenData) -> Result<Pattern> {
     let pattern = match literal {
         lexer::Literal::Option { is_some } => build_pattern_from_option(tokens, is_some)?,
         lexer::Literal::Result { is_ok } => build_pattern_from_result(tokens, is_ok)?,
@@ -75,7 +85,7 @@ fn build_pattern_from_literal(tokens: &mut Stack<TokenData>, literal: lexer::Lit
         lexer::Literal::Char(value) => Pattern::Literal(PatternLiteral::Char(value)),
         lexer::Literal::Number(value) => Pattern::Literal(PatternLiteral::Number(value)),
         lexer::Literal::PlainString(value) => Pattern::Literal(PatternLiteral::String(value)),
-        _ => todo!(),
+        _ => Err(ParseError::UnexpectedToken(token))?,
     };
 
     return Ok(pattern);
@@ -121,6 +131,64 @@ fn build_pattern_from_result(tokens: &mut Stack<TokenData>, is_ok: bool) -> Resu
     return Ok(pattern);
 }
 
+fn build_pattern_struct(tokens: &mut Stack<TokenData>, name: String, receiver: Option<PatternIdentity>) -> Result<PatternStruct> {
+    match tokens.pop() {
+        Some(TokenData { value: Token::OpenBrace, .. }) => {},
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::OpenBrace)))?,
+    }
+
+    let mut fields = vec![];
+
+    loop {
+        ignore_new_lines(tokens);
+
+        match tokens.peek() {
+            Some(TokenData { value: Token::CloseBrace, .. }) => {
+                tokens.pop();
+                break;
+            },
+            _ => {},
+        }
+
+        let name = match tokens.pop() {
+            Some(TokenData { value: Token::Identifier(ident), .. }) => ident,
+            Some(token) => Err(ParseError::UnexpectedToken(token))?,
+            None => Err(ParseError::MissingExpectedToken(Some(Token::Identifier(String::new()))))?,
+        };
+
+        ignore_new_lines(tokens);
+
+        let pattern = match tokens.peek() {
+            Some(TokenData { value: Token::Colon, .. }) => {
+                tokens.pop();
+
+                ignore_new_lines(tokens);
+
+                Some(Box::new(build_pattern(tokens)?))
+            },
+            _ => None,
+        };
+
+        fields.push(PatternStructField { name, pattern });
+
+        ignore_new_lines(tokens);
+
+        match tokens.pop() {
+            Some(TokenData { value: Token::CloseBrace, .. }) => break,
+            Some(TokenData { value: Token::Comma, .. }) => {},
+            Some(token) => Err(ParseError::UnexpectedToken(token))?,
+            None => Err(ParseError::MissingExpectedToken(Some(Token::CloseBrace)))?,
+        }
+    }
+
+    return Ok(PatternStruct {
+        name,
+        fields,
+        receiver,
+    });
+}
+
 fn build_pattern_tuple_struct(tokens: &mut Stack<TokenData>, name: String, receiver: Option<PatternIdentity>) -> Result<PatternTupleStruct> {
     match tokens.pop() {
         Some(TokenData { value: Token::OpenParenthesis, .. }) => {},
@@ -154,5 +222,131 @@ fn build_pattern_tuple_struct(tokens: &mut Stack<TokenData>, name: String, recei
     }
 
     return Ok(PatternTupleStruct { name, args, receiver })
+}
+
+fn build_pattern_tuple(tokens: &mut Stack<TokenData>) -> Result<Pattern> {
+    match tokens.pop() {
+        Some(TokenData { value: Token::OpenParenthesis, .. }) => {},
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::OpenParenthesis)))?,
+    }
+
+    let mut values = vec![];
+
+    loop {
+        ignore_new_lines(tokens);
+
+        match tokens.peek() {
+            Some(TokenData { value: Token::CloseParenthesis, .. }) => {
+                tokens.pop();
+                break;
+            },
+            _ => {},
+        }
+
+        values.push(Box::new(build_pattern(tokens)?));
+
+        ignore_new_lines(tokens);
+
+        match tokens.pop() {
+            Some(TokenData { value: Token::CloseParenthesis, .. }) => break,
+            Some(TokenData { value: Token::Comma, .. }) => {},
+            Some(token) => Err(ParseError::UnexpectedToken(token))?,
+            None => Err(ParseError::MissingExpectedToken(Some(Token::CloseParenthesis)))?,
+        }
+    }
+
+    return Ok(Pattern::Tuple(PatternTuple { values }));
+}
+
+fn build_pattern_list(tokens: &mut Stack<TokenData>) -> Result<Pattern> {
+    match tokens.pop() {
+        Some(TokenData { value: Token::OpenBracket, .. }) => {},
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::OpenBracket)))?,
+    }
+
+    let mut values = vec![];
+
+    loop {
+        ignore_new_lines(tokens);
+
+        match tokens.peek() {
+            Some(TokenData { value: Token::CloseBracket, .. }) => {
+                tokens.pop();
+                break;
+            },
+            _ => {},
+        }
+
+        values.push(Box::new(build_pattern(tokens)?));
+
+        ignore_new_lines(tokens);
+
+        match tokens.pop() {
+            Some(TokenData { value: Token::CloseBracket, .. }) => break,
+            Some(TokenData { value: Token::Comma, .. }) => {},
+            Some(token) => Err(ParseError::UnexpectedToken(token))?,
+            None => Err(ParseError::MissingExpectedToken(Some(Token::CloseBracket)))?,
+        }
+    }
+
+    return Ok(Pattern::List(PatternList { values }));
+}
+
+fn build_pattern_object(tokens: &mut Stack<TokenData>) -> Result<Pattern> {
+    match tokens.pop() {
+        Some(TokenData { value: Token::OpenBrace, .. }) => {},
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::OpenParenthesis)))?,
+    }
+
+    let mut fields = vec![];
+
+    loop {
+        ignore_new_lines(tokens);
+
+        match tokens.peek() {
+            Some(TokenData { value: Token::CloseBrace, .. }) => {
+                tokens.pop();
+                break;
+            },
+            _ => {},
+        }
+
+        let name = match tokens.pop() {
+            Some(TokenData { value: Token::Identifier(ident), .. }) => ident,
+            Some(token) => Err(ParseError::UnexpectedToken(token))?,
+            None => Err(ParseError::MissingExpectedToken(Some(Token::Identifier(String::new()))))?,
+        };
+
+        ignore_new_lines(tokens);
+
+        let pattern = match tokens.peek() {
+            Some(TokenData { value: Token::Colon, .. }) => {
+                tokens.pop();
+
+                ignore_new_lines(tokens);
+
+                Some(Box::new(build_pattern(tokens)?))
+            },
+            _ => None,
+        };
+
+        fields.push(PatternStructField { name, pattern });
+
+        ignore_new_lines(tokens);
+
+        match tokens.pop() {
+            Some(TokenData { value: Token::CloseBrace, .. }) => break,
+            Some(TokenData { value: Token::Comma, .. }) => {},
+            Some(token) => Err(ParseError::UnexpectedToken(token))?,
+            None => Err(ParseError::MissingExpectedToken(Some(Token::CloseBrace)))?,
+        }
+    }
+
+    return Ok(Pattern::Object(PatternObject {
+        fields,
+    }));
 }
 
