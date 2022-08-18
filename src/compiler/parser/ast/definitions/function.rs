@@ -9,6 +9,7 @@ pub struct DefFn {
 #[derive(Clone, Debug, PartialEq)]
 pub struct DefFnSignature {
     pub is_public: bool,
+    pub is_async: MaybeBool,
     pub name: String,
     pub generics: Option<DefGenerics>,
     pub params: Vec<DefFnParam>,

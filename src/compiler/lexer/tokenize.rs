@@ -280,6 +280,8 @@ pub fn tokenize(filepath: &std::path::PathBuf) -> Result<Tokens> {
                     "while" => Token::Keyword(Keyword::While),
                     "for" => Token::Keyword(Keyword::For),
                     "in" => Token::Keyword(Keyword::In),
+                    "async" => Token::Keyword(Keyword::Async),
+                    "await" => Token::Keyword(Keyword::Await),
 
                     "bool" => Token::BuiltInType(BuiltInType::Bool),
                     "bit" => Token::BuiltInType(BuiltInType::Bit),

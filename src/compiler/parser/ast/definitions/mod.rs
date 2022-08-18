@@ -32,3 +32,10 @@ pub enum DefType {
     Errors(DefErrors),
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum MaybeBool {
+    True,
+    False,
+    Maybe,
+}
+

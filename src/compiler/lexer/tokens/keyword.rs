@@ -27,5 +27,7 @@ pub enum Keyword {
     While,
     For,
     In,
+    Async,
+    Await,
 }
 

@@ -25,7 +25,23 @@ pub fn build_definition(tokens: &mut Stack<TokenData>) -> Result<Definition> {
     };
 
     let definition = match tokens.peek() {
-        Some(TokenData { value: Token::Keyword(Keyword::Fn), .. }) => Definition::Function(build_definition_fn(tokens, is_public)?),
+        Some(TokenData { value: Token::Keyword(Keyword::Async), .. }) => {
+            tokens.pop();
+
+            let is_async = match tokens.peek() {
+                Some(TokenData { value: Token::QuestionMark, .. }) => {
+                    tokens.pop();
+                    MaybeBool::Maybe
+                },
+                _ => MaybeBool::True,
+            };
+
+            Definition::Function(build_definition_fn(tokens, is_public, is_async)?)
+        },
+        Some(TokenData { value: Token::Keyword(Keyword::Fn), .. }) => {
+            const IS_ASYNC: MaybeBool = MaybeBool::False;
+            Definition::Function(build_definition_fn(tokens, is_public, IS_ASYNC)?)
+        },
         Some(TokenData { value: Token::Keyword(Keyword::Struct), .. }) => build_definition_struct(tokens, is_public)?,
         Some(TokenData { value: Token::Keyword(Keyword::Class), .. }) => build_definition_class(tokens, is_public)?,
         Some(TokenData { value: Token::Keyword(Keyword::Interface), .. }) => build_definition_interface(tokens, is_public)?,
@@ -45,8 +61,8 @@ pub fn build_definition(tokens: &mut Stack<TokenData>) -> Result<Definition> {
     return Ok(definition);
 }
 
-fn build_definition_fn(tokens: &mut Stack<TokenData>, is_public: bool) -> Result<DefFn> {
-    let signature = build_def_fn_signature(tokens, is_public)?;
+fn build_definition_fn(tokens: &mut Stack<TokenData>, is_public: bool, is_async: MaybeBool) -> Result<DefFn> {
+    let signature = build_def_fn_signature(tokens, is_public, is_async)?;
 
     ignore_new_lines(tokens);
     
@@ -139,7 +155,7 @@ fn build_generics(tokens: &mut Stack<TokenData>) -> Result<DefGenerics> {
     return Ok(DefGenerics { generics });
 }
 
-fn build_def_fn_signature(tokens: &mut Stack<TokenData>, is_public: bool) -> Result<DefFnSignature> {
+fn build_def_fn_signature(tokens: &mut Stack<TokenData>, is_public: bool, is_async: MaybeBool) -> Result<DefFnSignature> {
     match tokens.pop() {
         Some(TokenData { value: Token::Keyword(Keyword::Fn), .. }) => {},
         Some(token) => Err(ParseError::UnexpectedToken(token))?,
@@ -199,6 +215,7 @@ fn build_def_fn_signature(tokens: &mut Stack<TokenData>, is_public: bool) -> Res
 
     return Ok(DefFnSignature {
         is_public,
+        is_async,
         name,
         generics,
         params,
@@ -597,6 +614,21 @@ fn build_definition_class(tokens: &mut Stack<TokenData>, is_public: bool) -> Res
             _ => false,
         };
 
+        let is_async = match tokens.peek() {
+            Some(TokenData { value: Token::Keyword(Keyword::Async), .. }) => {
+                tokens.pop();
+                
+                match tokens.peek() {
+                    Some(TokenData { value: Token::QuestionMark, .. }) => {
+                        tokens.pop();
+                        MaybeBool::Maybe
+                    },
+                    _ => MaybeBool::True,
+                }
+            },
+            _ => MaybeBool::False,
+        };
+
         let is_mut = match tokens.peek() {
             Some(TokenData { value: Token::Keyword(Keyword::Mut), .. }) => {
                 tokens.pop();
@@ -607,14 +639,14 @@ fn build_definition_class(tokens: &mut Stack<TokenData>, is_public: bool) -> Res
 
         match tokens.peek() {
             Some(TokenData { value: Token::Keyword(Keyword::Fn), .. }) if !is_mut => {
-                let function = build_definition_fn(tokens, is_public)?;
+                let function = build_definition_fn(tokens, is_public, is_async)?;
                 functions.push(function);
             },
             Some(TokenData { value: Token::Keyword(Keyword::Self_), .. }) => {
-                let method = build_def_class_method(tokens, is_public, is_mut)?;
+                let method = build_def_class_method(tokens, is_public, is_async, is_mut)?;
                 methods.push(method);
             },
-            Some(TokenData { value: Token::Keyword(Keyword::Impl), .. }) if !is_public && !is_mut => {
+            Some(TokenData { value: Token::Keyword(Keyword::Impl), .. }) if !is_public && is_async == MaybeBool::False && !is_mut => {
                 let r#impl = build_def_class_impl(tokens)?;
                 impls.push(r#impl);
             },
@@ -710,8 +742,8 @@ fn build_def_class_field(tokens: &mut Stack<TokenData>) -> Result<DefClassSelfSt
     });
 }
 
-fn build_def_class_method(tokens: &mut Stack<TokenData>, is_public: bool, is_mut: bool) -> Result<DefClassMethod> {
-    let signature = build_def_class_method_signature(tokens, is_public, is_mut)?;
+fn build_def_class_method(tokens: &mut Stack<TokenData>, is_public: bool, is_async: MaybeBool, is_mut: bool) -> Result<DefClassMethod> {
+    let signature = build_def_class_method_signature(tokens, is_public, is_async, is_mut)?;
 
     ignore_new_lines(tokens);
     
@@ -731,7 +763,7 @@ fn build_def_class_method(tokens: &mut Stack<TokenData>, is_public: bool, is_mut
     });
 }
 
-fn build_def_class_method_signature(tokens: &mut Stack<TokenData>, is_public: bool, is_mut: bool) -> Result<DefClassMethodSignature> {
+fn build_def_class_method_signature(tokens: &mut Stack<TokenData>, is_public: bool, is_async: MaybeBool, is_mut: bool) -> Result<DefClassMethodSignature> {
     match tokens.pop() {
         Some(TokenData { value: Token::Keyword(Keyword::Self_), .. }) => {},
         Some(token) => Err(ParseError::UnexpectedToken(token))?,
@@ -797,6 +829,7 @@ fn build_def_class_method_signature(tokens: &mut Stack<TokenData>, is_public: bo
 
     return Ok(DefClassMethodSignature {
         is_public,
+        is_async,
         is_mut,
         name,
         generics,
@@ -839,6 +872,22 @@ fn build_def_class_impl(tokens: &mut Stack<TokenData>) -> Result<DefClassImpl> {
             _ => {}
         }
 
+        let is_async = match tokens.peek() {
+            Some(TokenData { value: Token::Keyword(Keyword::Async), .. }) => {
+                tokens.pop();
+                
+                match tokens.peek() {
+                    Some(TokenData { value: Token::QuestionMark, .. }) => {
+                        tokens.pop();
+
+                        MaybeBool::Maybe
+                    },
+                    _ => MaybeBool::True,
+                }
+            }
+            _ => MaybeBool::False,
+        };
+
         let is_mut = match tokens.peek() {
             Some(TokenData { value: Token::Keyword(Keyword::Mut), .. }) => {
                 tokens.pop();
@@ -851,7 +900,7 @@ fn build_def_class_impl(tokens: &mut Stack<TokenData>) -> Result<DefClassImpl> {
             Some(TokenData { value: Token::Keyword(Keyword::Self_), .. }) => {
                 const IS_PUBLIC: bool = true;
 
-                let method = build_def_class_method(tokens, IS_PUBLIC, is_mut)?;
+                let method = build_def_class_method(tokens, IS_PUBLIC, is_async, is_mut)?;
                 methods.push(method);
             },
             Some(token) => Err(ParseError::UnexpectedToken(token.clone()))?,
@@ -913,6 +962,22 @@ fn build_definition_interface(tokens: &mut Stack<TokenData>, is_public: bool) ->
             _ => {}
         }
 
+        let is_async = match tokens.peek() {
+            Some(TokenData { value: Token::Keyword(Keyword::Async), .. }) => {
+                tokens.pop();
+                
+                match tokens.peek() {
+                    Some(TokenData { value: Token::QuestionMark, .. }) => {
+                        tokens.pop();
+
+                        MaybeBool::Maybe
+                    },
+                    _ => MaybeBool::True,
+                }
+            }
+            _ => MaybeBool::False,
+        };
+
         let is_mut = match tokens.peek() {
             Some(TokenData { value: Token::Keyword(Keyword::Mut), .. }) => {
                 tokens.pop();
@@ -923,7 +988,7 @@ fn build_definition_interface(tokens: &mut Stack<TokenData>, is_public: bool) ->
 
         match tokens.peek() {
             Some(TokenData { value: Token::Keyword(Keyword::Self_), .. }) => {
-                let method = build_def_interface_method(tokens, is_mut)?;
+                let method = build_def_interface_method(tokens, is_async, is_mut)?;
                 methods.push(method);
             },
             Some(token) => Err(ParseError::UnexpectedToken(token.clone()))?,
@@ -946,7 +1011,7 @@ fn build_definition_interface(tokens: &mut Stack<TokenData>, is_public: bool) ->
     })));
 }
 
-fn build_def_interface_method(tokens: &mut Stack<TokenData>, is_mut: bool) -> Result<DefInterfaceMethod> {
+fn build_def_interface_method(tokens: &mut Stack<TokenData>, is_async: MaybeBool, is_mut: bool) -> Result<DefInterfaceMethod> {
     match tokens.pop() {
         Some(TokenData { value: Token::Keyword(Keyword::Self_), .. }) => {},
         Some(token) => Err(ParseError::UnexpectedToken(token))?,
@@ -1011,6 +1076,7 @@ fn build_def_interface_method(tokens: &mut Stack<TokenData>, is_mut: bool) -> Re
     };
 
     return Ok(DefInterfaceMethod {
+        is_async,
         is_mut,
         name,
         generics,

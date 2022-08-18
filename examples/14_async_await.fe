@@ -4,7 +4,7 @@ async fn is_async() {
 }
 
 async? fn maybe_async() {
-    if $.fn.is_async {
+    if $.is_async {
         TODO
     } else {
         TODO

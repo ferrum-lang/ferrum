@@ -77,6 +77,7 @@ fn parse_nodes(
 
         let is_definition = match token.value {
             Token::Keyword(Keyword::Pub) => true,
+            Token::Keyword(Keyword::Async) => true,
             Token::Keyword(Keyword::Fn) => true,
             Token::Keyword(Keyword::Struct) => true,
             Token::Keyword(Keyword::Class) => true,

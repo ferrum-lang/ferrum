@@ -37,10 +37,16 @@ pub fn build_expression(tokens: &mut Stack<TokenData>) -> Result<ast::Expression
 
     let expr = match tokens.pop() {
         Some(TokenData { value: Token::Keyword(Keyword::Self_), .. }) => {
-            build_expr_from_ident(tokens, SELF_STR.to_string())?
+            build_expr_from_ident(tokens, SELF_STR.to_string(), false)?
+        },
+        Some(TokenData { value: Token::Dollar, .. }) => {
+            Expression::Reference(Reference::Instance(ReferenceInstance {
+                name: "$".to_string(),
+                receiver: None,
+            }))
         },
         Some(TokenData { value: Token::Identifier(ident), .. }) => {
-            build_expr_from_ident(tokens, ident.to_string())?
+            build_expr_from_ident(tokens, ident.to_string(), false)?
         },
         Some(TokenData { value: Token::Literal(literal), .. }) => {
             build_expr_from_literal(tokens, literal)?
@@ -189,13 +195,14 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
 
                 let ident = match tokens.pop() {
                     Some(TokenData { value: Token::Identifier(ident), .. }) => ident,
+                    Some(TokenData { value: Token::Keyword(Keyword::Await), .. }) => "await".to_string(),
                     Some(token) => Err(ParseError::UnexpectedToken(token))?,
                     None => Err(ParseError::MissingExpectedToken(Some(Token::Identifier(String::new()))))?,
                 };
 
                 let receiver = expr;
 
-                let expr = build_expr_from_ident(tokens, ident)?;
+                let expr = build_expr_from_ident(tokens, ident, true)?;
 
                 add_reciever_to_expr(expr, receiver)?
             },
@@ -546,13 +553,14 @@ fn add_reciever_to_expr(expr: Expression, receiver: Expression) -> Result<Expres
             },
             _ => todo!(),
         },
-        _ => todo!(),
+        // Expression::Construction(_) => Err(ParseError::MissingExpectedToken(None))?,
+        expr => todo!("{expr:?}"),
     };
 
     return Ok(expr);
 }
 
-fn build_expr_from_ident(tokens: &mut Stack<TokenData>, ident: String) -> Result<Expression> {
+fn build_expr_from_ident(tokens: &mut Stack<TokenData>, ident: String, has_instance_receiver: bool) -> Result<Expression> {
     let new_line = ignore_new_lines(tokens);
 
     let expr = match tokens.pop() {
@@ -564,12 +572,13 @@ fn build_expr_from_ident(tokens: &mut Stack<TokenData>, ident: String) -> Result
 
             let ident = match tokens.pop() {
                 Some(TokenData { value: Token::Identifier(ident), .. }) => ident,
+                Some(TokenData { value: Token::Keyword(Keyword::Await), .. }) => "await".to_string(),
                 Some(TokenData { value: Token::Literal(lexer::Literal::Number(value)), .. }) => value, // number for accessing tuple values
                 Some(token) => Err(ParseError::UnexpectedToken(token.clone()))?,
                 None => Err(ParseError::MissingExpectedToken(Some(Token::Identifier(String::new()))))?,
             };
 
-            let expr = build_expr_from_ident(tokens, ident.to_string())?;
+            let expr = build_expr_from_ident(tokens, ident.to_string(), true)?;
 
             add_reciever_to_expr(expr, receiver)?
         },
@@ -630,7 +639,7 @@ fn build_expr_from_ident(tokens: &mut Stack<TokenData>, ident: String) -> Result
                 receiver: None,
             })
         },
-        Some(TokenData { value: Token::DoubleColon, .. }) => {
+        Some(TokenData { value: Token::DoubleColon, .. }) if !has_instance_receiver => {
             let receiver = Expression::Reference(Reference::Static(ReferenceStatic {
                 name: ident,
                 receiver: None,
@@ -642,11 +651,11 @@ fn build_expr_from_ident(tokens: &mut Stack<TokenData>, ident: String) -> Result
                 None => Err(ParseError::MissingExpectedToken(Some(Token::Identifier(String::new()))))?,
             };
 
-            let expr = build_expr_from_ident(tokens, ident.to_string())?;
+            let expr = build_expr_from_ident(tokens, ident.to_string(), false)?;
 
             add_reciever_to_expr(expr, receiver)?
         },
-        Some(token) if token.value == Token::OpenBrace => {
+        Some(token) if token.value == Token::OpenBrace && !has_instance_receiver => {
             let get_res: Box<dyn FnOnce(&mut Stack<TokenData>) -> Result<Expression>> = Box::new(|tokens| {
                 let r#type = Type::Custom(TypeCustom {
                     name: ident.clone(),

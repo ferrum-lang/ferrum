@@ -73,6 +73,7 @@ pub struct DefClassMethod {
 #[derive(Clone, Debug, PartialEq)]
 pub struct DefClassMethodSignature {
     pub is_public: bool,
+    pub is_async: MaybeBool,
     pub is_mut: bool,
     pub name: String,
     pub generics: Option<DefGenerics>,
