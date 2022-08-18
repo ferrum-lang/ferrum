@@ -11,6 +11,20 @@ const SELF_STR: &'static str = "self";
 pub fn build_expression(tokens: &mut Stack<TokenData>) -> Result<ast::Expression> {
     ignore_new_lines(tokens);
 
+    let expr = build_simple_expr(tokens)?;
+
+    let new_line = ignore_new_lines(tokens);
+
+    let expr = build_binary_operation_from(tokens, expr, true)?;
+
+    if let Some(new_line) = new_line {
+        tokens.push(new_line);
+    }
+
+    return Ok(expr);
+}
+
+fn build_simple_expr(tokens: &mut Stack<TokenData>) -> Result<Expression> {
     match tokens.peek() {
         Some(TokenData { value: Token::Keyword(Keyword::Mut), .. }) => {
             tokens.pop();
@@ -51,10 +65,9 @@ pub fn build_expression(tokens: &mut Stack<TokenData>) -> Result<ast::Expression
         Some(TokenData { value: Token::Literal(literal), .. }) => {
             build_expr_from_literal(tokens, literal)?
         },
-        Some(TokenData { value: Token::ExclamationMark, .. }) => {
-            Expression::Result(ExprResult::Passed(ExprResultPassed {
-                reciever: None,
-            }))
+        Some(token) if token.value == Token::ExclamationMark => {
+            tokens.push(token);
+            build_expr_not(tokens)?
         },
         Some(token) if token.value == Token::OpenParenthesis => {
             tokens.push(token);
@@ -82,7 +95,7 @@ pub fn build_expression(tokens: &mut Stack<TokenData>) -> Result<ast::Expression
 
     let new_line = ignore_new_lines(tokens);
 
-    let expr = build_binary_operation_from(tokens, expr)?;
+    let expr = build_binary_operation_from(tokens, expr, false)?;
 
     if let Some(new_line) = new_line {
         tokens.push(new_line);
@@ -181,7 +194,7 @@ fn wrap_expression(tokens: &mut Stack<TokenData>, expr: Expression) -> Result<Ex
     return Ok(expr);
 }
 
-fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) -> Result<Expression> {
+fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression, allow_spaced_bin: bool) -> Result<Expression> {
     let mut expr = expr;
 
     loop {
@@ -206,7 +219,7 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
 
                 add_reciever_to_expr(expr, receiver)?
             },
-            Some(TokenData { value: Token::Plus, .. }) => {
+            Some(TokenData { value: Token::Plus, .. }) if allow_spaced_bin => {
                 tokens.pop();
 
                 let left = Box::new(expr);
@@ -219,7 +232,7 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     operator: BinaryOperator::Plus,
                 })
             },
-            Some(TokenData { value: Token::Minus, .. }) => {
+            Some(TokenData { value: Token::Minus, .. }) if allow_spaced_bin => {
                 tokens.pop();
 
                 let left = Box::new(expr);
@@ -232,7 +245,7 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     operator: BinaryOperator::Minus,
                 })
             },
-            Some(TokenData { value: Token::Asterisk, .. }) => {
+            Some(TokenData { value: Token::Asterisk, .. }) if allow_spaced_bin => {
                 tokens.pop();
 
                 let left = Box::new(expr);
@@ -245,7 +258,7 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     operator: BinaryOperator::Multiply,
                 })
             },
-            Some(TokenData { value: Token::ForwardSlash, .. }) => {
+            Some(TokenData { value: Token::ForwardSlash, .. }) if allow_spaced_bin => {
                 tokens.pop();
 
                 let left = Box::new(expr);
@@ -258,7 +271,7 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     operator: BinaryOperator::Divide,
                 })
             },
-            Some(TokenData { value: Token::Percent, .. }) => {
+            Some(TokenData { value: Token::Percent, .. }) if allow_spaced_bin => {
                 tokens.pop();
 
                 let left = Box::new(expr);
@@ -271,7 +284,7 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     operator: BinaryOperator::Mod,
                 })
             },
-            Some(TokenData { value: Token::Caret, .. }) => {
+            Some(TokenData { value: Token::Caret, .. }) if allow_spaced_bin => {
                 tokens.pop();
 
                 let left = Box::new(expr);
@@ -284,7 +297,7 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     operator: BinaryOperator::Pow,
                 })
             },
-            Some(TokenData { value: Token::PlusEquals, .. }) => {
+            Some(TokenData { value: Token::PlusEquals, .. }) if allow_spaced_bin => {
                 tokens.pop();
 
                 let left = Box::new(expr);
@@ -297,7 +310,7 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     operator: BinaryOperator::PlusEquals,
                 })
             },
-            Some(TokenData { value: Token::MinusEquals, .. }) => {
+            Some(TokenData { value: Token::MinusEquals, .. }) if allow_spaced_bin => {
                 tokens.pop();
 
                 let left = Box::new(expr);
@@ -310,7 +323,7 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     operator: BinaryOperator::MinusEquals,
                 })
             },
-            Some(TokenData { value: Token::AsteriskEquals, .. }) => {
+            Some(TokenData { value: Token::AsteriskEquals, .. }) if allow_spaced_bin => {
                 tokens.pop();
 
                 let left = Box::new(expr);
@@ -323,7 +336,7 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     operator: BinaryOperator::MultiplyEquals,
                 })
             },
-            Some(TokenData { value: Token::ForwardSlashEquals, .. }) => {
+            Some(TokenData { value: Token::ForwardSlashEquals, .. }) if allow_spaced_bin => {
                 tokens.pop();
 
                 let left = Box::new(expr);
@@ -336,7 +349,7 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     operator: BinaryOperator::DivideEquals,
                 })
             },
-            Some(TokenData { value: Token::PercentEquals, .. }) => {
+            Some(TokenData { value: Token::PercentEquals, .. }) if allow_spaced_bin => {
                 tokens.pop();
 
                 let left = Box::new(expr);
@@ -349,7 +362,7 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     operator: BinaryOperator::ModEquals,
                 })
             },
-            Some(TokenData { value: Token::CaretEquals, .. }) => {
+            Some(TokenData { value: Token::CaretEquals, .. }) if allow_spaced_bin => {
                 tokens.pop();
 
                 let left = Box::new(expr);
@@ -362,7 +375,7 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     operator: BinaryOperator::PowEquals,
                 })
             },
-            Some(TokenData { value: Token::DoubleEquals, .. }) => {
+            Some(TokenData { value: Token::DoubleEquals, .. }) if allow_spaced_bin => {
                 tokens.pop();
 
                 let left = Box::new(expr);
@@ -375,7 +388,7 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     operator: BinaryOperator::Equals,
                 })
             },
-            Some(TokenData { value: Token::NotEquals, .. }) => {
+            Some(TokenData { value: Token::NotEquals, .. }) if allow_spaced_bin => {
                 tokens.pop();
 
                 let left = Box::new(expr);
@@ -388,7 +401,7 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     operator: BinaryOperator::NotEquals,
                 })
             },
-            Some(TokenData { value: Token::GreaterThan, .. }) => {
+            Some(TokenData { value: Token::GreaterThan, .. }) if allow_spaced_bin => {
                 tokens.pop();
 
                 let left = Box::new(expr);
@@ -401,7 +414,7 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     operator: BinaryOperator::GreaterThan,
                 })
             },
-            Some(TokenData { value: Token::GreaterThanEquals, .. }) => {
+            Some(TokenData { value: Token::GreaterThanEquals, .. }) if allow_spaced_bin => {
                 tokens.pop();
 
                 let left = Box::new(expr);
@@ -414,7 +427,7 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     operator: BinaryOperator::GreaterThanOrEquals,
                 })
             },
-            Some(TokenData { value: Token::LessThan, .. }) => {
+            Some(TokenData { value: Token::LessThan, .. }) if allow_spaced_bin => {
                 tokens.pop();
 
                 let left = Box::new(expr);
@@ -427,7 +440,7 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     operator: BinaryOperator::LessThan,
                 })
             },
-            Some(TokenData { value: Token::LessThanEquals, .. }) => {
+            Some(TokenData { value: Token::LessThanEquals, .. }) if allow_spaced_bin => {
                 tokens.pop();
 
                 let left = Box::new(expr);
@@ -440,7 +453,7 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     operator: BinaryOperator::LessThanOrEquals,
                 })
             },
-            Some(TokenData { value: Token::DoublePipe, .. }) => {
+            Some(TokenData { value: Token::DoublePipe, .. }) if allow_spaced_bin => {
                 tokens.pop();
 
                 let left = Box::new(expr);
@@ -453,7 +466,7 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     operator: BinaryOperator::Or,
                 })
             },
-            Some(TokenData { value: Token::DoubleAmpersand, .. }) => {
+            Some(TokenData { value: Token::DoubleAmpersand, .. }) if allow_spaced_bin => {
                 tokens.pop();
 
                 let left = Box::new(expr);
@@ -466,7 +479,7 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     operator: BinaryOperator::And,
                 })
             },
-            Some(TokenData { value: Token::DoubleQuestionMark, .. }) => {
+            Some(TokenData { value: Token::DoubleQuestionMark, .. }) if allow_spaced_bin => {
                 tokens.pop();
 
                 let left = Box::new(expr);
@@ -479,7 +492,7 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     operator: BinaryOperator::NullCoalesce
                 })
             },
-            Some(TokenData { value: Token::DoublePeriod, .. }) => {
+            Some(TokenData { value: Token::DoublePeriod, .. }) if allow_spaced_bin => {
                 tokens.pop();
 
                 let from = Box::new(expr);
@@ -492,7 +505,7 @@ fn build_binary_operation_from(tokens: &mut Stack<TokenData>, expr: Expression) 
                     inclusive: false,
                 })
             },
-            Some(TokenData { value: Token::DoublePeriodEquals, .. }) => {
+            Some(TokenData { value: Token::DoublePeriodEquals, .. }) if allow_spaced_bin => {
                 tokens.pop();
 
                 let from = Box::new(expr);
@@ -911,11 +924,12 @@ fn build_expr_if_else(tokens: &mut Stack<TokenData>) -> Result<Expression> {
 fn build_expr_not(tokens: &mut Stack<TokenData>) -> Result<Expression> {
     match tokens.pop() {
         Some(TokenData { value: Token::Keyword(Keyword::Not), .. }) => {},
+        Some(TokenData { value: Token::ExclamationMark, .. }) => {},
         Some(token) => Err(ParseError::UnexpectedToken(token))?,
         None => Err(ParseError::MissingExpectedToken(Some(Token::Keyword(Keyword::Not))))?,
     }
 
-    let expr = Box::new(build_expression(tokens)?);
+    let expr = Box::new(build_simple_expr(tokens)?);
 
     return Ok(Expression::Not(expr));
 }
