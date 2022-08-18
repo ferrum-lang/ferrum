@@ -33,7 +33,7 @@ pub fn build_and_run(config: &Config) -> Result<()> {
     let stdout = output.stdout;
     let string = String::from_utf8(stdout)?;
 
-    println!("{}", string);
+    print!("{}", string);
 
     return Ok(());
 }
