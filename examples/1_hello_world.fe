@@ -1,1 +1,1 @@
-log.info("Hello world")
+print("hello world")
