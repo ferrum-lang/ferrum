@@ -1,6 +1,6 @@
 fn main() {
-    log.info("Current function: {$.fn.name}")
+    log.info("Current function: {$.name}")
 
-    log.info("Is async? {$.fn.is_async}")
+    log.info("Is async? {$.is_async}")
 }
 
