@@ -9,4 +9,6 @@ edition = "2021"
 structopt = "0.3.13"
 anyhow = "1.0"
 thiserror = "1.0"
+syn = { version = "1.0.99", features = ["full", "printing", "extra-traits"] }
+quote = "1.0.21"
 

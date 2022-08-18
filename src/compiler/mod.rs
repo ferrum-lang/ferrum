@@ -8,11 +8,11 @@ use std::path;
 use anyhow::Result;
 
 pub fn compile(filepath: &path::PathBuf) -> Result<String> {
-    let mut ast = compile_to_unchecked_ast(filepath)?;
+    let ast = compile_to_unchecked_ast(filepath)?;
 
-    semantics::fix_and_validate(&mut ast)?;
+    let rs_ast = semantics::translate(ast)?;
 
-    return generator::generate_rust(ast);
+    return generator::generate_rust(rs_ast);
 }
 
 fn compile_to_unchecked_ast(filepath: &path::PathBuf) -> Result<parser::AST> {

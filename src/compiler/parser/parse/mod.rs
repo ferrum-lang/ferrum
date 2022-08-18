@@ -46,8 +46,8 @@ pub fn parse_ast(tokens: Tokens) -> Result<AST> {
     
     // println!("\n{tokens:?}\n");
 
-    todo!("\n{ast:?}\n");
-    // return Ok(ast);
+    // todo!("\n{ast:?}\n");
+    return Ok(ast);
 }
 
 pub fn ignore_new_lines(tokens: &mut Stack<TokenData>) -> Option<TokenData> {
