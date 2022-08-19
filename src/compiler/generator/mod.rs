@@ -9,6 +9,11 @@ use proc_macro2::Span;
 use anyhow::Result;
 
 pub fn generate_rust(ast: SemanticAST) -> Result<String> {
+    /* TODO
+     * syn's AST has many complex pieces within.
+     * Might be worth trying to build string ourselves.
+     */
+
     let file = syn::File {
         shebang: None,
         attrs: vec![],
