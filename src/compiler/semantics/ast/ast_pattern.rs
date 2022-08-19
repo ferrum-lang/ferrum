@@ -72,8 +72,14 @@ pub struct PatStruct {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FieldPat {
-    pub name: Option<String>,
+    pub name: Member,
     pub pattern: Box<Pattern>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Member {
+    Named(String),
+    Indexed(usize),
 }
 
 #[derive(Clone, Debug, PartialEq)]
