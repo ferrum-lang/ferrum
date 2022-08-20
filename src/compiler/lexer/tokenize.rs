@@ -315,14 +315,35 @@ pub fn tokenize(filepath: &std::path::PathBuf) -> Result<Tokens> {
                 });
             },
 
-            '{' => tokens.push(TokenData {
-                value: Token::OpenBrace,
-                source_meta: source_meta(current_line, current_line),
-            }),
-            '}' => tokens.push(TokenData {
-                value: Token::CloseBrace,
-                source_meta: source_meta(current_line, current_line),
-            }),
+
+            '{' => {
+                let token = match chars.peek() {
+                    Some(&'{') => {
+                        chars.pop();
+                        Token::DoubleOpenBrace
+                    },
+                    _ => Token::OpenBrace,
+                };
+
+                tokens.push(TokenData {
+                    value: token,
+                    source_meta: source_meta(current_line, current_line),
+                });
+            },
+            '}' => {
+                let token = match chars.peek() {
+                    Some(&'}') => {
+                        chars.pop();
+                        Token::DoubleCloseBrace
+                    },
+                    _ => Token::CloseBrace,
+                };
+
+                tokens.push(TokenData {
+                    value: token,
+                    source_meta: source_meta(current_line, current_line),
+                });
+            },
             '[' => tokens.push(TokenData {
                 value: Token::OpenBracket,
                 source_meta: source_meta(current_line, current_line),

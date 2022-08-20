@@ -872,6 +872,12 @@ fn build_def_class_impl(tokens: &mut Stack<TokenData>) -> Result<DefClassImpl> {
             _ => {}
         }
 
+        match tokens.pop() {
+            Some(TokenData { value: Token::Keyword(Keyword::Pub), .. }) => {},
+            _ => Err(ParseError::MissingExpectedToken(Some(Token::Keyword(Keyword::Pub))))?,
+        }
+
+
         let is_async = match tokens.peek() {
             Some(TokenData { value: Token::Keyword(Keyword::Async), .. }) => {
                 tokens.pop();
@@ -1177,6 +1183,61 @@ fn build_def_enum_field(tokens: &mut Stack<TokenData>) -> Result<DefEnumField> {
 }
 
 fn build_definition_errors(tokens: &mut Stack<TokenData>, is_public: bool) -> Result<Definition> {
-    todo!();
+    match tokens.pop() {
+        Some(TokenData { value: Token::Keyword(Keyword::Errors), .. }) => {},
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::Keyword(Keyword::Errors))))?,
+    }
+
+    let name = match tokens.pop() {
+        Some(TokenData { value: Token::Identifier(ident), .. }) => ident,
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::Identifier(String::new()))))?,
+    };
+
+    ignore_new_lines(tokens);
+
+    match tokens.pop() {
+        Some(TokenData { value: Token::OpenBrace, .. }) => {},
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::OpenBrace)))?,
+    }
+
+    let mut values = vec![];
+
+    loop {
+        ignore_new_lines(tokens);
+
+        match tokens.peek() {
+            Some(TokenData { value: Token::CloseBrace, .. }) => {
+                tokens.pop();
+                break;
+            },
+            _ => {},
+        }
+
+
+        let value = match tokens.pop() {
+            Some(TokenData { value: Token::Identifier(ident), .. }) => DefErrorsValue { name: ident },
+            Some(token) => Err(ParseError::UnexpectedToken(token))?,
+            None => Err(ParseError::MissingExpectedToken(Some(Token::Identifier(String::new()))))?,
+        };
+        values.push(value);
+
+        ignore_new_lines(tokens);
+
+        match tokens.pop() {
+            Some(TokenData { value: Token::CloseBrace, .. }) => break,
+            Some(TokenData { value: Token::Comma, .. }) => {},
+            Some(token) => Err(ParseError::UnexpectedToken(token))?,
+            None => Err(ParseError::MissingExpectedToken(Some(Token::CloseBrace)))?,
+        }
+    }
+
+    return Ok(Definition::Type(DefType::Errors(DefErrors {
+        is_public,
+        name,
+        values,
+    })));
 }
 

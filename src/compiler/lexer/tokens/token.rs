@@ -14,6 +14,8 @@ pub enum Token {
 
     OpenBrace,            // {
     CloseBrace,           // }
+    DoubleOpenBrace,      // {{
+    DoubleCloseBrace,     // }}
     OpenBracket,          // [
     CloseBracket,         // ]
     OpenParenthesis,      // (

@@ -1,6 +1,8 @@
 #[derive(Clone, Debug, PartialEq)]
 pub struct DefErrors {
-  pub values: Vec<DefErrorsValue>,
+    pub is_public: bool,
+    pub name: String,
+    pub values: Vec<DefErrorsValue>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

@@ -48,6 +48,7 @@ pub enum Expression {
     FunctionCall(FunctionCall),
     MethodCall(MethodCall),
     Construction(Construction),       // Example { a, b }
+    AnonymousObject(AnonObj),         // {{ a, b: "c" }}
     Reference(Reference),             // example, some.example, some::example
     Loop(Loop),                       // loop, loop-while, while, for
     Branch(Branch),                   // if/else, match, ternary
@@ -67,6 +68,11 @@ pub enum Expression {
     TernaryElse(Box<Expression>),
     ValueSpread(Box<Expression>),
     Return(Option<Box<Expression>>),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct AnonObj {
+    pub fields: Vec<ConstructionField>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

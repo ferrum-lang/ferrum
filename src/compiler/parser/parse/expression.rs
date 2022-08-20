@@ -82,6 +82,10 @@ fn build_simple_expr(tokens: &mut Stack<TokenData>) -> Result<Expression> {
             let block = Box::new(build_statement_block(tokens)?);
             ast::Expression::Block(BlockExpr { block })
         },
+        Some(token) if token.value == Token::DoubleOpenBrace => {
+            tokens.push(token);
+            build_expr_anonymous_object(tokens)?
+        },
         Some(TokenData { value: Token::Keyword(keyword), source_meta }) => {
             tokens.push(TokenData { value: Token::Keyword(keyword), source_meta });
             build_expr_keyword(tokens)?
@@ -870,6 +874,42 @@ fn build_expr_from_literal(tokens: &mut Stack<TokenData>, literal: lexer::Litera
     };
 
     return Ok(expr);
+}
+
+fn build_expr_anonymous_object(tokens: &mut Stack<TokenData>) -> Result<Expression> {
+    match tokens.pop() {
+        Some(TokenData { value: Token::DoubleOpenBrace, .. }) => {},
+        Some(token) => Err(ParseError::UnexpectedToken(token))?,
+        None => Err(ParseError::MissingExpectedToken(Some(Token::DoubleOpenBrace)))?,
+    }
+
+    let mut fields = vec![];
+
+    loop {
+        ignore_new_lines(tokens);
+
+        match tokens.peek() {
+            Some(TokenData { value: Token::DoubleCloseBrace, .. }) => {
+                tokens.pop();
+                break;
+            },
+            _ => {},
+        }
+
+        ignore_new_lines(tokens);
+
+        let field = build_construction_field(tokens)?;
+        fields.push(field);
+
+        match tokens.pop() {
+            Some(TokenData { value: Token::DoubleCloseBrace, .. }) => break,
+            Some(TokenData { value: Token::Comma, .. }) => {},
+            Some(token) => Err(ParseError::UnexpectedToken(token))?,
+            None => Err(ParseError::MissingExpectedToken(Some(Token::DoubleCloseBrace)))?,
+        }
+    }
+
+    return Ok(Expression::AnonymousObject(AnonObj { fields }));
 }
 
 fn build_expr_keyword(tokens: &mut Stack<TokenData>) -> Result<Expression> {
