@@ -11,34 +11,34 @@ pub struct ItemEnum {
 #[derive(Clone, Debug, PartialEq)]
 pub struct EnumVariant {
     pub name: String,
-    pub fields: EnumVariantFields,
+    pub fields: Fields,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum EnumVariantFields {
-    Named(EnumVariantNamedFields),
-    Unnamed(EnumVariantUnnamedFields),
+pub enum Fields {
+    Named(NamedFields),
+    Unnamed(UnnamedFields),
     Unit,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct EnumVariantNamedFields {
-    pub fields: Vec<EnumVariantNamedField>,
+pub struct NamedFields {
+    pub fields: Vec<NamedField>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct EnumVariantNamedField {
+pub struct NamedField {
     pub name: String,
     pub typ: Type,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct EnumVariantUnnamedFields {
-    pub fields: Vec<EnumVariantUnnamedField>,
+pub struct UnnamedFields {
+    pub fields: Vec<UnnamedField>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct EnumVariantUnnamedField {
+pub struct UnnamedField {
     pub typ: Type,
 }
 
