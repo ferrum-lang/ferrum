@@ -10,9 +10,11 @@ use anyhow::Result;
 pub fn compile(filepath: &path::PathBuf) -> Result<String> {
     let input_ast = compile_to_input_ast(filepath)?;
 
-    let semantic_ast = semantics::validate_and_contextualize(input_ast)?;
+    let semantic_ast = semantics::translate(input_ast)?;
 
     let rust = generator::generate_rust(semantic_ast);
+
+    // todo!("\n\nRust:\n{rust}\n");
 
     return Ok(rust);
 }

@@ -1,6 +1,6 @@
 mod ast;
-mod validate;
+mod translate;
 
 pub use ast::*;
-pub use validate::*;
+pub use translate::*;
 

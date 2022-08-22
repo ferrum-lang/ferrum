@@ -613,8 +613,6 @@ fn build_expr_from_ident(tokens: &mut Stack<TokenData>, ident: String, has_insta
                     _ => {},
                 }
 
-                ignore_new_lines(tokens);
-
                 let name = match tokens.peek() {
                     Some(TokenData { value: Token::Identifier(ident), source_meta }) => {
                         let ident = ident.clone();
@@ -641,6 +639,8 @@ fn build_expr_from_ident(tokens: &mut Stack<TokenData>, ident: String, has_insta
 
                 let value = Box::new(build_expression(tokens)?);
                 args.push(FunctionCallArg { name, value });
+
+                ignore_new_lines(tokens);
 
                 match tokens.pop() {
                     Some(TokenData { value: Token::CloseParenthesis, .. }) => break,

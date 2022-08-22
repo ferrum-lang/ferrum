@@ -1,2 +1,4 @@
-log.info("Hello world")
+print(
+    "Hello Adam!",
+)
 

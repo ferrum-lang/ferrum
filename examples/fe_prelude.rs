@@ -2,14 +2,14 @@ use std::{clone, cmp, fmt, hash, ops, rc};
 
 fn main() {}
 
-pub fn print<S: Into<FeString>>(text: S, new_line: bool) {
+pub fn print<S: Into<FeString>>(text: S/*, new_line: bool*/) {
     let text: FeString = text.into();
 
-    if new_line {
+    // if new_line {
         println!("{}", text);
-    } else {
-        print!("{}", text);
-    }
+    // } else {
+    //     print!("{}", text);
+    // }
 }
 
 #[allow(dead_code)]
