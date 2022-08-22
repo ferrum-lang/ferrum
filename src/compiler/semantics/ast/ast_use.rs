@@ -9,6 +9,7 @@ pub enum UseTree {
     Path(UsePath),
     Name(UseName),
     Group(UseGroup),
+    Glob,
 }
 
 #[derive(Clone, Debug, PartialEq)]

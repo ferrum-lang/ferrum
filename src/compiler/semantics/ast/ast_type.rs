@@ -1,6 +1,14 @@
 use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct ItemType {
+    pub is_public: bool,
+    pub name: String,
+    pub generics: Generics,
+    pub typ: Box<Type>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum Type {
     Array(TypeArray),
     BareFn(TypeBareFn),

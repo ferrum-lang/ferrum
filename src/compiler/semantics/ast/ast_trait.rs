@@ -6,6 +6,7 @@ pub struct ItemTrait {
     pub name: String,
     pub generics: Generics,
     pub items: Vec<TraitItem>,
+    pub supertraits: Vec<TypeParamBound>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

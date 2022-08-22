@@ -2,6 +2,7 @@ use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Generics {
+    pub params: Vec<GenericParam>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

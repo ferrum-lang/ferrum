@@ -1,3 +1,4 @@
+mod ast_const;
 mod ast_enum;
 mod ast_expr;
 mod ast_fn;
@@ -15,6 +16,7 @@ mod ast_trait;
 mod ast_type;
 mod ast_use;
 
+pub use ast_const::*;
 pub use ast_enum::*;
 pub use ast_expr::*;
 pub use ast_fn::*;
@@ -61,10 +63,12 @@ pub struct SemanticAST {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Item {
-    Struct(ItemStruct),
-    Impl(ItemImpl),
+    Const(ItemConst),
     Enum(ItemEnum),
-    Trait(ItemTrait),
     Fn(ItemFn),
+    Impl(ItemImpl),
+    Struct(ItemStruct),
+    Trait(ItemTrait),
+    Type(ItemType),
 }
 

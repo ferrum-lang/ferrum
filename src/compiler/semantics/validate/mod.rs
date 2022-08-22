@@ -39,15 +39,18 @@ pub fn validate_and_contextualize(ast: p::AST) -> Result<SemanticAST> {
     // println!("has_explicit_main: {has_explicit_main:?}");
 
     return Ok(SemanticAST {
-        mods: vec![],
+        mods: vec![
+            Mod {
+                is_public: false,
+                name: "fe_prelude".to_string(),
+            }
+        ],
         uses: vec![
             Use {
                 is_public: false,
                 tree: UseTree::Path(UsePath {
-                    ident: "*".to_string(),
-                    tree: Box::new(UseTree::Name(UseName {
-                        name: "fe_prelude".to_string(),
-                    })),
+                    ident: "fe_prelude".to_string(),
+                    tree: Box::new(UseTree::Glob),
                 })
             },
         ],
@@ -55,12 +58,14 @@ pub fn validate_and_contextualize(ast: p::AST) -> Result<SemanticAST> {
         lazy_static_consts: vec![],
         items: vec![
             Item::Fn(ItemFn {
+                is_public: true,
                 signature: FnSignature {
-                    is_public: true,
                     is_const: false,
                     is_async: false,
                     name: "main".to_string(),
-                    generics: Generics {},
+                    generics: Generics {
+                        params: vec![],
+                    },
                     params: vec![],
                     return_type: ReturnType::Default,
                 },
@@ -72,14 +77,18 @@ pub fn validate_and_contextualize(ast: p::AST) -> Result<SemanticAST> {
                                     segments: vec![
                                         PathSegment {
                                             ident: "print".to_string(),
+                                            arguments: PathArguments::None,
                                         }
                                     ],
                                 }
                             })),
                             args: vec![
-                                Box::new(Expr::Lit(ExprLit {
+                                Expr::Lit(ExprLit {
                                     literal: Literal::Str("hello world".to_string()),
-                                })),
+                                }),
+                                Expr::Lit(ExprLit {
+                                    literal: Literal::Bool(true),
+                                }),
                             ],
                         }))
                     ],

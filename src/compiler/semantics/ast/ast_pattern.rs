@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Pattern {
-    Box(PatBox),
+    Ident(PatIdent),
     Lit(PatLit),
     Or(PatOr),
     Path(PatPath),
@@ -17,8 +17,10 @@ pub enum Pattern {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct PatBox {
-    pub pattern: Box<Pattern>,
+pub struct PatIdent {
+    pub is_ref: bool,
+    pub is_mut: bool,
+    pub name: String,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -28,7 +30,7 @@ pub struct PatLit {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PatOr {
-    pub cases: Vec<Box<Pattern>>,
+    pub cases: Vec<Pattern>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -44,6 +46,46 @@ pub struct Path {
 #[derive(Clone, Debug, PartialEq)]
 pub struct PathSegment {
     pub ident: String,
+    pub arguments: PathArguments,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum PathArguments {
+    None,
+    AngleBracketed(AngleBracketedGenericArguments),
+    Parenthesized(ParenthesizedGenericArguments),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct AngleBracketedGenericArguments {
+    pub args: Vec<GenericArgument>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum GenericArgument {
+    Lifetime(Lifetime),
+    Type(Type),
+    Binding(Binding),
+    Constraint(Constraint),
+    Const(Expr),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Binding {
+    pub name: String,
+    pub typ: Type,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Constraint {
+    pub name: String,
+    pub bounds: Vec<TypeParamBound>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ParenthesizedGenericArguments {
+    pub inputs: Vec<Type>,
+    pub output: ReturnType,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -61,7 +103,7 @@ pub struct PatReference {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PatSlice {
-    pub elems: Vec<Box<Pattern>>,
+    pub elems: Vec<Pattern>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -72,19 +114,19 @@ pub struct PatStruct {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FieldPat {
-    pub name: Member,
-    pub pattern: Box<Pattern>,
+    pub member: Member,
+    pub pattern: Option<Box<Pattern>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Member {
     Named(String),
-    Indexed(usize),
+    Indexed(u32),
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PatTuple {
-    pub elems: Vec<Box<Pattern>>,
+    pub elems: Vec<Pattern>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

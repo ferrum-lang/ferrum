@@ -2,13 +2,13 @@ use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ItemFn {
+    pub is_public: bool,
     pub signature: FnSignature,
     pub block: Box<Block>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FnSignature {
-    pub is_public: bool,
     pub is_const: bool,
     pub is_async: bool,
     pub name: String,
@@ -25,6 +25,7 @@ pub enum FnParam {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Self_ {
+    pub is_mutable: bool,
     pub reference: Option<Reference>,
 }
 

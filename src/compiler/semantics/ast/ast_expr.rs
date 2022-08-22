@@ -28,7 +28,7 @@ pub enum Expr {
     Path(ExprPath),
     Range(ExprRange),
     Reference(ExprReference),
-    // Repeat(ExprRepeat),
+    Repeat(ExprRepeat),
     Return(ExprReturn),
     Struct(ExprStruct),
     Try(ExprTry),
@@ -40,7 +40,7 @@ pub enum Expr {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ExprArray {
-    pub elems: Vec<Box<Expr>>,
+    pub elems: Vec<Expr>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -90,7 +90,7 @@ pub enum BinOp {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ExprAsync {
-    pub has_move: bool,
+    pub is_move: bool,
     pub block: Block,
 }
 
@@ -109,7 +109,7 @@ pub struct ExprBinary {
 #[derive(Clone, Debug, PartialEq)]
 pub struct ExprCall {
     pub func: Box<Expr>,
-    pub args: Vec<Box<Expr>>,
+    pub args: Vec<Expr>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -121,7 +121,7 @@ pub struct ExprCast {
 #[derive(Clone, Debug, PartialEq)]
 pub struct ExprClosure {
     pub is_async: bool,
-    pub has_move: bool,
+    pub is_move: bool,
     pub params: Vec<Pattern>,
     pub return_type: ReturnType,
     pub body: Box<Expr>,
@@ -144,7 +144,7 @@ pub struct ExprForLoop {
 pub struct ExprIf {
     pub condition: Box<Expr>,
     pub then_branch: Block,
-    pub else_branch: Option<Block>,
+    pub else_branch: Option<Box<Expr>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -192,7 +192,7 @@ pub struct ExprMethodCall {
     pub receiver: Box<Expr>,
     pub method: String,
     pub turbofish: Option<MethodTurbofish>,
-    pub args: Vec<Box<Expr>>,
+    pub args: Vec<Expr>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -230,6 +230,12 @@ pub struct ExprReference {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct ExprRepeat {
+    pub expr: Box<Expr>,
+    pub len: Box<Expr>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct ExprReturn {
     pub expr: Option<Box<Expr>>,
 }
@@ -244,7 +250,7 @@ pub struct ExprStruct {
 #[derive(Clone, Debug, PartialEq)]
 pub struct FieldValue {
     pub member: Member,
-    pub expr: Expr,
+    pub expr: Option<Expr>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -254,7 +260,7 @@ pub struct ExprTry {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ExprTuple {
-    pub elems: Vec<Box<Expr>>,
+    pub elems: Vec<Expr>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

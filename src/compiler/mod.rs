@@ -12,7 +12,9 @@ pub fn compile(filepath: &path::PathBuf) -> Result<String> {
 
     let semantic_ast = semantics::validate_and_contextualize(input_ast)?;
 
-    return generator::generate_rust(semantic_ast);
+    let rust = generator::generate_rust(semantic_ast);
+
+    return Ok(rust);
 }
 
 fn compile_to_input_ast(filepath: &path::PathBuf) -> Result<parser::AST> {
