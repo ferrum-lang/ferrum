@@ -23,6 +23,10 @@ pub fn convert_to_syn_ast(sem_ast: SemanticAST) -> syn::File {
         file.items.push(convert_static_const(static_const));
     }
 
+    for lazy_static_const in sem_ast.lazy_static_consts.into_iter() {
+        todo!();
+    }
+
     for item in sem_ast.items.into_iter() {
         file.items.push(convert_item(item));
     }
