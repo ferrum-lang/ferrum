@@ -5,7 +5,7 @@ pub enum Literal {
     Bool(bool),
     Number(LiteralNumber),
     Char(LiteralChar),
-    String(LiteralString),
+    PlainString(LiteralString),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -19,9 +19,8 @@ pub struct LiteralChar {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum LiteralString {
-    Plain(String),
-    Template(TemplateString),
+pub struct LiteralString {
+    pub value: String,
 }
 
 #[derive(Clone, Debug, PartialEq)]

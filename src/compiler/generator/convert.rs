@@ -764,7 +764,7 @@ fn convert_macro(mac: Macro) -> syn::Macro {
             MacroDelimiter::Brace => syn::MacroDelimiter::Brace(brace_token()),
         },
         path: convert_path(mac.path),
-        tokens: token_stream(mac.values),
+        tokens: mac.tokens,
     };
 }
 
@@ -1245,9 +1245,5 @@ fn punctuated<T, P>(items: Vec<T>, delim: fn() -> P) -> syn::punctuated::Punctua
     }
 
     return p;
-}
-
-fn token_stream(values: Vec<String>) -> proc_macro2::TokenStream {
-    todo!();
 }
 

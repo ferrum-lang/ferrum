@@ -56,6 +56,7 @@ pub enum Expression {
     Matches(Matches),
     Closure(Closure), // () => {}
     Literal(Literal), // 1, "hello"
+    TemplateString(TemplateString),
     Tuple(Tuple),     // (1, 2, 3)
     List(List),       // [1, 2, 3]
     ListIndexedItem(ListIndexedItem),

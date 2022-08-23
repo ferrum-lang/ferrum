@@ -2,6 +2,8 @@ use super::*;
 
 use std::collections::HashMap;
 
+use quote::quote;
+
 pub fn translate_def_fn(
     fn_params_map: &FnParamsMap,
     ast: &mut SemanticAST,
@@ -55,85 +57,75 @@ fn map_statement(fn_params_map: &FnParamsMap, statement: p::Statement) -> Result
 
 fn map_expr(fn_params_map: &FnParamsMap, expr: p::Expression) -> Result<Expr> {
     let expr = match expr {
-        p::Expression::FunctionCall(call) => {
-            /*
-                args: call.args
-                    .into_iter()
-                    .map(|arg| {
-                        // TODO: Handle name or if expr is name
-
-
-
-                        map_expr(fn_params_map, *arg.value).unwrap()
-                    })
-                .collect(),
-             */
-
-            let fn_params = fn_params_map.get(&call.name);
-
-            let mut args = vec![];
-
-            if let Some(fn_params) = fn_params {
-                if call.args.len() > fn_params.len() {
-                    todo!("Too many args!");
-                }
-
-                let mut named_args = HashMap::new();
-                let mut unnamed_args = vec![];
-
-                for arg in call.args.clone().into_iter() {
-                    if let Some(name) = arg.name.clone() {
-                        let fn_param = fn_params.iter()
-                            .find(|p| p.0 == name)
-                            .expect("Couldn't find param");
-
-                        named_args.insert(fn_param.0.clone(), arg);
-                    } else {
-                        unnamed_args.push(arg);
-                    }
-                }
-
-                unnamed_args.reverse();
-
-                for param in fn_params.clone().into_iter() {
-                    if let Some(named_arg) = named_args.remove(&param.0) {
-                        args.push(map_expr(&fn_params_map, *named_arg.value)?);
-                    } else if let Some(unnamed_arg) = unnamed_args.pop() {
-                        args.push(map_expr(&fn_params_map, *unnamed_arg.value)?);
-                    } else if let Some(default_val) = param.1 {
-                        args.push(map_expr(&fn_params_map, *default_val)?);
-                    } else {
-                        todo!("Missing arg!");
-                    }
-                }
-            } else {
-                for arg in call.args.into_iter() {
-                    args.push(map_expr(fn_params_map, *arg.value)?);
-                }
-            }
-
-            let mut segments = vec![
-                PathSegment {
-                    ident: call.name,
-                    arguments: PathArguments::None,
-                },
-            ];
-
-            if let Some(typ) = call.receiver {
-                todo!();
-                // segments.extend(map_type_to_path_segments(typ));
-            }
-
-            Expr::Call(ExprCall {
-                func: Box::new(Expr::Path(ExprPath {
-                    path: Path { segments },
-                })),
-                args,
-            })
-        },
         p::Expression::Literal(literal) => Expr::Lit(ExprLit { literal: map_literal(literal)? }),
-        _=> todo!(),
+        p::Expression::FunctionCall(call) => map_expr_fn_call(fn_params_map, call)?,
+        p::Expression::TemplateString(template_str) => map_expr_template_str(fn_params_map, template_str)?,
+        _=> todo!("{expr:?}"),
     };
+
+    return Ok(expr);
+}
+
+fn map_expr_fn_call(fn_params_map: &FnParamsMap, call: p::FunctionCall) -> Result<Expr> {
+    let fn_params = fn_params_map.get(&call.name);
+
+    let mut args = vec![];
+
+    if let Some(fn_params) = fn_params {
+        if call.args.len() > fn_params.len() {
+            todo!("Too many args!");
+        }
+
+        let mut named_args = HashMap::new();
+        let mut unnamed_args = vec![];
+
+        for arg in call.args.clone().into_iter() {
+            if let Some(name) = arg.name.clone() {
+                let fn_param = fn_params.iter()
+                    .find(|p| p.0 == name)
+                    .expect("Couldn't find param");
+
+                named_args.insert(fn_param.0.clone(), arg);
+            } else {
+                unnamed_args.push(arg);
+            }
+        }
+
+        unnamed_args.reverse();
+
+        for param in fn_params.clone().into_iter() {
+            if let Some(named_arg) = named_args.remove(&param.0) {
+                args.push(map_expr(&fn_params_map, *named_arg.value)?);
+            } else if let Some(unnamed_arg) = unnamed_args.pop() {
+                args.push(map_expr(&fn_params_map, *unnamed_arg.value)?);
+            } else if let Some(default_val) = param.1 {
+                args.push(map_expr(&fn_params_map, *default_val)?);
+            } else {
+                todo!("Missing arg!");
+            }
+        }
+    } else {
+        for arg in call.args.into_iter() {
+            args.push(map_expr(fn_params_map, *arg.value)?);
+        }
+    }
+
+    let mut segments = match call.receiver {
+        Some(static_ref) => map_static_ref_to_path_segments(static_ref),
+        None => vec![],
+    };
+
+    segments.push(PathSegment {
+        ident: call.name,
+        arguments: PathArguments::None,
+    });
+
+    let expr = Expr::Call(ExprCall {
+        func: Box::new(Expr::Path(ExprPath {
+            path: Path { segments },
+        })),
+        args,
+    });
 
     return Ok(expr);
 }
@@ -141,15 +133,94 @@ fn map_expr(fn_params_map: &FnParamsMap, expr: p::Expression) -> Result<Expr> {
 fn map_literal(literal: p::Literal) -> Result<Literal> {
     let literal = match literal {
         p::Literal::Bool(value) => Literal::Bool(value),
-        p::Literal::String(value) => match value {
-            p::LiteralString::Plain(value) => Literal::Str(value),
-            _ => todo!(),
-        },
+        p::Literal::PlainString(p::LiteralString { value }) => Literal::Str(value),
         p::Literal::Number(p::LiteralNumber { value }) => Literal::Float(value),
         _ => todo!(),
     };
 
-
     return Ok(literal);
+}
+
+fn map_expr_template_str(fn_params_map: &FnParamsMap, template_string: p::TemplateString) -> Result<Expr> {
+    let mut format_str = template_string.start;
+    let mut exprs = vec![];
+
+    let mut requires_templating = false;
+
+    for part in template_string.parts.into_iter() {
+        match *part.expression {
+            p::Expression::Literal(literal) => {
+                let string = match literal {
+                    p::Literal::Bool(value) => value.to_string(),
+                    p::Literal::Number(p::LiteralNumber { value }) => value,
+                    p::Literal::PlainString(p::LiteralString { value }) => value,
+                    p::Literal::Char(p::LiteralChar { value }) => value,
+                };
+
+                format_str.push_str(&string);
+            },
+            expr => {
+                requires_templating = true;
+
+                format_str.push_str("{}");
+                format_str.push_str(&part.post_string);
+                exprs.push(map_expr(fn_params_map, expr)?);
+            },
+        }
+    }
+
+    if !requires_templating {
+        return Ok(Expr::Lit(ExprLit {
+            literal: Literal::Str(format_str),
+        }));
+    }
+
+    let mut tokens = quote! { #format_str };
+
+    for i in 0..exprs.len() {
+        tokens.extend(quote! { , values.#i });
+    }
+
+    let expr = Expr::Block(Block {
+        statements: vec![
+            Statement::Local(Local {
+                pattern: Pattern::Ident(PatIdent {
+                    is_mut: false,
+                    is_ref: false,
+                    name: "values".to_string(),
+                }),
+                init: Some(Box::new(
+                        Expr::Tuple(ExprTuple {
+                            elems: exprs,
+                        })
+                )),
+            }),
+            Statement::Expr(
+                Expr::Macro(ExprMacro { mac: Macro {
+                    path: Path { segments: vec![PathSegment {
+                        ident: "format".to_string(),
+                        arguments: PathArguments::None,
+                    }] },
+                    delimiter: MacroDelimiter::Paren,
+                    tokens,
+                }})),
+        ],
+    });
+
+    return Ok(expr);
+}
+
+fn map_static_ref_to_path_segments(static_ref: p::ReferenceStatic) -> Vec<PathSegment> {
+    let mut segments = match static_ref.receiver {
+        Some(static_ref) => map_static_ref_to_path_segments(*static_ref),
+        None => vec![],
+    };
+
+    segments.push(PathSegment {
+        ident: static_ref.name,
+        arguments: PathArguments::None,
+    });
+
+    return segments;
 }
 

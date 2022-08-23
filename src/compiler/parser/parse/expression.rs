@@ -62,6 +62,9 @@ fn build_simple_expr(tokens: &mut Stack<TokenData>) -> Result<Expression> {
         Some(TokenData { value: Token::Identifier(ident), .. }) => {
             build_expr_from_ident(tokens, ident.to_string(), false)?
         },
+        Some(TokenData { value: Token::BuiltInType(typ), .. }) => {
+            build_expr_from_built_in_type(tokens, typ)?
+        },
         Some(TokenData { value: Token::Literal(literal), .. }) => {
             build_expr_from_literal(tokens, literal)?
         },
@@ -558,11 +561,26 @@ fn add_reciever_to_expr(expr: Expression, receiver: Expression) -> Result<Expres
 
             Expression::Reference(Reference::Static(ref_static))
         },
-        Expression::FunctionCall(fn_call) => Expression::MethodCall(MethodCall {
-            name: fn_call.name,
-            args: fn_call.args,
-            receiver: Box::new(receiver),
-        }),
+        Expression::FunctionCall(mut fn_call) => if let Expression::Reference(Reference::Static(_)) = receiver {
+            fn_call.receiver = match fn_call.receiver {
+                Some(r) => match add_reciever_to_expr(Expression::Reference(Reference::Static(r)), receiver)? {
+                    Expression::Reference(Reference::Static(receiver)) => Some(receiver),
+                    expr => todo!("Unexpected: {expr:?}"),
+                },
+                None => match receiver {
+                    Expression::Reference(Reference::Static(receiver)) => Some(receiver),
+                    expr => todo!("Unexpected: {expr:?}"),
+                },
+            };
+
+            Expression::FunctionCall(fn_call)
+        } else {
+            Expression::MethodCall(MethodCall {
+                name: fn_call.name,
+                args: fn_call.args,
+                receiver: Box::new(receiver),
+            })
+        },
         Expression::MethodCall(method_call) => match *method_call.receiver {
             Expression::Reference(Reference::Instance(mut ref_instance)) => {
                 ref_instance.receiver = Some(Box::new(receiver));
@@ -573,6 +591,37 @@ fn add_reciever_to_expr(expr: Expression, receiver: Expression) -> Result<Expres
         // Expression::Construction(_) => Err(ParseError::MissingExpectedToken(None))?,
         expr => todo!("{expr:?}"),
     };
+
+    return Ok(expr);
+}
+
+fn build_expr_from_built_in_type(tokens: &mut Stack<TokenData>, typ: BuiltInType) -> Result<Expression> {
+    let typ_name = match typ {
+        BuiltInType::Bool => "bool",
+        BuiltInType::Bit => "bit",
+        BuiltInType::Byte => "byte",
+        BuiltInType::Uint => "uint",
+        BuiltInType::Uint8 => "uint8",
+        BuiltInType::Uint16 => "uint16",
+        BuiltInType::Uint32 => "uint32",
+        BuiltInType::Uint64 => "uint64",
+        BuiltInType::Uint128 => "uint128",
+        BuiltInType::BigUint => "biguint",
+        BuiltInType::Int => "int",
+        BuiltInType::Int8 => "int8",
+        BuiltInType::Int16 => "int16",
+        BuiltInType::Int32 => "int32",
+        BuiltInType::Int64 => "int64",
+        BuiltInType::Int128 => "int128",
+        BuiltInType::BigInt => "bigint",
+        BuiltInType::Float => "float",
+        BuiltInType::Float32 => "float32",
+        BuiltInType::Float64 => "float64",
+        BuiltInType::Char => "char",
+        BuiltInType::String => "string",
+    };
+
+    let expr = build_expr_from_ident(tokens, typ_name.to_string(), false)?;
 
     return Ok(expr);
 }
@@ -784,8 +833,15 @@ fn build_expr_from_literal(tokens: &mut Stack<TokenData>, literal: lexer::Litera
         lexer::Literal::Number(value) => Expression::Literal(ast::Literal::Number(LiteralNumber { value })),
         lexer::Literal::Char(value) => Expression::Literal(ast::Literal::Char(LiteralChar { value })),
 
-        lexer::Literal::PlainString(string) => Expression::Literal(ast::Literal::String(LiteralString::Plain(string))),
+        lexer::Literal::PlainString(string) => Expression::Literal(ast::Literal::PlainString(LiteralString { value: string })),
         lexer::Literal::TemplateStringStart(start) => {
+            match tokens.pop() {
+                Some(TokenData { value: Token::Literal(lexer::Literal::TemplateStringEnd(_)), source_meta }) =>
+                    Err(ParseError::UnexpectedToken(TokenData { value: Token::CloseBrace, source_meta }))?,
+                Some(token) => tokens.push(token),
+                _ => {},
+            }
+
             let mut parts = vec![];
 
             loop {
@@ -810,10 +866,10 @@ fn build_expr_from_literal(tokens: &mut Stack<TokenData>, literal: lexer::Litera
                 }
             }
 
-            Expression::Literal(ast::Literal::String(LiteralString::Template(TemplateString {
+            Expression::TemplateString(TemplateString {
                 start,
                 parts,
-            })))
+            })
         },
 
         lexer::Literal::Option { is_some } => match is_some {
@@ -870,7 +926,7 @@ fn build_expr_from_literal(tokens: &mut Stack<TokenData>, literal: lexer::Litera
             Expression::Result(ExprResult::Direct(ExprResultDirect { is_ok, value }))
         },
 
-        _ => todo!(),
+        _ => todo!("{literal:?}"),
     };
 
     return Ok(expr);

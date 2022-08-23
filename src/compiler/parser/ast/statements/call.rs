@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FunctionCall {
-    pub receiver: Option<Type>,
+    pub receiver: Option<ReferenceStatic>,
     pub name: String,
     pub args: Vec<FunctionCallArg>,
 }
