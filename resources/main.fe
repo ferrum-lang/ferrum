@@ -1,7 +1,12 @@
 // use { rand } from std
 // const rng = rand::gen_rng(seed = $.env.RNG_SEED)
 
-print("abc: {123}")
+const x = 12
+let y = 4
+
+const z = "abc: {x}"
+
+print("{z}{y}")
 
 pub fn test(a: string, b: int? = 0) {}
 

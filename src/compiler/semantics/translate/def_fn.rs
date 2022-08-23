@@ -48,11 +48,62 @@ fn map_fn_impl(fn_params_map: &FnParamsMap, fn_impl: p::DefFnImpl) -> Result<Blo
 
 fn map_statement(fn_params_map: &FnParamsMap, statement: p::Statement) -> Result<Statement> {
     let statement = match statement {
-        p::Statement::Assignment(assign) => todo!(),
+        p::Statement::Assignment(assign) => map_assignment_to_statement(fn_params_map, assign)?,
         p::Statement::Expression(expr) => Statement::Semi(map_expr(fn_params_map, expr)?),
+        // TODO: If expr is yield, then use Statement::Expr
     };
 
     return Ok(statement);
+}
+
+fn map_assignment_to_statement(fn_params_map: &FnParamsMap, assign: p::Assignment) -> Result<Statement> {
+    if let Some(local_var) = assign.local_var {
+        let is_mut = local_var == p::AssignmentLocalVar::Let || match assign.expression {
+            Some(p::Expression::Mut(_)) => true,
+            _ => false,
+        };
+
+        let local = Local {
+            pattern: map_assign_target_to_pat(assign.target, assign.explicit_type, is_mut)?,
+            init: if let Some(expr) = assign.expression {
+                Some(Box::new(map_expr(fn_params_map, expr)?))
+            } else {
+                None
+            },
+        };
+
+        return Ok(Statement::Local(local));
+    } else {
+        return Ok(Statement::Semi(Expr::Assign(ExprAssign {
+            left: todo!(),
+            right: todo!(),
+        })));
+    }
+}
+
+fn map_assign_target_to_pat(target: p::AssignmentTarget, typ: Option<p::Type>, is_mut: bool) -> Result<Pattern> {
+    let pattern = match target {
+        p::AssignmentTarget::Direct(direct) => Pattern::Ident(PatIdent {
+            is_ref: false,
+            is_mut,
+            name: direct,
+        }),
+        _ => todo!(),
+    };
+
+    let pattern = match typ {
+        Some(typ) => Pattern::Type(PatType {
+            typ: Box::new(map_type(typ)?),
+            pattern: Box::new(pattern),
+        }),
+        _ => pattern,
+    };
+
+    return Ok(pattern);
+}
+
+fn map_type(typ: p::Type) -> Result<Type> {
+    todo!();
 }
 
 fn map_expr(fn_params_map: &FnParamsMap, expr: p::Expression) -> Result<Expr> {
@@ -60,6 +111,7 @@ fn map_expr(fn_params_map: &FnParamsMap, expr: p::Expression) -> Result<Expr> {
         p::Expression::Literal(literal) => Expr::Lit(ExprLit { literal: map_literal(literal)? }),
         p::Expression::FunctionCall(call) => map_expr_fn_call(fn_params_map, call)?,
         p::Expression::TemplateString(template_str) => map_expr_template_str(fn_params_map, template_str)?,
+        p::Expression::Reference(reference) => map_expr_reference(fn_params_map, reference)?,
         _=> todo!("{expr:?}"),
     };
 
@@ -206,6 +258,30 @@ fn map_expr_template_str(fn_params_map: &FnParamsMap, template_string: p::Templa
                 }})),
         ],
     });
+
+    return Ok(expr);
+}
+
+fn map_expr_reference(fn_params_map: &FnParamsMap, reference: p::Reference) -> Result<Expr> {
+    let expr = match reference {
+        p::Reference::Instance(reference) => match reference.receiver {
+            Some(receiver) => Expr::Field(ExprField {
+                member: Member::Named(reference.name),
+                base: Box::new(map_expr(fn_params_map, *receiver)?),
+            }),
+            None => Expr::Path(ExprPath {
+                path: Path {
+                    segments: vec![
+                        PathSegment {
+                            ident: reference.name,
+                            arguments: PathArguments::None,
+                        },
+                    ],
+                },
+            }),
+        },
+        p::Reference::Static(reference) => todo!(),
+    };
 
     return Ok(expr);
 }

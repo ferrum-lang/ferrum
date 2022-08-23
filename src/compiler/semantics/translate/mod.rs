@@ -1,10 +1,12 @@
 mod def_fn;
 mod import;
 mod static_const;
+mod verify_locals;
 
 pub use def_fn::*;
 pub use import::*;
 pub use static_const::*;
+pub use verify_locals::*;
 
 use super::*;
 use super::super::parser as p;
@@ -18,7 +20,7 @@ pub type FnParamsMap = HashMap<String, Vec<(String, Option<Box<p::Expression>>)>
 pub fn translate(mut p_ast: p::AST) -> Result<SemanticAST> {
     move_top_level_into_main(&mut p_ast)?;
 
-    // println!("\n\n{p_ast:?}\n\n");
+    verify_locals(&p_ast)?;
 
     let mut ast = SemanticAST {
         mods: vec![],
@@ -63,65 +65,6 @@ pub fn translate(mut p_ast: p::AST) -> Result<SemanticAST> {
     }
 
     return Ok(ast);
-
-    // return Ok(SemanticAST {
-    //     mods: vec![
-    //         Mod {
-    //             is_public: false,
-    //             name: "fe_prelude".to_string(),
-    //         }
-    //     ],
-    //     uses: vec![
-    //         Use {
-    //             is_public: false,
-    //             tree: UseTree::Path(UsePath {
-    //                 ident: "fe_prelude".to_string(),
-    //                 tree: Box::new(UseTree::Glob),
-    //             })
-    //         },
-    //     ],
-    //     static_consts: vec![],
-    //     lazy_static_consts: vec![],
-    //     items: vec![
-    //         Item::Fn(ItemFn {
-    //             is_public: true,
-    //             signature: FnSignature {
-    //                 is_const: false,
-    //                 is_async: false,
-    //                 name: "main".to_string(),
-    //                 generics: Generics {
-    //                     params: vec![],
-    //                 },
-    //                 params: vec![],
-    //                 return_type: ReturnType::Default,
-    //             },
-    //             block: Box::new(Block {
-    //                 statements: vec![
-    //                     Statement::Semi(Expr::Call(ExprCall {
-    //                         func: Box::new(Expr::Path(ExprPath {
-    //                             path: Path {
-    //                                 segments: vec![
-    //                                     PathSegment {
-    //                                         ident: "print".to_string(),
-    //                                         arguments: PathArguments::None,
-    //                                     }
-    //                                 ],
-    //                             }
-    //                         })),
-    //                         args: vec![
-    //                             Expr::Lit(ExprLit {
-    //                                 literal: Literal::Str("hello world".to_string()),
-    //                             }),
-    //                             Expr::Lit(ExprLit {
-    //                                 literal: Literal::Bool(true),
-    //                             }),
-    //                         ],
-    //                     }))
-    //                 ],
-    //             }),
-    //         })
-    //     ],
-    // });
 }
 
 fn move_top_level_into_main(ast: &mut p::AST) -> Result<()> {
