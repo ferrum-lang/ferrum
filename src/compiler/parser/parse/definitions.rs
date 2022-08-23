@@ -259,7 +259,10 @@ fn build_def_fn_param(tokens: &mut Stack<TokenData>) -> Result<DefFnParam> {
     ignore_new_lines(tokens);
 
     let r#default = match tokens.peek() {
-        Some(TokenData { value: Token::Equals, .. }) => Some(Box::new(build_expression(tokens)?)),
+        Some(TokenData { value: Token::Equals, .. }) => {
+            tokens.pop();
+            Some(Box::new(build_expression(tokens)?))
+        },
         _ => None,
     };
 

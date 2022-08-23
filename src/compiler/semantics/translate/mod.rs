@@ -9,7 +9,11 @@ pub use static_const::*;
 use super::*;
 use super::super::parser as p;
 
+use std::collections::HashMap;
+
 use anyhow::Result;
+
+pub type FnParamsMap = HashMap<String, Vec<(String, Option<Box<p::Expression>>)>>;
 
 pub fn translate(mut p_ast: p::AST) -> Result<SemanticAST> {
     move_top_level_into_main(&mut p_ast)?;
@@ -46,11 +50,13 @@ pub fn translate(mut p_ast: p::AST) -> Result<SemanticAST> {
         translate_static_const(&mut ast, static_const)?;
     }
 
+    let fn_params_map: FnParamsMap = build_fn_args_map(&p_ast.nodes);
+
     for node in p_ast.nodes.into_iter() {
         match node {
             p::RootNode::Definition(definition) => match definition {
                 p::Definition::Type(def_type) => todo!(),
-                p::Definition::Function(def_fn) => translate_def_fn(&mut ast, def_fn)?,
+                p::Definition::Function(def_fn) => translate_def_fn(&fn_params_map, &mut ast, def_fn)?,
             },
             p::RootNode::Statement(_) => unreachable!("All root statements should be moved into main"),
         }
@@ -199,5 +205,68 @@ fn move_top_level_into_main(ast: &mut p::AST) -> Result<()> {
     ast.nodes = nodes;
 
     return Ok(());
+}
+
+fn build_fn_args_map(nodes: &Vec<p::RootNode>) -> FnParamsMap {
+    let mut map: FnParamsMap = HashMap::new();
+
+    for node in nodes.iter() {
+        match node {
+            p::RootNode::Definition(p::Definition::Function(p::DefFn { signature, .. })) => {
+                let (fn_name, params) = (
+                    signature.name.clone(),
+                    signature.params.clone()
+                        .into_iter()
+                        .map(|param| (param.name, param.default))
+                        .collect()
+                );
+
+                map.insert(fn_name, params);
+            },
+            p::RootNode::Definition(p::Definition::Type(p::DefType::Class(p::DefClass { methods, impls, .. }))) => {
+                for method in methods.iter() {
+                    let (fn_name, params) = (
+                        method.signature.name.clone(),
+                        method.signature.params.clone()
+                            .into_iter()
+                            .map(|param| (param.name, param.default))
+                            .collect()
+                    );
+
+                    map.insert(fn_name, params);
+                }
+
+                for r#impl in impls.iter() {
+                    for method in r#impl.methods.iter() {
+                        let (fn_name, params) = (
+                            method.signature.name.clone(),
+                            method.signature.params.clone()
+                            .into_iter()
+                            .map(|param| (param.name, param.default))
+                            .collect()
+                            );
+
+                        map.insert(fn_name, params);
+                    }
+                }
+            },
+            p::RootNode::Definition(p::Definition::Type(p::DefType::Interface(p::DefInterface { methods, .. }))) => {
+                for method in methods.iter() {
+                    let (fn_name, params) = (
+                        method.name.clone(),
+                        method.params.clone()
+                            .into_iter()
+                            .map(|param| (param.name, param.default))
+                            .collect()
+                    );
+
+                    map.insert(fn_name, params);
+                }
+            },
+            _ => {},
+        };
+    }
+
+    return map;
 }
 

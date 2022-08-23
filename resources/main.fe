@@ -1,4 +1,7 @@
-print(
-    "Hello Adam!",
-)
+// use { rand } from std
+// const rng = rand::gen_rng(seed = $.env.RNG_SEED)
+
+print("Hello Adam!")
+
+pub fn test(a: string, b: int? = 0) {}
 
