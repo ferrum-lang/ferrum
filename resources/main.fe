@@ -1,12 +1,20 @@
-// use { rand } from std
-// const rng = rand::gen_rng(seed = $.env.RNG_SEED)
+let x = 12
+const y = 3
 
-const x = 12
-let y = 4
+print("abc: {x}{y}")
 
-const z = "abc: {x}"
+x = 33
+
+const z: string = "abc: {x}"
 
 print("{z}{y}")
 
-pub fn test(a: string, b: int? = 0) {}
+print(z)
+
+say_hello(age = 25, "Adam")
+say_hello("Madison", "female", 24)
+
+fn say_hello(name: string, gender: string = "male", age: uint) {
+    print("hello {name}, you are a {age} yr old {gender}")
+}
 

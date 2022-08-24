@@ -9,6 +9,23 @@ pub fn translate_def_fn(
     ast: &mut SemanticAST,
     def_fn: p::DefFn,
 ) -> Result<()> {
+    let mut params = vec![];
+
+    for param in def_fn.signature.params.into_iter() {
+        params.push(FnParam::Typed(PatType {
+            pattern: Box::new(Pattern::Ident(PatIdent {
+                is_ref: false,
+                is_mut: param.is_mutable,
+                name: param.name,
+            })),
+            typ: Box::new(Type::Reference(TypeReference {
+                lifetime: None,
+                is_mut: param.is_mutable,
+                elem: Box::new(map_type(param.r#type)?),
+            })),
+        }));
+    }
+
     let item = ItemFn {
         is_public: def_fn.signature.is_public,
         signature: FnSignature {
@@ -18,7 +35,7 @@ pub fn translate_def_fn(
             generics: Generics {
                 params: vec![],
             },
-            params: vec![],
+            params,
             return_type: ReturnType::Default,
         },
         block: Box::new(map_fn_impl(fn_params_map, def_fn.r#impl)?),
@@ -74,9 +91,13 @@ fn map_assignment_to_statement(fn_params_map: &FnParamsMap, assign: p::Assignmen
 
         return Ok(Statement::Local(local));
     } else {
+        let left = Box::new(map_assign_target_to_expr(assign.target, assign.explicit_type)?);
+
+        let right = Box::new(map_expr(fn_params_map, assign.expression.expect("TODO"))?);
+
         return Ok(Statement::Semi(Expr::Assign(ExprAssign {
-            left: todo!(),
-            right: todo!(),
+            left,
+            right,
         })));
     }
 }
@@ -102,13 +123,58 @@ fn map_assign_target_to_pat(target: p::AssignmentTarget, typ: Option<p::Type>, i
     return Ok(pattern);
 }
 
+fn map_assign_target_to_expr(target: p::AssignmentTarget, typ: Option<p::Type>) -> Result<Expr> {
+    let expr = match target {
+        p::AssignmentTarget::Direct(direct) => Expr::Path(ExprPath {
+            path: Path {
+                segments: vec![
+                    PathSegment {
+                        ident: direct,
+                        arguments: PathArguments::None,
+                    },
+                ],
+            }
+        }),
+        _ => todo!(),
+    };
+
+    let expr = match typ {
+        Some(typ) => Expr::Type(ExprType {
+            typ: Box::new(map_type(typ)?),
+            expr: Box::new(expr),
+        }),
+        _ => expr,
+    };
+
+    return Ok(expr);
+}
+
 fn map_type(typ: p::Type) -> Result<Type> {
-    todo!();
+    let typ = match typ {
+        p::Type::BuiltIn(built_in) => Type::Path(TypePath {
+            path: Path {
+                segments: vec![
+                    PathSegment {
+                        ident: (match built_in {
+                            p::TypeBuiltIn::Int => "isize",
+                            p::TypeBuiltIn::Uint => "usize",
+                            p::TypeBuiltIn::String => "FeString",
+                            _ => todo!(),
+                        }).to_string(),
+                        arguments: PathArguments::None,
+                    },
+                ],
+            },
+        }),
+        _ => todo!(),
+    };
+
+    return Ok(typ);
 }
 
 fn map_expr(fn_params_map: &FnParamsMap, expr: p::Expression) -> Result<Expr> {
     let expr = match expr {
-        p::Expression::Literal(literal) => Expr::Lit(ExprLit { literal: map_literal(literal)? }),
+        p::Expression::Literal(literal) => map_literal_to_expr(literal)?,
         p::Expression::FunctionCall(call) => map_expr_fn_call(fn_params_map, call)?,
         p::Expression::TemplateString(template_str) => map_expr_template_str(fn_params_map, template_str)?,
         p::Expression::Reference(reference) => map_expr_reference(fn_params_map, reference)?,
@@ -146,19 +212,35 @@ fn map_expr_fn_call(fn_params_map: &FnParamsMap, call: p::FunctionCall) -> Resul
         unnamed_args.reverse();
 
         for param in fn_params.clone().into_iter() {
-            if let Some(named_arg) = named_args.remove(&param.0) {
-                args.push(map_expr(&fn_params_map, *named_arg.value)?);
+            let expr = if let Some(named_arg) = named_args.remove(&param.0) {
+                map_expr(&fn_params_map, *named_arg.value)?
             } else if let Some(unnamed_arg) = unnamed_args.pop() {
-                args.push(map_expr(&fn_params_map, *unnamed_arg.value)?);
+                map_expr(&fn_params_map, *unnamed_arg.value)?
             } else if let Some(default_val) = param.1 {
-                args.push(map_expr(&fn_params_map, *default_val)?);
+                map_expr(&fn_params_map, *default_val)?
             } else {
-                todo!("Missing arg!");
-            }
+                todo!("Missing arg!")
+            };
+
+            args.push(match expr {
+                Expr::Reference(_) => expr,
+                expr => Expr::Reference(ExprReference {
+                    is_mutable: false,
+                    expr: Box::new(expr),
+                }),
+            });
         }
     } else {
         for arg in call.args.into_iter() {
-            args.push(map_expr(fn_params_map, *arg.value)?);
+            let expr = map_expr(fn_params_map, *arg.value)?;
+
+            args.push(match expr {
+                Expr::Reference(_) => expr,
+                expr => Expr::Reference(ExprReference {
+                    is_mutable: false,
+                    expr: Box::new(expr),
+                }),
+            });
         }
     }
 
@@ -182,15 +264,37 @@ fn map_expr_fn_call(fn_params_map: &FnParamsMap, call: p::FunctionCall) -> Resul
     return Ok(expr);
 }
 
-fn map_literal(literal: p::Literal) -> Result<Literal> {
-    let literal = match literal {
-        p::Literal::Bool(value) => Literal::Bool(value),
-        p::Literal::PlainString(p::LiteralString { value }) => Literal::Str(value),
-        p::Literal::Number(p::LiteralNumber { value }) => Literal::Float(value),
+fn map_literal_to_expr(literal: p::Literal) -> Result<Expr> {
+    let expr = match literal {
+        p::Literal::Bool(value) => Expr::Lit(ExprLit {
+            literal: Literal::Bool(value),
+        }),
+        p::Literal::Number(p::LiteralNumber { value }) => Expr::Lit(ExprLit {
+            literal: Literal::Float(value),
+        }),
+        p::Literal::PlainString(p::LiteralString { value }) => Expr::Call(ExprCall {
+            func: Box::new(Expr::Path(ExprPath {
+                path: Path {
+                    segments: vec![
+                        PathSegment {
+                            ident: "FeString".to_string(),
+                            arguments: PathArguments::None,
+                        },
+                        PathSegment {
+                            ident: "from".to_string(),
+                            arguments: PathArguments::None,
+                        },
+                    ],
+                },
+            })),
+            args: vec![Expr::Lit(ExprLit {
+                literal: Literal::Str(value),
+            })],
+        }),
         _ => todo!(),
     };
 
-    return Ok(literal);
+    return Ok(expr);
 }
 
 fn map_expr_template_str(fn_params_map: &FnParamsMap, template_string: p::TemplateString) -> Result<Expr> {
@@ -221,42 +325,58 @@ fn map_expr_template_str(fn_params_map: &FnParamsMap, template_string: p::Templa
         }
     }
 
-    if !requires_templating {
-        return Ok(Expr::Lit(ExprLit {
+    let expr = if !requires_templating {
+        Expr::Lit(ExprLit {
             literal: Literal::Str(format_str),
-        }));
-    }
+        })
+    } else {
+        let mut tokens = quote! { #format_str };
 
-    let mut tokens = quote! { #format_str };
+        for i in 0..exprs.len() {
+            tokens.extend(quote! { , values.#i });
+        }
 
-    for i in 0..exprs.len() {
-        tokens.extend(quote! { , values.#i });
-    }
-
-    let expr = Expr::Block(Block {
-        statements: vec![
-            Statement::Local(Local {
-                pattern: Pattern::Ident(PatIdent {
-                    is_mut: false,
-                    is_ref: false,
-                    name: "values".to_string(),
+        Expr::Block(Block {
+            statements: vec![
+                Statement::Local(Local {
+                    pattern: Pattern::Ident(PatIdent {
+                        is_mut: false,
+                        is_ref: false,
+                        name: "values".to_string(),
+                    }),
+                    init: Some(Box::new(Expr::Tuple(ExprTuple {
+                        elems: exprs,
+                    }))),
                 }),
-                init: Some(Box::new(
-                        Expr::Tuple(ExprTuple {
-                            elems: exprs,
-                        })
-                )),
-            }),
-            Statement::Expr(
-                Expr::Macro(ExprMacro { mac: Macro {
-                    path: Path { segments: vec![PathSegment {
-                        ident: "format".to_string(),
+                Statement::Expr(
+                    Expr::Macro(ExprMacro { mac: Macro {
+                        path: Path { segments: vec![PathSegment {
+                            ident: "format".to_string(),
+                            arguments: PathArguments::None,
+                        }] },
+                        delimiter: MacroDelimiter::Paren,
+                        tokens,
+                    }})),
+                ],
+        })
+    };
+
+    let expr = Expr::Call(ExprCall {
+        func: Box::new(Expr::Path(ExprPath {
+            path: Path {
+                segments: vec![
+                    PathSegment {
+                        ident: "FeString".to_string(),
                         arguments: PathArguments::None,
-                    }] },
-                    delimiter: MacroDelimiter::Paren,
-                    tokens,
-                }})),
-        ],
+                    },
+                    PathSegment {
+                        ident: "from".to_string(),
+                        arguments: PathArguments::None,
+                    },
+                ],
+            },
+        })),
+        args: vec![expr],
     });
 
     return Ok(expr);
@@ -264,22 +384,25 @@ fn map_expr_template_str(fn_params_map: &FnParamsMap, template_string: p::Templa
 
 fn map_expr_reference(fn_params_map: &FnParamsMap, reference: p::Reference) -> Result<Expr> {
     let expr = match reference {
-        p::Reference::Instance(reference) => match reference.receiver {
-            Some(receiver) => Expr::Field(ExprField {
-                member: Member::Named(reference.name),
-                base: Box::new(map_expr(fn_params_map, *receiver)?),
+        p::Reference::Instance(reference) => Expr::Reference(ExprReference {
+            is_mutable: false,
+            expr: Box::new(match reference.receiver {
+                Some(receiver) => Expr::Field(ExprField {
+                    member: Member::Named(reference.name),
+                    base: Box::new(map_expr(fn_params_map, *receiver)?),
+                }),
+                None => Expr::Path(ExprPath {
+                    path: Path {
+                        segments: vec![
+                            PathSegment {
+                                ident: reference.name,
+                                arguments: PathArguments::None,
+                            },
+                        ],
+                    },
+                }),
             }),
-            None => Expr::Path(ExprPath {
-                path: Path {
-                    segments: vec![
-                        PathSegment {
-                            ident: reference.name,
-                            arguments: PathArguments::None,
-                        },
-                    ],
-                },
-            }),
-        },
+        }),
         p::Reference::Static(reference) => todo!(),
     };
 

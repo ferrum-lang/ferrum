@@ -128,12 +128,21 @@ fn verify_locals_block(locals: &mut Locals, block: &p::Block) -> Result<()> {
                                 todo!();
                             } else if let Some(local) = locals.get(&reference.name) {
                                 if !local.is_reassign {
-                                    todo!("Cannot reassign!");
+                                    panic!("Cannot reassign!");
                                 }
                             } else {
-                                todo!("Variable name not found!");
+                                panic!("Variable name not found!");
                             }
                         },
+                        p::AssignmentTarget::Direct(name) => {
+                            if let Some(local) = locals.get(name) {
+                                if !local.is_reassign {
+                                    panic!("Cannot reassign!");
+                                }
+                            } else {
+                                panic!("Variable name not found!");
+                            }
+                        }
                         _ => todo!(),
                     }
                 }

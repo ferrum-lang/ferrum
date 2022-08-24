@@ -480,9 +480,9 @@ fn convert_expr(expr: Expr) -> syn::Expr {
             let expr = convert_expr(*reference.expr);
             
             if reference.is_mutable {
-                syn::parse_quote!(&mut expr)
+                syn::parse_quote!(&mut #expr)
             } else {
-                syn::parse_quote!(&expr)
+                syn::parse_quote!(&#expr)
             }
         },
         Expr::Repeat(repeat) => syn::Expr::Repeat(syn::ExprRepeat {
