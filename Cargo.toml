@@ -7,5 +7,5 @@ edition = "2021"
 
 [dependencies]
 structopt = "0.3.13"
-ferrum_oxidize = { path = "../ferrum_oxidize" }
+ferrum_oxidize = "0.1.2"
 

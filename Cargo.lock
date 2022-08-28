@@ -59,7 +59,9 @@ dependencies = [
 
 [[package]]
 name = "ferrum_oxidize"
-version = "0.1.0"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fb279c2722b0863fb9e7c0498d7f8f9d56aaa7b160baa93c6a9ff5cd05f8d1c1"
 dependencies = [
  "anyhow",
  "proc-macro2",
