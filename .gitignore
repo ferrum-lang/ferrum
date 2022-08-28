@@ -1,12 +1,6 @@
 out
-!out/build/fe_*
-
-!test.sh
-
-/target
-
+target
 temp*
-
 .DS_Store
 
 fe_build/*

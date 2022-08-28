@@ -21,24 +21,6 @@ fn main() -> Result<()> {
     return executor::build_and_run(&config);
 }
 
-fn temp_main() -> Result<()> {
-    let name = "Adam";
-
-    println!("Hello, {name}");
-
-    return Ok(());
-}
-
-/*
-
-fn temp_main() -> ! {
-    const name = "Adam"
-
-    print("Hello, {name}")
-}
-
-*/
-
 struct TodoItem {
     pub title: String,
     pub description: Option<String>,

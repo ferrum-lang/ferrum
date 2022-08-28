@@ -1,5 +1,5 @@
 [package]
-name = "oxidize"
+name = "ferrum"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,9 +7,5 @@ edition = "2021"
 
 [dependencies]
 structopt = "0.3.13"
-anyhow = "1.0"
-thiserror = "1.0"
-syn = { version = "1.0.99", features = ["full", "printing", "extra-traits"] }
-quote = "1.0.21"
-proc-macro2 = "1.0.43"
+ferrum_oxidize = { path = "../ferrum_oxidize" }
 
