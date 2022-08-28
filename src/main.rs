@@ -1,21 +1,23 @@
-mod args;
-mod compiler;
-mod config;
-mod executor;
-mod io;
-mod utils;
+mod ferrum_rs;
+use ferrum_rs::prelude::*;
 
-use anyhow::Result;
+fn main() {
+    let name: FeStr = FeStr::from("Adam");
+    print(&name);
 
-fn main() -> Result<()> {
-    let args = args::parse_args();
-    
-    let config = config::build(args);
+    let name1: FeBox<FeStr> = FeBox::new(name);
+    print(&name1);
 
-    let output_contents = compiler::compile(&config.input_filepath)?;
+    let mut name2: FeBox<FeStr> = FeBox::share(&name1);
 
-    io::write_to_build_dir(&config, output_contents)?;
+    let mut name3: FeBox<FeStr> = FeBox::share(&name1);
 
-    return executor::build_and_run(&config);
+    print(&name1);
+
+    *name2 = FeStr::from("Foo");
+    print(&name1);
+
+    *name3 = FeStr::from("Bar");
+    print(name1);
 }
 

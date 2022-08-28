@@ -320,7 +320,18 @@ fn map_expr_template_str(fn_params_map: &FnParamsMap, template_string: p::Templa
 
                 format_str.push_str("{}");
                 format_str.push_str(&part.post_string);
-                exprs.push(map_expr(fn_params_map, expr)?);
+
+                // exprs.push(map_expr(fn_params_map, expr)?);
+                
+                let expr = map_expr(fn_params_map, expr)?;
+
+                exprs.push(match expr {
+                    Expr::Reference(_) => expr,
+                    _ => Expr::Reference(ExprReference {
+                        is_mutable: false,
+                        expr: Box::new(expr),
+                    }),
+                });
             },
         }
     }
@@ -384,25 +395,41 @@ fn map_expr_template_str(fn_params_map: &FnParamsMap, template_string: p::Templa
 
 fn map_expr_reference(fn_params_map: &FnParamsMap, reference: p::Reference) -> Result<Expr> {
     let expr = match reference {
-        p::Reference::Instance(reference) => Expr::Reference(ExprReference {
-            is_mutable: false,
-            expr: Box::new(match reference.receiver {
-                Some(receiver) => Expr::Field(ExprField {
-                    member: Member::Named(reference.name),
-                    base: Box::new(map_expr(fn_params_map, *receiver)?),
-                }),
-                None => Expr::Path(ExprPath {
-                    path: Path {
-                        segments: vec![
-                            PathSegment {
-                                ident: reference.name,
-                                arguments: PathArguments::None,
-                            },
-                        ],
-                    },
-                }),
+        // p::Reference::Instance(reference) => Expr::Reference(ExprReference {
+        //     is_mutable: false,
+        //     expr: Box::new(match reference.receiver {
+        //         Some(receiver) => Expr::Field(ExprField {
+        //             member: Member::Named(reference.name),
+        //             base: Box::new(map_expr(fn_params_map, *receiver)?),
+        //         }),
+        //         None => Expr::Path(ExprPath {
+        //             path: Path {
+        //                 segments: vec![
+        //                     PathSegment {
+        //                         ident: reference.name,
+        //                         arguments: PathArguments::None,
+        //                     },
+        //                 ],
+        //             },
+        //         }),
+        //     }),
+        // }),
+        p::Reference::Instance(reference) => match reference.receiver {
+            Some(receiver) => Expr::Field(ExprField {
+                member: Member::Named(reference.name),
+                base: Box::new(map_expr(fn_params_map, *receiver)?),
             }),
-        }),
+            None => Expr::Path(ExprPath {
+                path: Path {
+                    segments: vec![
+                        PathSegment {
+                            ident: reference.name,
+                            arguments: PathArguments::None,
+                        },
+                    ],
+                },
+            }),
+        },
         p::Reference::Static(reference) => todo!(),
     };
 
