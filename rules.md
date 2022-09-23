@@ -103,7 +103,7 @@ print(adam) // "Adam12"
 print(adam2) // "Adam12"
 print(adam3) // "Adam12"
 
-print(@::count(adam)) // 3
+print(@::count(&adam)) // 3
 ```
 
 Rust:
@@ -119,7 +119,7 @@ print(adam);
 print(adam2);
 print(adam3);
 
-print(FeShared::count(adam.as_ref()));
+print(FeShared::count(&adam));
 ```
 
 Ferrum:
