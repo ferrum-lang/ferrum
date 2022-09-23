@@ -80,7 +80,7 @@ Rust:
 ```rust
 let name: FeStr = FeStr::from("Adam");
 
-let mut adam: FeShared<FeStr> = FeBox::new(name);
+let mut adam: FeShared<FeStr> = FeShared::new(name);
 
 let mut names: FeList<FeShared<FeStr>> = fe_list![adam];
 ```
@@ -108,9 +108,9 @@ print(@::count(adam)) // 3
 
 Rust:
 ```rust
-let mut adam: FeBox<_> = FeStr::from("Adam").into();
-let mut adam2 = FeBox::share(adam.as_ref());
-let mut adam3 = FeBox::share(adam.as_ref());
+let mut adam: FeShared<_> = FeStr::from("Adam").into();
+let mut adam2 = FeShared::share(adam.as_ref());
+let mut adam3 = FeShared::share(adam.as_ref());
 
 adam.append('1');
 adam2.append('2');
@@ -119,7 +119,7 @@ print(adam);
 print(adam2);
 print(adam3);
 
-print(FeBox::count(adam.as_ref()));
+print(FeShared::count(adam.as_ref()));
 ```
 
 Ferrum:
@@ -135,9 +135,9 @@ let adam: @ = "Adam"
 
 Rust:
 ```rust
-let mut adam: FeBox<_> = FeStr::from("Adam").into();
+let mut adam: FeShared<_> = FeStr::from("Adam").into();
 
-*(unsafe { FeBox::get_unsafe_mut(adam.as_ref()) }) = FeStr::from("Adam Bates");
+*(unsafe { FeShared::get_unsafe_mut(adam.as_ref()) }) = FeStr::from("Adam Bates");
 ```
 
 ## `fn` - Functions
