@@ -69,10 +69,10 @@ const name: string = "Adam"
 // explicit creation
 let adam: @<string> = @::new(name)
 
-// Can use like any other data
+// can use like any other data
 let names: [@<string>] = [adam]
 
-// Won't compile as @ implies mutable
+// won't compile as @ implies mutable
 // const adam = @::new(name)
 ```
 
@@ -80,9 +80,9 @@ Rust:
 ```rust
 let name: FeStr = FeStr::from("Adam");
 
-let mut adam: FeBox<FeStr> = FeBox::new(name);
+let mut adam: FeShared<FeStr> = FeBox::new(name);
 
-let mut names: FeList<FeBox<FeStr>> = fe_list![adam];
+let mut names: FeList<FeShared<FeStr>> = fe_list![adam];
 ```
 
 Ferrum:
