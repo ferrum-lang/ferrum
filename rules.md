@@ -385,9 +385,7 @@ if e.value() is some(value) {
 Rust:
 ```rust
 
-lazy_static! {
-    ref VAL_2: FeStr = FeStr::from_slice("some_value");
-}
+const VAL_2: FeStr = FeStr::from_slice("some_value");
 
 enum MyEnum {
     MyEmptyVal,
@@ -396,11 +394,11 @@ enum MyEnum {
 }
 
 impl MyEnum {
-    pub fn value(&self) -> Option<&FeStr> {
+    pub fn value(&self) -> Option<&'static FeStr> {
         return match *self {
             Self::MyEmptyVal => None,
             Self::MyTupleVal(..) => None,
-            Self::MyStructVal { .. } => Some(VAL_2),
+            Self::MyStructVal { .. } => Some(&VAL_2),
         };
     }
 }
@@ -762,12 +760,13 @@ $: print("Hello, {name}")
 
 <h1>Hello {name}</>
 <input bind:value={&mut name} />
+
 <>
     let count: @ = 0
 
     <h2>{count}</>
-    <button on:click={() => *@count += 1} />
-    <button on:click={() => *@count -= 1} />
+    <button on:click={() => *@count += 1}>+</>
+    <button on:click={() => *@count -= 1}>-</>
 </>
 ```
 
@@ -782,6 +781,7 @@ Svelte Component:
 
 <h1>Hello {name}!</h1>
 <input bind:value={name} />
+
 <div>
 	<h2>{count}</h2>
 	<button on:click={() => count += 1}>+</button>
