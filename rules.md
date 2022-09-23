@@ -196,6 +196,8 @@ fn update_name(name: &mut string) -> bool {
 }
 
 fn consume_name(name: string) {
+    name.append('!')
+
     print("consumed: {name}")
 }
 ```
@@ -245,6 +247,8 @@ fn update_name(name: &mut FeStr) -> bool {
 }
 
 fn consume_name(mut name: FeStr) {
+    name.append('!');
+
     print(format!("consumed: {}", name));
 }
 ```
@@ -265,7 +269,7 @@ struct Device(
 struct Inventory(
     devices: Map<Serial, Device> = {},
 ) impl {
-    &self.get_all() -> [Device] {
+    &self.get_all() -> [&Device] {
         return self.devices.values()
     }
 
@@ -333,7 +337,7 @@ impl Inventory {
         };
     }
 
-    fn get_all(&self) -> FeList<Device> {
+    fn get_all(&self) -> FeList<&Device> {
         return self.devices.values();
     }
 
