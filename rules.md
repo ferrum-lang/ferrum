@@ -1,4 +1,5 @@
-# Language Rules
+# Some Language Rules
+An incomplete collection of the language's rules and design decisions to help me keep track.
 
 ## `let` - Mutable Variable Declarations
 
@@ -79,9 +80,9 @@ Rust:
 ```rust
 let name: FeStr = FeStr::from("Adam");
 
-let adam: FeBox<FeStr> = FeBox::new(name);
+let mut adam: FeBox<FeStr> = FeBox::new(name);
 
-let names: FeList<FeBox<FeStr>> = fe_list![adam];
+let mut names: FeList<FeBox<FeStr>> = fe_list![adam];
 ```
 
 Ferrum:
