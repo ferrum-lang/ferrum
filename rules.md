@@ -66,8 +66,8 @@ Ferrum:
 ```
 const name: string = "Adam"
 
-// explicit creation
-let adam: @<string> = @::new(name)
+// verbose creation
+let adam: @string = @::new(name)
 
 // can use like any other data
 let names: [@<string>] = [adam]
@@ -87,8 +87,10 @@ let mut names: FeList<FeShared<FeStr>> = fe_list![adam];
 
 Ferrum:
 ```
-// coerced creation
-let adam: @ = "Adam"
+const name: string = "Adam"
+
+// typical creation
+let adam = @name
 
 // sharing the data, not cloning
 let adam2 = @adam
@@ -108,7 +110,9 @@ print(@::count(&adam)) // 3
 
 Rust:
 ```rust
-let mut adam: FeShared<_> = FeStr::from("Adam").into();
+let name: FeStr = FeStr::from("Adam");
+
+let mut adam: FeShared<_> = FeShared::new(name);
 
 let mut adam2 = FeShared::share(adam.as_ref());
 
@@ -126,18 +130,19 @@ print(FeShared::count(&adam));
 
 Ferrum:
 ```
+// coerced creation
 let adam: @ = "Adam"
 
-// Note: *@ creates a temporary mutable reference to avoid unnecessary RC-clones
+// note: *@ creates a temporary mutable reference to avoid unnecessary RC-clones
 *@adam = "Adam Bates"
 
-// Won't compile, cannot take out of a mutable reference
+// won't compile, cannot take out of a mutable reference
 // let taken = *@adam
 ```
 
 Rust:
 ```rust
-let mut adam: FeShared<_> = FeStr::from("Adam").into();
+let mut adam: FeShared<_> = FeShared::new(FeStr::from("Adam"));
 
 *(unsafe { FeShared::get_unsafe_mut(adam.as_ref()) }) = FeStr::from("Adam Bates");
 ```
@@ -160,8 +165,10 @@ fn main() {
 
     let name = get_name()
 
-    say_hello(&name)
+    // named params in any order
+    say_hello(age = 25, &name)
 
+    // optional and default params can be skipped
     const updated = update_name(&mut name)
 
     if updated {
@@ -183,12 +190,12 @@ fn get_name() -> string {
     return "Adam"
 }
 
-fn say_hello(name: &string) {
-    print("Hello, {name}")
+fn say_hello(name: &string, age: uint) {
+    print("Hello, {age} year old named {name}")
 }
 
-fn update_name(name: &mut string) -> bool {
-    if *name != "Adam" {
+fn update_name(name: &mut string, force: bool = false) -> bool {
+    if !force && *name != "Adam" {
         return false
     }
 
@@ -213,9 +220,9 @@ fn main() {
 
     let mut name = get_name();
 
-    say_hello(&name);
+    say_hello(&name, FeUint::from(25));
 
-    let updated = update_name(&mut name);
+    let updated = update_name(&mut name, None);
 
     if updated {
         consume_name(name);
@@ -234,12 +241,14 @@ fn get_name() -> FeStr {
     return FeStr::from("Adam");
 }
 
-fn say_hello(name: &FeStr) {
-    print(format!("Hello, {}", name));
+fn say_hello(name: &FeStr, age: FeUint) {
+    print(format!("Hello, {} year old named {}", age, name));
 }
 
-fn update_name(name: &mut FeStr) -> bool {
-    if name != FeStr::from("Adam") {
+fn update_name(name: &mut FeStr, force: Option<bool>) -> bool {
+    let force = force.unwrap_or_else(|| false);
+
+    if !force && name != FeStr::from("Adam") {
         return false;
     }
 
@@ -454,6 +463,10 @@ const largest
 // value3 has been dropped but this is still valid
 print(largest)
 
+fn inferred(value: &string) -> &string {
+    return value
+}
+
 struct HoldingRefs(&string, &[int]) impl {
     fn -> &self.get_values() -> (&string, &[int]) {
         return (&self.0, &self.1);
@@ -475,6 +488,10 @@ fn get_largest_first_2<'a>(
     } else {
         return value2;
     }
+}
+
+fn inferred(value: &FeStr) -> &FeStr {
+    return value;
 }
 
 struct HoldingRefs<'a, 'b>(&'a String, &'b Vec<isize>);
@@ -554,6 +571,10 @@ let largest
 // value3 has been dropped but this is still valid
 print(largest)
 
+fn inferred(value: &string) -> &string {
+    return value
+}
+
 struct HoldingRefs(&mut string, &mut [int]) impl {
     fn -> &mut self.get_values() -> (&mut string, &mut [int]) {
         return (&mut self.0, &mut self.1);
@@ -575,6 +596,10 @@ fn get_largest_first_2<'a>(
     } else {
         return value2;
     }
+}
+
+fn inferred(value: &FeStr) -> &FeStr {
+    return value;
 }
 
 struct HoldingRefs<'a, 'b>(&'a mut String, &'b mut Vec<isize>);
@@ -651,7 +676,7 @@ fn main() {
     let name: Option<FeStr> = Some(FeStr::from("Adam"));
     let name: Option<FeStr> = None;
 
-    let name: Option<FeStr> = FeStr::from("Adam").into();
+    let name: Option<FeStr> = Some(FeStr::from("Adam"));
     
     let length = get_length(name.as_ref());
 }
@@ -696,7 +721,7 @@ fn main() {
     let name: FeResult<FeStr> = Ok(FeStr::from("Adam"));
     let name: FeResult<FeStr> = Err(FeInt::from(123));
 
-    let name: FeResult<FeStr> = FeStr::from("Adam").into();
+    let name: FeResult<FeStr> = Ok(FeStr::from("Adam"));
     
     let length = get_length(name.as_ref());
 }
@@ -761,7 +786,7 @@ prop name: @<string> = "World"
 $: print("Hello, {name}")
 
 <h1>Hello {name}</>
-<input bind:value={&mut @name} />
+<input bind:value={*@name} />
 
 <>
     let count: @ = 0
