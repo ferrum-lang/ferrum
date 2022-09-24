@@ -270,7 +270,7 @@ Create concrete data structures to hold data, and/or implement methods.
 
 Ferrum:
 ```
-type Serial(uint)
+type Serial = uint
 
 struct Device(
     serial: Serial,
