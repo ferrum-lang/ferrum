@@ -1076,7 +1076,7 @@ set.insert(FeInt::from(101));
 
 Ferrum:
 ```
-const (a, b, ..., f, g) = (1, 2, 3, 4, 5, 6, 7)
+const (a, b, .., f, g) = (1, 2, 3, 4, 5, 6, 7)
 
 print(a, b, f, g) // 1, 2, 6, 7
 
