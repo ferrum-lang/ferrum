@@ -25,8 +25,8 @@ for n in 0..20 {
     print("{n}: {nth_fib(n)}")
 }
 
-fn nth_fib(n: uint, cache: mut Cache = {}) -> biguint {
-    type Cache = map<uint, biguint>
+fn nth_fib(n: uint, cache: &mut Cache = %{}) -> biguint {
+    type Cache = Map<uint, biguint>
 
     if n is 0 or 1 {
         return n

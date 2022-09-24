@@ -336,7 +336,7 @@ impl Device {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Inventory {
     devices: FeMap<Serial, Device>,
 }
@@ -398,6 +398,7 @@ Rust:
 
 const VAL_2: FeStr = FeStr::from_slice("some_value");
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum MyEnum {
     MyEmptyVal,
     MyTupleVal(FeInt, char, char),
@@ -420,6 +421,141 @@ fn main() {
     if let Some(value) = e.value() {
         print(value);
     }
+}
+```
+
+## `alias` - Type-Aliasing
+
+`alias` syntax creates type aliases to make referencing long or complicated types easier.
+
+Ferrum:
+```
+alias Cache = Map<(char, char, int), ~Iter<@string>>
+
+fn get_some() -> ?Map<(char, char, int), ~Iter<@string>> {
+    return none
+}
+
+fn accept_some(maybe_cache: ?Cache) {
+    # TODO
+}
+
+const cache = get_some()
+
+// Cache is just an alias
+accept_some(cache)
+```
+
+Rust:
+```rust
+type Cache = FeMap<(char, char, FeInt), Box<dyn FeIter<FeShared<FeStr>>>>;
+
+fn get_some() -> Option<FeMap<(char, char, FeInt), Box<dyn FeIter<FeShared<FeStr>>>>> {
+    return None;
+}
+
+fn accept_some(maybe_cache: Option<Cache>) {
+    todo!();
+}
+
+fn main() {
+    let cache = get_some();
+
+    accept_some(cache);
+}
+```
+
+## `type` - Type-Wrapping
+
+`type` syntax creates an new unique type that wraps some other type. This can be useful for the newtype pattern.
+
+Ferrum:
+```
+type Name = string
+type Email = string
+type Age = uint
+
+struct Person(
+    name: Name,
+    email: Email,
+    age: Age,
+)
+
+// coerced creation
+const name: Name = "Adam"
+
+// explicit creation
+const email = Email("adam@example.com")
+
+// inferred type by usage below
+const age = 101
+
+let person = Person(name, email, age)
+
+
+const full_name: Name = "Adam Bates"
+
+// won't compile as Name and Email are unique types, even though they both wrap string
+// person.email = full_name
+```
+
+Rust:
+```rust
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+struct Name(FeStr);
+
+impl<T: Into<FeStr>> From<T> for Name {
+    fn from(value: T) -> Self {
+        return Self(value.into());
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+struct Email(FeStr);
+
+impl<T: Into<FeStr>> From<T> for FeStr {
+    fn from(value: T) -> Self {
+        return Self(value.into());
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+struct Age(FeUint);
+
+impl Copy for Age {}
+
+impl<T: Into<FeUint>> From<T> for FeStr {
+    fn from(value: T) -> Self {
+        return Self(value.into());
+    }
+}
+
+struct Person {
+    name: Name,
+    email: Email,
+    age: Age,
+}
+
+impl Person {
+    pub fn new(name: Name, email: Email, age: Age) -> Self {
+        return Self {
+            name,
+            email,
+            age,
+        };
+    }
+}
+
+fn main() {
+    let name: Name = Name::from(FeStr::from("Adam"));
+
+    let email = Email(FeStr::from("adam@example.com"));
+
+    let age = Age(101);
+
+    let mut person = Person::new(name, email, age);
+
+    let full_name: Name = Name::from(FeStr::from("Adam Bates"));
 }
 ```
 
@@ -738,7 +874,7 @@ const values: [int] = [1, 2, 3]
 // The above is syntactic-sugar for:
 const values: List<int> = List(1, 2, 3)
 
-// Iter is an interface that defines iteration over a collect
+// Iter is an interface that defines iteration over a collection
 const values: ~Iter<int> = [1, 2, 3]
 
 // Unfortunately, this requires moving the data onto the heap.
@@ -772,6 +908,233 @@ for i in FeInt::from(0)..FeInt::from(10) {
 }
 
 print(values);
+```
+
+## `[...; N]` - Arrays
+
+`[]` can also be used to create arrays, when a size is specified.
+
+Ferrum:
+```
+const values: [int; 3] = [1, 2, 3]
+
+fn print_all(numbers: &[int; N]) {
+    print("Printing {N} numbers:")
+
+    for number in numbers {
+        print(number)
+    }
+}
+
+print_all(&values)
+print_all(&[])
+
+const values: [int; _] = [2 * x for x in 1..=3]
+
+print_all(&values)
+```
+
+Rust:
+```rust
+fn print_all<const N: usize>(numbers: &[FeInt; N]) {
+    print(format!("Printing {} numbers:", N));
+
+    for number in numbers {
+        print(number);
+    }
+}
+
+fn main() {
+    let values: [FeInt; 3] = [FeInt::from(1), FeInt::from(2), FeInt::from(3)];
+
+    print_all(&values);
+    print_all(&[]);
+
+    let values: [FeInt; 3] = [
+        {
+            let x = 1;
+            2 * x
+        },
+        {
+            let x = 2;
+            2 * x
+        },
+        {
+            let x = 3;
+            2 * x
+        },
+    ];
+
+    print_all(&values);
+}
+```
+
+## `%{ ... }` - Maps
+
+`%{}` can be used to create dynamic key-value maps.
+
+Ferrum:
+```
+const values: %{ char: int } = %{
+    'a': 1,
+    'b': 2,
+    'c': 3,
+}
+
+// The above is syntactic-sugar for:
+const values: Map<char, int> = Map(
+    ('a', 1),
+    ('b', 2),
+    ('c', 3),
+)
+
+const my_char = 'z'
+
+const my_int = 123
+
+let mapping = %{
+    my_char: my_int,
+}
+
+if mapping[&my_char] is some(n) {
+    print(n)
+}
+
+mapping['x'] = 0
+
+```
+
+Rust:
+```rust
+let values: FeMap<char, FeInt> = fe_map![
+    ('a', 1),
+    ('b', 2),
+    ('c', 3),
+];
+
+let values: FeMap<char, FeInt> = fe_map![
+    ('a', 1),
+    ('b', 2),
+    ('c', 3),
+];
+
+let my_char = 'z';
+
+let my_int = FeInt::from(123);
+
+let mut mapping = fe_map![
+    (my_char, my_int),
+];
+
+if let Some(n) = mapping.get_value(&my_char) {
+    print(n);
+}
+
+mapping.insert('x', FeInt::from(0));
+```
+
+## `%[]` - Sets
+
+`%[]` can be used to create sets.
+
+Ferrum:
+```
+const values: %[int] = %[1, 1, 2, 2, 3]
+
+// The above is syntactic-sugar for:
+const values: Set<int> = Set(1, 1, 2, 2, 3)
+
+print(values.len()) // 3
+
+const my_int = 42
+
+let set = %[my_int]
+
+if set[&my_int] {
+    print(true)
+}
+
+set.insert(101)
+```
+
+Rust:
+```rust
+let values: FeSet<FeInt> = fe_set![1, 1, 2, 2, 3];
+
+let values: FeSet<FeInt> = fe_set![1, 1, 2, 2, 3];
+
+print(values.len());
+
+let my_int = FeInt::from(42);
+
+let mut set = fe_set![my_int];
+
+if set.get(&my_int) {
+    print(true);
+}
+
+set.insert(FeInt::from(101));
+```
+
+## `..` - Spread
+
+`..` syntax can be used to auto-fill the rest of something, when it is obvious to the compiler.
+
+Ferrum:
+```
+const (a, b, ..., f, g) = (1, 2, 3, 4, 5, 6, 7)
+
+print(a, b, f, g) // 1, 2, 6, 7
+
+if [1, 2, 3, 4] is [.., 3, n] {
+    print("ends with 3, {n}")
+}
+
+struct Unique<T>(
+    inner_id: UUID = UUID(),
+    value: T,
+) impl {
+    pub construct(value) ..
+}
+```
+
+Rust:
+```rust
+struct Unique<T> {
+    inner_id: FeUUID,
+    value: T,
+}
+
+impl<T> Unique<T> {
+    pub fn new(value: T) -> Self {
+        return Self {
+            value,
+            inner_id: FeUUID::new(),
+        };
+    }
+}
+
+fn main() {
+    let (a, b, f, g) = {
+        let values = (1, 2, 3, 4, 5, 6, 7);
+        (values.0, values.1, values.5, values.6)
+    };
+
+    print(format!("{}, {}, {}, {}", a, b, f, g));
+
+    if let Some((3, n)) = {
+        let values = fe_list![1, 2, 3, 4];
+
+        if values.len() < 2 {
+            None
+        } else {
+            Some((values[values.len() - 2], values[values.len() - 1]))
+        }
+    } {
+        print(format!("ends with 3, {}", n))
+    }
+}
+
 ```
 
 ---
