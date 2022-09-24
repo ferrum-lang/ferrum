@@ -270,7 +270,7 @@ Create concrete data structures to hold data, and/or implement methods.
 
 Ferrum:
 ```
-primative Serial(uint)
+type Serial(uint)
 
 struct Device(
     serial: Serial,
@@ -307,19 +307,13 @@ Rust:
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct Serial(FeUint);
 
-impl Serial {
-    fn new(val0: FeUint) -> Self {
-        return Self(val0);
+impl<T: Into<FeUint>> From<T> for Serial {
+    fn from(value: T) -> Self {
+        return Self(value.into());
     }
 }
 
 impl Copy for Serial {}
-
-impl std::fmt::Display for Serial {
-    fn fmt(&self, f: std::fmt::Formatter) -> std::fmt::Result {
-        return write!(f, "{}", self.0);
-    }
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Device {
@@ -551,7 +545,7 @@ fn main() {
 
     let email = Email(FeStr::from("adam@example.com"));
 
-    let age = Age(101);
+    let age = Age(FeUint::from(101));
 
     let mut person = Person::new(name, email, age);
 
