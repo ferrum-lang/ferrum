@@ -1131,6 +1131,26 @@ fn main() {
 
 ```
 
+## `safe` - Safe functions
+
+Safe functions cannot contain any code paths that cause a panic
+
+Note: the `safe` keyword can be ignored when running a development build
+
+Ferrum:
+```
+pub safe fn main() {
+    print("Can't panic!")
+
+    // won't compile as safe fns can't panic, and some_func contains a panic
+    // some_func()
+}
+
+fn some_func() {
+    #TODO
+}
+```
+
 ---
 
 ## Frontend Component syntax
