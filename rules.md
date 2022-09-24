@@ -1151,6 +1151,98 @@ fn some_func() {
 }
 ```
 
+## `~` - Dynamic Contract Objects
+
+Contracts can be referenced directly (using monomorphization), or dynamically with `~` (using dynamic dispatch)
+
+Ferrum:
+```
+contract Connection {
+    &mut self.connect() -> bool
+}
+
+struct DbConnection impl Connection {
+    pub &mut self.connect() -> bool {
+        return true
+    }
+}
+
+struct Wrapper1<T: Connection> {
+    c: &mut T,
+}
+
+struct Wrapper2 {
+    c: &mut ~Connection,
+}
+
+fn handle_connection1(c: &mut Connection) {
+    let wrapper = Wrapper1 { c }
+    wrapper.c.connect()
+}
+
+fn handle_connection2(c: &mut ~Connection) {
+    let wrapper = Wrapper2 { c }
+    wrapper.c.connect()
+}
+
+// ~Connection cannot be passed as Connection
+// let y: ~Connection = DbConnection()
+// handle_connection1(&mut y)
+
+let y: DbConnection = DbConnection()
+handle_connection1(&mut y)
+
+let y: ~Connection = DbConnection()
+handle_connection2(&mut y)
+
+let y: DbConnection = DbConnection()
+handle_connection2(&mut y)
+```
+
+Rust:
+```rust
+trait Connection {
+    fn connect(&mut self) -> bool;
+}
+
+struct DbConnection;
+impl Connection for DbConnection {
+    fn connect(&mut self) -> bool {
+        return true;
+    }
+}
+
+struct Wrapper1<'a, T: Connection> {
+    c: &'a mut T,
+}
+
+struct Wrapper2<'a> {
+    c: &'a mut dyn Connection,
+}
+
+fn handle_connection1(c: &mut impl Connection) {
+    let mut wrapper = Wrapper1 { c };
+    wrapper.c.connect();
+}
+
+fn handle_connection2(c: &mut dyn Connection) {
+    let mut wrapper = Wrapper2 { c };
+    wrapper.c.connect();
+}
+
+// let mut y: Box<dyn Connection> = Box::new(DbConnection);
+// handle_connection1(&mut *y);
+
+let mut y: DbConnection = DbConnection;
+handle_connection1(&mut y);
+
+let mut y: Box<dyn Connection> = Box::new(DbConnection);
+handle_connection2(&mut *y);
+
+let mut y: DbConnection = DbConnection;
+handle_connection2(&mut y);
+```
+
 ---
 
 ## Frontend Component syntax
