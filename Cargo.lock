@@ -66,6 +66,7 @@ dependencies = [
  "quote",
  "rust_source_bundler",
  "syn",
+ "target-lexicon",
  "thiserror",
 ]
 
@@ -152,8 +153,9 @@ dependencies = [
 
 [[package]]
 name = "rust_source_bundler"
-version = "0.1.0"
-source = "git+https://github.com/adam-bates/rust_source_bundler#7792527a55f81503791a810815ca3e6ce5ea8375"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e0a0e60975d81653e25d4ade80067fc2229e5a6b55711df245c8d1f45efa8b61"
 dependencies = [
  "anyhow",
  "quote",
@@ -201,6 +203,12 @@ dependencies = [
  "quote",
  "unicode-ident",
 ]
+
+[[package]]
+name = "target-lexicon"
+version = "0.12.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c02424087780c9b71cc96799eaeddff35af2bc513278cda5c99fc1f5d026d3c1"
 
 [[package]]
 name = "textwrap"

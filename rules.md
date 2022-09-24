@@ -109,7 +109,9 @@ print(@::count(&adam)) // 3
 Rust:
 ```rust
 let mut adam: FeShared<_> = FeStr::from("Adam").into();
+
 let mut adam2 = FeShared::share(adam.as_ref());
+
 let mut adam3 = FeShared::share(adam.as_ref());
 
 adam.append('1');
@@ -267,7 +269,7 @@ struct Device(
 )
 
 struct Inventory(
-    devices: Map<Serial, Device> = {},
+    devices: Map<Serial, Device> = Map(),
 ) impl {
     &self.get_all() -> [&Device] {
         return self.devices.values()
@@ -755,11 +757,11 @@ Svelte-style, cleaned up, and using Ferrum
 
 Ferrum Component:
 ```
-prop name: &mut string = "World"
+prop name: @<string> = "World"
 $: print("Hello, {name}")
 
 <h1>Hello {name}</>
-<input bind:value={&mut name} />
+<input bind:value={&mut @name} />
 
 <>
     let count: @ = 0
