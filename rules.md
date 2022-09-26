@@ -1273,8 +1273,8 @@ Rust:
 let x = FeInt::from(1);
 let add: Box<dyn Fn(FeInt, FeInt) -> FeInt> = Box::new(|a, b| a + b + x);
 
-let y = FeInt::from(2);
-let add_mut: Box<dyn FnMut(FeInt, FeInt) -> FeInt> = Box::new(|a, b| {
+let mut y = FeInt::from(2);
+let mut add_mut: Box<dyn FnMut(FeInt, FeInt) -> FeInt> = Box::new(|a, b| {
     y += a + b;
     return y;
 });
