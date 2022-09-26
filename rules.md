@@ -1243,6 +1243,52 @@ let mut y: DbConnection = DbConnection;
 handle_connection2(&mut y);
 ```
 
+## `() => {}` - Closures
+
+`() => {}` syntax can be used to create closures.
+
+Ferrum:
+```
+const x = 1
+const add: ~Fn(int, int) -> int = (a, b) => a + b + x
+
+let y = 2
+let add_mut: ~FnMut(int, int) -> int = (a, b) => {
+    y += a + b
+    return y
+}
+
+const z = 3
+const add_once: ~FnOnce(int, int) -> int = (a, b) => {
+    return a + b + z
+}
+
+const value1 = add(3, 4)
+const value2 = add_mut(3, 4)
+const value3 = add_once(3, 4)
+```
+
+Rust:
+```rust
+let x = FeInt::from(1);
+let add: Box<dyn Fn(FeInt, FeInt) -> FeInt> = Box::new(|a, b| a + b + x);
+
+let y = FeInt::from(2);
+let add_mut: Box<dyn FnMut(FeInt, FeInt) -> FeInt> = Box::new(|a, b| {
+    y += a + b;
+    return y;
+});
+
+let z = FeInt::from(3);
+let add_once: Box<dyn FnOnce(FeInt, FeInt) -> FeInt> = Box::new(|a, b| {
+    return a + b + z;
+});
+
+let value1 = add(3, 4);
+let value2 = add_mut(3, 4);
+let value3 = add_once(3, 4);
+```
+
 ---
 
 ## Frontend Component syntax
