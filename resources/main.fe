@@ -1,22 +1,5 @@
-let x = 12
-const y = 3
+print()
+println()
 
-print("abc: {x}{y}")
-
-x = 33
-
-const z: string = "abc: {x}"
-
-print("{z}{y}")
-
-print(z)
-
-say_hello(age = 25, "Adam")
-say_hello("Madison", "female", 23)
-
-fn say_hello(name: string, gender: string = "male", age: uint) {
-    print("hello {name}, you are a {age} yr old {gender}")
-}
-
-const z = y
+hello_world()
 
