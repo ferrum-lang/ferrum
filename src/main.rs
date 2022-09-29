@@ -12,24 +12,20 @@ fn main() -> Result {
 
     let project = ferrum_oxidize::build_project(config)?;
 
-    let output = std::process::Command::new("cargo")
-        .arg("run")
-        .current_dir(project.build_dir)
+    let output = std::process::Command::new(project.out_file)
         .output()?;
 
     if !output.status.success() {
         let stderr = output.stderr;
         let string = String::from_utf8(stderr)?;
 
-        eprintln!("{}", string);
-
-        todo!();
+        panic!("{}", string);
     }
 
     let stdout = output.stdout;
     let string = String::from_utf8(stdout)?;
 
-    println!("{}", string);
+    println!("\n\n*** OUTPUT ***\n{}*** END ***", string);
 
     return Ok(());
 }
