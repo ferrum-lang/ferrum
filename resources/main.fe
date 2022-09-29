@@ -3,4 +3,9 @@ print("Hello world!")
 print(true)
 print(false)
 
+pub fn say_something() {
+    print("say_something")
+}
+
+say_something()
 
