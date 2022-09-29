@@ -3,5 +3,6 @@ target
 temp*
 .DS_Store
 
-fe_build/*
+resources/.ferrum
+resources/main
 
