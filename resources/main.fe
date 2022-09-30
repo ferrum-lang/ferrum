@@ -1,11 +1,42 @@
+
+/*
+
+say_something()
+
 print("Hello world!")
+
+pub fn say_something() {
+    inner()
+
+    print("say_something")
+
+    fn inner() {
+        print("inner")
+    }
+
+    inner()
+}
+
+say_something()
 
 print(true)
 print(false)
 
-pub fn say_something() {
-    print("say_something")
+*/
+
+fn hello(name: string) {
+    print(name)
 }
 
-say_something()
+hello("Adam")
+
+hello("Madison")
+
+hello("World!")
+
+let x: string = "x"
+let y = "x"
+
+const foo: &string
+const bar: &mut string
 
