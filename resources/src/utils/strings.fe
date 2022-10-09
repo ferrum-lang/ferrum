@@ -1,0 +1,12 @@
+/*
+pub fn longest(a: -> &string, b: -> &string) -> &string {
+    # TODO
+}
+
+pub fn shortest(a: -> &string, b: -> &string) -> &string {
+    # TODO
+}
+*/
+
+pub fn from_utils_strings() {}
+

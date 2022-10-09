@@ -1,0 +1,99 @@
+use other::foo
+// use utils::{ self, lists }
+
+// other::foo()
+
+// utils::strings::longest(&"a", &"b")
+
+// lists::split_by(["a", "bbbbb"], (x) => x.len() >= 5)
+
+
+pub fn say_something() {
+    inner()
+
+    print("say_something")
+
+    fn inner() {
+        print("inner")
+    }
+
+    inner()
+}
+
+say_something()
+
+print("\n  Hello world!  \n")
+
+say_something()
+
+print("")
+print(true)
+print(false)
+
+////////////////
+
+fn hello(name: string) {
+    print(name)
+}
+
+print("")
+hello("Adam")
+hello("Madison")
+hello("World!")
+
+
+////////////////
+
+// explicit type, with assignment
+const x: string = "x"
+
+// implicit type, with assignment
+let y = "x"
+
+// explicit type, without assignment
+const z: string
+
+
+const foo: &string
+let bar: &mut string
+
+const foo: &string = &x
+let bar: &mut string = &mut y
+
+let one: string = "lol"
+let two: &mut string = &mut one
+const three: &&mut string = &two
+const four: &string = *three
+const five: &string = &*four 
+
+const one: string = "lol"
+let two: &string = &one
+let three: &mut &string = &mut two
+const four: &string = *three
+const five: &string = &*four 
+
+/*
+    /* Nested block comments! */
+*/
+
+
+fn one_line_func() { print("one_line_func") }
+
+print("")
+one_line_func()
+
+/*
+
+enum Sex {
+    Male,
+    Female,
+}
+
+struct Person (
+    first_name: string,
+    last_name: string,
+    age: uint,
+    sex: Sex,
+)
+
+

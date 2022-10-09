@@ -1289,6 +1289,62 @@ let value2 = add_mut(3, 4);
 let value3 = add_once(3, 4);
 ```
 
+## `use ...` - Use statements
+
+`use` can be used to import and/or re-export
+
+Ferrum:
+```
+/*
+Given:
+src
+|- _main.fe
+|- foobar.fe
+|- utils
+|  |- _pkg.fe
+|  |- inner.fe
+|  |- strings.fe
+*/
+
+// src/_main.fe
+    use utils
+    use ~/utils // `~/` points to src root
+
+    use utils::strings
+    
+    // Can't access utils/inner
+    // use utils::inner
+
+
+// src/utils/_pkg.fe
+    pub use strings
+    use inner // not pub
+
+
+// src/utils/inner.fe
+    use ../foobar // Can access siblings of any parent
+```
+
+Rust:
+```rust
+// src/main.rs
+    pub mod utils;
+    pub mod foobar;
+
+    use utils;
+    use crate::utils;
+
+    use utils::strings;
+
+
+// src/utils/mod.rs
+    pub use strings;
+    use inner;
+
+// src/utils/inner.rs
+    use super::super::foobar;
+```
+
 ---
 
 ## Frontend Component syntax
