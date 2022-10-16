@@ -1,8 +1,7 @@
-pub use lists::*
-pub use strings::*
+pub use lists::{self, *}
+pub use strings::{self, *}
 
-pub use inner
-pub use inner::*
+pub use inner::{self, *}
 
 use ../other
 use ../other::*

@@ -1,8 +1,8 @@
-use hello::say_hello
+use hello::{self, *}
 
 say_hello()
 
-/*
+hello::say_hello()
 
 use other::foo
 // use utils::{ self, lists }

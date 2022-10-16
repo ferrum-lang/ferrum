@@ -1,4 +1,4 @@
-// use utils::{self, lists::from_utils_lists}
+use utils::{self, lists::from_utils_lists}
 
 pub fn foo() { print("foo") }
 
