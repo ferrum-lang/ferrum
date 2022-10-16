@@ -62,6 +62,7 @@ name = "ferrum_oxidize"
 version = "0.1.2"
 dependencies = [
  "anyhow",
+ "ferrum_runtime",
  "proc-macro2",
  "quote",
  "rust_source_bundler",
@@ -69,6 +70,10 @@ dependencies = [
  "target-lexicon",
  "thiserror",
 ]
+
+[[package]]
+name = "ferrum_runtime"
+version = "0.1.0"
 
 [[package]]
 name = "heck"

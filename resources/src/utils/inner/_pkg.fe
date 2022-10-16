@@ -1,0 +1,6 @@
+pub fn lol() {}
+
+fn abc_123() {}
+
+use ~/other::{self, foo}
+

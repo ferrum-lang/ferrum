@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 fn main() -> Result {
     let config = ferrum_oxidize::Config {
-        entry_file: Some(PathBuf::from("./resources/src/main.fe")),
+        entry_file: Some(PathBuf::from("./resources/src/_main.fe")),
         build_dir: Some(PathBuf::from("./resources/.ferrum/cargo_gen")),
         out_file: Some(PathBuf::from("./resources/main")),
         ..Default::default()

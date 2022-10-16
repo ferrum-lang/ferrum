@@ -1,3 +1,9 @@
+use hello::say_hello
+
+say_hello()
+
+/*
+
 use other::foo
 // use utils::{ self, lists }
 
@@ -7,8 +13,7 @@ use other::foo
 
 // lists::split_by(["a", "bbbbb"], (x) => x.len() >= 5)
 
-
-pub fn say_something() {
+fn say_something() {
     inner()
 
     print("say_something")
@@ -81,19 +86,4 @@ fn one_line_func() { print("one_line_func") }
 
 print("")
 one_line_func()
-
-/*
-
-enum Sex {
-    Male,
-    Female,
-}
-
-struct Person (
-    first_name: string,
-    last_name: string,
-    age: uint,
-    sex: Sex,
-)
-
 

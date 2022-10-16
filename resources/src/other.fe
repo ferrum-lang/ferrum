@@ -95,9 +95,9 @@ main.fe
 
 /// WHAT IF
 
-- CANT access main.fe or **/_root.fe from child nodes
+- CANT access main.fe or **\/_root.fe from child nodes
 - CANT `pub use super...`
-- **/_root.fe gives access to parent modules, but sibling/child modules have access no matter what
+- **\/_root.fe gives access to parent modules, but sibling/child modules have access no matter what
 
 main.fe
     // Can't be pub
@@ -171,5 +171,3 @@ main.rs
 
     ...
 
-
-*/
