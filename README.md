@@ -21,30 +21,28 @@ I'm currently on attempt 3, but not much development is happening as I'm still b
 Here's an example of what I envision the language to look like for a simple `nth_fibonnacci` recursive solution:
 
 ```
-for n in 0..20 {
+for n in 0..20
     print("{n}: {nth_fib(n)}")
-}
+;
 
-fn nth_fib(n: uint, cache: &mut Cache = %{}) -> biguint {
+fn nth_fib(n: uint, cache: &mut Cache = #{}) -> biguint
     type Cache = Map<uint, biguint>
 
-    if n is 0 or 1 {
+    if n is (0 or 1)
         return n
-    }
+    ;
 
-    if cache[n] is some(fib) {
-        return fib
-    }
+    do return it if cache[n]
 
-    let prev1 = nth_fib(n - 1, cache)
-    let prev2 = nth_fib(n - 2, cache)
+    const prev1 = nth_fib(n - 1, cache)
+    const prev2 = nth_fib(n - 2, cache)
 
-    let fib = prev1 + prev2;
+    const fib = prev1 + prev2
 
     cache[n] = fib
 
     return fib
-}
+;
 ```
 
 ## The Oxidize Build Tool
@@ -60,3 +58,5 @@ Rust is a fantastic programming language that changes the status-quo. But it's a
 The goal of this language is to take the lessons from Rust, and apply them to a higher-level "general-purpose" programming language that is built on Rust. Concepts like managing mutability, compile-time match guarantees, possibly ownership & borrowing, and more. But also without ever worrying about lifetimes; making unique / shared memory easy with opt-in automatic reference counting; a single, easy to use, string type; string templating; variable arguments; dynamic lists by default; and much more!
 
 Of course, building some of these concepts means losing some performance. But for the average programmer, the loss in performance should be minimal compared to the gain in accessibility.
+
+
