@@ -1,10 +1,59 @@
 use hello::{self, *}
+use other::foo
+
+use(rust) low_level::low_level_func
+
+low_level_func("Adam", "25")
+
+/*
+
+let x_sum = 0
+let y_sum = 0
+
+let xx_sum = 0
+let xy_sum = 0
+
+let count = 0
+
+for (_, source_value), idx in source_data
+    const (_, target_value) = target_data[idx]
+
+    x_sum += source_value
+    y_sum += target_value
+
+    xx_sum += source_value ** 2
+    xy_sum += source_value * target_value
+
+    count += 1
+;
+
+
+const m = ((count * xy_sum) - (x_sum * y_sum)) / ((count * xx_sum) - (x_sum * x_sum))
+
+const b = (y_sum / count) - ((m * x_sum) / count)
+
+*/
+
+
+fn bar() => print("bar")
+
+fn baz() => do
+    print("baz")
+    print("hehehe")
+;
+
+foo()
+bar()
+baz()
+
+fn xyz() => pass
+
+xyz()
 
 say_hello()
 
 hello::say_hello()
 
-use other::foo
 // use utils::{ self, lists }
 
 // other::foo()
@@ -13,17 +62,17 @@ use other::foo
 
 // lists::split_by(["a", "bbbbb"], (x) => x.len() >= 5)
 
-fn say_something() {
+fn say_something()
     inner()
 
     print("say_something")
 
-    fn inner() {
+    fn inner()
         print("inner")
-    }
+    ;
 
     inner()
-}
+;
 
 say_something()
 
@@ -37,52 +86,52 @@ print(false)
 
 ////////////////
 
-fn hello(name: string) {
+fn hello_name(name: str)
     print(name)
-}
+;
 
 print("")
-hello("Adam")
-hello("Madison")
-hello("World!")
+hello_name("Adam")
+hello_name("Madison")
+hello_name("World!")
 
 
 ////////////////
 
 // explicit type, with assignment
-const x: string = "x"
+const x: str = "x"
 
 // implicit type, with assignment
 let y = "x"
 
 // explicit type, without assignment
-const z: string
+const z: str
 
 
-const foo: &string
-let bar: &mut string
+const foo: &str
+let bar: &mut str
 
-const foo: &string = &x
-let bar: &mut string = &mut y
+const foo: &str = &x
+let bar: &mut str = &mut y
 
-let one: string = "lol"
-let two: &mut string = &mut one
-const three: &&mut string = &two
-const four: &string = *three
-const five: &string = &*four 
+let one: str = "lol"
+let two: &mut str = &mut one
+const three: &&mut str = &two
+const four: &str = @three
+const five: &str = &@four 
 
-const one: string = "lol"
-let two: &string = &one
-let three: &mut &string = &mut two
-const four: &string = *three
-const five: &string = &*four 
+const one: str = "lol"
+let two: &str = &one
+let three: &mut &str = &mut two
+const four: &str = @three
+const five: &str = &@four 
 
 /*
     /* Nested block comments! */
 */
 
 
-fn one_line_func() { print("one_line_func") }
+fn one_line_func() => print("one_line_func")
 
 print("")
 one_line_func()

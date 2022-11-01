@@ -1,4 +1,4 @@
-pub fn say_hello() {
+pub fn say_hello()
     print("hello world!")
-}
+;
 

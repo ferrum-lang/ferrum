@@ -2,10 +2,10 @@
 // use super::other
 
 /*
-pub fn split_by<T>(list: [T], predicate: ~Fn(T) -> bool) -> ([T], [T]) {
+pub fn split_by<T>(list: [T], predicate: ~Fn(T) -> bool) -> ([T], [T])
     # TODO
-}
+;
 */
 
-pub fn from_utils_lists() {}
+pub fn from_utils_lists() => pass
 

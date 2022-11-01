@@ -1,13 +1,14 @@
 use utils::{self, lists::from_utils_lists}
 
-pub fn foo() { print("foo") }
+pub fn foo() => print("foo")
 
-fn bar() { print("bar") }
+fn bar() => print("bar")
 
 
-fn from_other() {
-    // from_utils_lists()
-}
+fn from_other()
+    utils::lists::from_utils_lists()
+    from_utils_lists()
+;
 
 /*
 
@@ -43,9 +44,9 @@ utils/lists.fe
      * algos -> utils/algos/_root.fe
      */
 
-    pub fn split_by<T>(list: [T], predicate: ~Fn(T) -> bool) -> ([T], [T]) {
+    pub fn split_by<T>(list: [T], predicate: ~Fn(T) -> bool) -> ([T], [T])
         ...
-    }
+    ;
 
 utils/strings.fe
     /* root -> utils/_root.fe
@@ -55,13 +56,13 @@ utils/strings.fe
      * algos -> utils/algos/_root.fe
      */
 
-    pub fn longest(a: -> &string, b: -> &string) -> &string {
+    pub fn longest(a: -> &string, b: -> &string) -> &string
         ...
-    }
+    ;
 
-    pub fn shortest(a: -> &string, b: -> &string) -> &string {
+    pub fn shortest(a: -> &string, b: -> &string) -> &string
         ...
-    }
+    ;
 
 
 other.fe
@@ -73,7 +74,7 @@ other.fe
 
     use utils::*
 
-    pub fn foo() { print("foo") }
+    pub fn foo() => print("foo")
 
 
 main.fe
@@ -91,7 +92,7 @@ main.fe
 
     utils::strings::longest(&"a", &"b")
 
-    lists::split_by(["a", "bbbbb"], (x) => x.len() >= 5)
+    lists::split_by(["a", "bbbbb"], x => x.len() >= 5)
 
 /// WHAT IF
 
@@ -107,7 +108,7 @@ main.fe
     use utils::* // <- utils/_root.fe
 
     // MUST be pub
-    pub fn main() { ... }
+    pub fn main() => ...
 
 other.fe
     // Can't access main.fe
@@ -136,12 +137,12 @@ main.fe
 mod1.fe
     pub use mod2::*
 
-    pub fn f() { }
+    pub fn f() => pass
 
 mod2.fe
     pub use mod1::*
 
-    pub fn f() { }
+    pub fn f() => pass
 
 
 /// TO RUST:

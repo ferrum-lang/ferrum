@@ -17,7 +17,7 @@ y = &"cba"
 let z
 
 let y = &mut x
-*y = "cba"
+@y = "cba"
 y.append('!')
 ```
 
@@ -58,22 +58,40 @@ let y = &x;
 let z;
 ```
 
-## `@` - Shared-Mutable State
+## `std::mem` - Smart Pointers
 
-The `@` symbol is a syntax that makes it easy to create shared mutable data using reference-counting.
+The `std::mem` package provides smart pointers for managing data in more complex manors.
 
 Ferrum:
 ```
-const name: string = "Adam"
+use std::mem::Rc
 
-// verbose creation
-let adam: @string = @::new(name)
+const name: Rc<str> = Rc::new("Adam")
+const name2: Rc<str> = Rc::share(&name)
 
-// can use like any other data
-let names: [@<string>] = [adam]
+const name = Rc::new("Adam", lazy = true)   // Still on stack, not reference counting yet
+const name2 = Rc::share(&name)              // Reference counting starts here
+```
 
-// won't compile as @ implies mutable
-// const adam = @::new(name)
+```
+use std::mem::RcMut
+
+let name: RcMut<str> = RcMut::new("Adam")   // lazy option available here too
+let name2: RcMut<str> = RcMut::share(&name)
+```
+
+```
+use std::mem::Gc
+
+const name: Gc<str> = Gc::new("Adam")       // lazy option available here too
+const name2: Gc<str> = Gc::share(&name)
+```
+
+```
+use std::mem::GcMut
+
+let name: GcMut<str> = GcMut::new("Adam")         // lazy option available here too
+let name2: GcMut<str> = GcMut::share(&name)
 ```
 
 Rust:
@@ -87,7 +105,7 @@ let mut names: FeList<FeShared<FeStr>> = fe_list![adam];
 
 Ferrum:
 ```
-const name: string = "Adam"
+const name: str = "Adam"
 
 // typical creation
 let adam = @name
@@ -158,7 +176,7 @@ Notes:
 
 Ferrum:
 ```
-fn main() {
+fn main()
     print("hello world")
 
     foo_bar()
@@ -171,44 +189,44 @@ fn main() {
     // optional and default params can be skipped
     const updated = update_name(&mut name)
 
-    if updated {
+    if updated
         consume_name(name)
-    }
-}
+    ;
+;
 
-fn foo_bar() {
-    fn inner() {
+fn foo_bar()
+    fn inner()
         print("Hello from inner")
-    }
+    ;
 
     print("Hello from foo_bar")
 
     inner()
-}
+;
 
-fn get_name() -> string {
+fn get_name() -> str
     return "Adam"
-}
+;
 
-fn say_hello(name: &string, age: uint) {
+fn say_hello(name: &str, age: uint)
     print("Hello, {age} year old named {name}")
-}
+;
 
-fn update_name(name: &mut string, force: bool = false) -> bool {
-    if !force && *name != "Adam" {
+fn update_name(name: &mut str, force: bool = false) -> bool
+    if !force && *name != "Adam"
         return false
-    }
+    ;
 
     name.append(" Bates")
 
     return true
-}
+;
 
-fn consume_name(name: string) {
+fn consume_name(name: str)
     name.append('!')
 
     print("consumed: {name}")
-}
+;
 ```
 
 Rust:
@@ -272,32 +290,34 @@ Ferrum:
 ```
 type Serial = uint
 
-struct Device(
+struct Device {
     serial: Serial,
     is_active: bool = true,
-)
+}
 
-struct Inventory(
+struct Inventory {
     devices: Map<Serial, Device> = Map(),
-) impl {
-    &self.get_all() -> [&Device] {
+}
+
+impl
+    &self.get_all() -> [&Device]
         return self.devices.values()
-    }
+    ;
 
-    &mut self.add(device: Device) {
+    &mut self.add(device: Device)
         self.devices.insert(device.serial, device);
-    }
+    ;
 
-    self.decorate() -> Self {
+    self.decorate() -> Self
         return Inventory(self.devices)
-    }
+    ;
 
-    mut self.with_device(device: Device) -> Self {
+    mut self.with_device(device: Device) -> Self
         self.add(device)
 
         return self
-    }
-}
+    ;
+;
 
 const inventory = Inventory()
 ```
@@ -377,14 +397,17 @@ Ferrum:
 enum MyEnum {
     MyEmptyVal,
     MyTupleVal(int, char, char),
-    MyStructVal(name: string, age: uint) = "some value",
+    MyStructVal {
+        name: str,
+        age: uint,
+    } = "some value",
 }
 
 const e: MyEnum = MyEnum::MyTupleVal(1, 'a', 'b')
 
-if e.value() is some(value) {
+if e.value() is some(value)
     print(value)
-}
+;
 ```
 
 Rust:
@@ -424,15 +447,15 @@ fn main() {
 
 Ferrum:
 ```
-alias Cache = Map<(char, char, int), ~Iter<@string>>
+alias Cache = Map<(char, char, int), ~Iter<@str>>
 
-fn get_some() -> ?Map<(char, char, int), ~Iter<@string>> {
+fn get_some() -> ?Map<(char, char, int), ~Iter<@str>>
     return none
-}
+;
 
-fn accept_some(maybe_cache: ?Cache) {
+fn accept_some(maybe_cache: ?Cache)
     # TODO
-}
+;
 
 const cache = get_some()
 
@@ -465,15 +488,15 @@ fn main() {
 
 Ferrum:
 ```
-type Name = string
-type Email = string
+type Name = str
+type Email = str
 type Age = uint
 
-struct Person(
+struct Person {
     name: Name,
     email: Email,
     age: Age,
-)
+}
 
 // coerced creation
 const name: Name = "Adam"
@@ -489,7 +512,7 @@ let person = Person(name, email, age)
 
 const full_name: Name = "Adam Bates"
 
-// won't compile as Name and Email are unique types, even though they both wrap string
+// won't compile as Name and Email are unique types, even though they both wrap str
 // person.email = full_name
 ```
 
@@ -567,41 +590,40 @@ const borrow_name_2 = &name
 print(borrow_name_1, borrow_name_2)
 
 fn get_largest_first_2(
-    value1: -> &string, // -> & syntax tells us which references are used in return (helps w/ lifetimes)
-    value2: -> &string,
-    value3: &string,
-) -> &string {
+    value1: -> &str, // -> & syntax tells us which references are used in return (helps w/ lifetimes)
+    value2: -> &str,
+    value3: &str,
+) -> &str
     print(value3)
 
-    if value1.len() >= value2.len() {
+    if value1.len() >= value2.len()
         return value1
-    } else {
+    else
         return value2
-    }
-}
+    ;
+;
 
 const value1 = "a"
 const value2 = "bb"
 
-const largest
-{
+const largest = get
     const value3 = "hello"
 
-    largest = get_largest_first_2(&value1, &value2, &value3)
-}
+    yield get_largest_first_2(&value1, &value2, &value3)
+;
 
 // value3 has been dropped but this is still valid
 print(largest)
 
-fn inferred(value: &string) -> &string {
+fn inferred(value: &str) -> &str
     return value
-}
+;
 
-struct HoldingRefs(&string, &[int]) impl {
-    fn -> &self.get_values() -> (&string, &[int]) {
-        return (&self.0, &self.1);
-    }
-}
+struct HoldingRefs(&str, &[int]) impl
+    fn &self.get_values() -> (&str, &[int])
+        return (&self.0, &self.1)
+    ;
+;
 ```
 
 Rust:
@@ -675,41 +697,40 @@ let borrow_name_1 = &mut name
 print(borrow_name_1)
 
 fn get_largest_first_2(
-    value1: -> &mut string, // -> & syntax tells us which references are used in return (helps w/ lifetimes)
-    value2: -> &mut string,
-    value3: &mut string,
-) -> &mut string {
+    value1: -> &mut str, // -> & syntax tells us which references are used in return (helps w/ lifetimes)
+    value2: -> &mut str,
+    value3: &mut str,
+) -> &mut str
     print(value3)
 
-    if value1.len() >= value2.len() {
+    if value1.len() >= value2.len()
         return value1
-    } else {
+    else
         return value2
-    }
-}
+    ;
+;
 
 let value1 = "a"
 let value2 = "bb"
 
-let largest
-{
+let largest = get
     let value3 = "hello"
 
-    largest = get_largest_first_2(&mut value1, &mut value2, &mut value3)
-}
+    yield get_largest_first_2(&mut value1, &mut value2, &mut value3)
+;
 
 // value3 has been dropped but this is still valid
 print(largest)
 
-fn inferred(value: &string) -> &string {
+fn inferred(value: &str) -> &str
     return value
-}
+;
 
-struct HoldingRefs(&mut string, &mut [int]) impl {
-    fn -> &mut self.get_values() -> (&mut string, &mut [int]) {
-        return (&mut self.0, &mut self.1);
-    }
-}
+struct HoldingRefs(&mut str, &mut [int]) impl
+    fn &mut self.get_values() -> (&mut str, &mut [int])
+        return (&mut self.0, &mut self.1)
+    ;
+;
 ```
 
 Rust:
@@ -769,13 +790,13 @@ Represent optional values using the `?` syntax.
 
 Ferrum:
 ```
-const name: ?string = some("Adam")
-const name: ?string = none
+const name: ?str = some("Adam")
+const name: ?str = none
 
 // coerced
-const name: ?string = "Adam"
+const name: ?str = "Adam"
 
-fn get_length(value: ?&string) -> ?uint {
+fn get_length(value: ?&str) -> ?uint
     // ?. maps the optional
     const length: ?uint = value?.len()
 
@@ -784,7 +805,7 @@ fn get_length(value: ?&string) -> ?uint {
 
     // values can be coerced into some(...)
     return length
-}
+;
 
 const length = get_length(&name)
 ```
@@ -818,12 +839,12 @@ Represent results using `!` syntax.
 
 Ferrum:
 ```
-const name: !string = ok("Adam")
-const name: !string = err(123)
+const name: !str = ok("Adam")
+const name: !str = err(123)
 
-const name: !string = "Adam"
+const name: !str = "Adam"
 
-fn get_length(value: !&string) -> !uint {
+fn get_length(value: !&str) -> !uint
     // !. maps the optional
     const length: !uint = value!.len()
 
@@ -832,7 +853,7 @@ fn get_length(value: !&string) -> !uint {
 
     // values can be coerced into ok(...)
     return length
-}
+;
 
 const length = get_length(&name)
 ```
@@ -878,9 +899,9 @@ const values: &~Iter<int> = &[1, 2, 3]
 // Lists can be mutated
 let values = []
 
-for i in 0..10 {
+for i in 0..10
     values.push(i)
-}
+;
 
 print(values)
 ```
@@ -912,13 +933,13 @@ Ferrum:
 ```
 const values: [int; 3] = [1, 2, 3]
 
-fn print_all(numbers: &[int; N]) {
+fn print_all(numbers: &[int; N])
     print("Printing {N} numbers:")
 
-    for number in numbers {
+    for number in numbers
         print(number)
-    }
-}
+    ;
+;
 
 print_all(&values)
 print_all(&[])
@@ -963,13 +984,13 @@ fn main() {
 }
 ```
 
-## `%{ ... }` - Maps
+## `#{ ... }` - Maps
 
-`%{}` can be used to create dynamic key-value maps.
+`#{}` can be used to create dynamic key-value maps.
 
 Ferrum:
 ```
-const values: %{ char: int } = %{
+const values: #{ char: int } = #{
     'a': 1,
     'b': 2,
     'c': 3,
@@ -986,13 +1007,13 @@ const my_char = 'z'
 
 const my_int = 123
 
-let mapping = %{
+let mapping = #{
     my_char: my_int,
 }
 
-if mapping[&my_char] is some(n) {
+if mapping[&my_char] is some(n)
     print(n)
-}
+;
 
 mapping['x'] = 0
 
@@ -1027,13 +1048,13 @@ if let Some(n) = mapping.get_value(&my_char) {
 mapping.insert('x', FeInt::from(0));
 ```
 
-## `%[]` - Sets
+## `#[]` - Sets
 
-`%[]` can be used to create sets.
+`#[]` can be used to create sets.
 
 Ferrum:
 ```
-const values: %[int] = %[1, 1, 2, 2, 3]
+const values: #[int] = #[1, 1, 2, 2, 3]
 
 // The above is syntactic-sugar for:
 const values: Set<int> = Set(1, 1, 2, 2, 3)
@@ -1042,11 +1063,11 @@ print(values.len()) // 3
 
 const my_int = 42
 
-let set = %[my_int]
+let set = #[my_int]
 
-if set[&my_int] {
+if set[&my_int]
     print(true)
-}
+;
 
 set.insert(101)
 ```
@@ -1080,16 +1101,16 @@ const (a, b, .., f, g) = (1, 2, 3, 4, 5, 6, 7)
 
 print(a, b, f, g) // 1, 2, 6, 7
 
-if [1, 2, 3, 4] is [.., 3, n] {
+if [1, 2, 3, 4] is [.., 3, n]
     print("ends with 3, {n}")
-}
+;
 
-struct Unique<T>(
+struct Unique<T> {
     inner_id: UUID = UUID(),
     value: T,
-) impl {
+} impl
     pub construct(value) ..
-}
+;
 ```
 
 Rust:
@@ -1131,15 +1152,15 @@ fn main() {
 
 ```
 
-## `safe` - Safe functions
+## `stable` - Safe functions
 
 Safe functions cannot contain any code paths that cause a panic
 
-Note: the `safe` keyword can be ignored when running a development build
+Note: the `stable` keyword can be ignored when running a development build
 
 Ferrum:
 ```
-pub safe fn main() {
+pub stable fn main() {
     print("Can't panic!")
 
     // won't compile as safe fns can't panic, and some_func contains a panic
@@ -1157,15 +1178,15 @@ Contracts can be referenced directly (using monomorphization), or dynamically wi
 
 Ferrum:
 ```
-contract Connection {
+contract Connection
     &mut self.connect() -> bool
-}
+;
 
-struct DbConnection impl Connection {
-    pub &mut self.connect() -> bool {
+struct DbConnection impl Connection
+    pub &mut self.connect() -> bool
         return true
-    }
-}
+    ;
+;
 
 struct Wrapper1<T: Connection> {
     c: &mut T,
@@ -1175,15 +1196,15 @@ struct Wrapper2 {
     c: &mut ~Connection,
 }
 
-fn handle_connection1(c: &mut Connection) {
+fn handle_connection1(c: &mut Connection)
     let wrapper = Wrapper1 { c }
     wrapper.c.connect()
-}
+;
 
-fn handle_connection2(c: &mut ~Connection) {
+fn handle_connection2(c: &mut ~Connection)
     let wrapper = Wrapper2 { c }
     wrapper.c.connect()
-}
+;
 
 // ~Connection cannot be passed as Connection
 // let y: ~Connection = DbConnection()
@@ -1243,25 +1264,24 @@ let mut y: DbConnection = DbConnection;
 handle_connection2(&mut y);
 ```
 
-## `() => {}` - Closures
+## `=>` - Closures
 
-`() => {}` syntax can be used to create closures.
+`=>` syntax can be used to create closures.
 
 Ferrum:
 ```
 const x = 1
-const add: ~Fn(int, int) -> int = (a, b) => a + b + x
+const add: ~Fn(int, int) -> int = a, b => a + b + x
 
 let y = 2
-let add_mut: ~FnMut(int, int) -> int = (a, b) => {
+let add_mut: ~FnMut(int, int) -> int = a, b => get
     y += a + b
-    return y
-}
+    yield y
+;
 
 const z = 3
-const add_once: ~FnOnce(int, int) -> int = (a, b) => {
-    return a + b + z
-}
+const add_once: ~FnOnce(int, int) -> int
+    = a, b => a + b + z
 
 const value1 = add(3, 4)
 const value2 = add_mut(3, 4)
@@ -1353,18 +1373,19 @@ Svelte-style, cleaned up, and using Ferrum
 
 Ferrum Component:
 ```
-prop name: @<string> = "World"
+prop name: state<str> = "World"
+
 $: print("Hello, {name}")
 
 <h1>Hello {name}</>
-<input bind:value={*@name} />
+<input bind:value={~name} />
 
 <>
-    let count: @ = 0
+    let count: ~ = 0
 
     <h2>{count}</>
-    <button on:click={() => *@count += 1}>+</>
-    <button on:click={() => *@count -= 1}>-</>
+    <button value="+" on:click={() => @count += 1} />
+    <button value="-" on:click={() => @count -= 1} />
 </>
 ```
 
