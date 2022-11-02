@@ -63,6 +63,7 @@ version = "0.1.2"
 dependencies = [
  "anyhow",
  "ferrum_runtime",
+ "lazy_static",
  "proc-macro2",
  "quote",
  "rust_source_bundler",

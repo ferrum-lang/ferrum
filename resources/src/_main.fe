@@ -3,7 +3,15 @@ use other::foo
 
 use(rust) low_level::low_level_func
 
+use(rust) rs_calc
+
 low_level_func("Adam", "25")
+
+const adam = "Adam"
+const madison = "Madison"
+
+print("Longest name:")
+print(rs_calc::get_longest(&adam, &madison))
 
 /*
 
