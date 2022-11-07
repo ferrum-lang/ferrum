@@ -1,3 +1,45 @@
+const x: ?str = some("hello")
+print(x)
+
+const x: ?str = none
+print(x)
+
+const x: ?bool = some(true)
+const y: ?bool = some(false)
+const z: ?bool = none
+
+print("")
+print(&x)
+print(&y)
+print(&z)
+
+print("")
+print("{x}, {y}, {z}")
+
+let name = "Adam"
+print("Hello, {name}")
+
+name = "Madison"
+print("Hello, {name}")
+
+fn say_hi(name: &str)
+    print("Hi, {name}")
+;
+
+const name = "Adam"
+say_hi(&name)
+
+const name: str = "{name} Bates"
+say_hi(&name)
+
+// const x: ?str = "hello"
+// print(x)
+
+// const x = none
+// print(x)
+
+/*
+
 use hello::{self, *}
 use other::foo
 
@@ -12,6 +54,14 @@ const madison = "Madison"
 
 print("Longest name:")
 print(rs_calc::get_longest(&adam, &madison))
+
+let x: bool = true
+
+print(x)
+
+x = false
+
+print(x)
 
 /*
 
@@ -29,7 +79,7 @@ for (_, source_value), idx in source_data
     x_sum += source_value
     y_sum += target_value
 
-    xx_sum += source_value ** 2
+    xx_sum += source_value ^ 2
     xy_sum += source_value * target_value
 
     count += 1

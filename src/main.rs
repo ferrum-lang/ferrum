@@ -26,6 +26,7 @@ fn main() -> Result {
     let string = String::from_utf8(stdout)?;
 
     println!("\n\n*** OUTPUT ***\n{}*** END ***", string);
+    // println!("{string}");
 
     return Ok(());
 }
