@@ -1,3 +1,13 @@
+use hello::{self, *}
+use other::foo
+
+use(rust) low_level::low_level_func
+
+use(rust) rs_calc
+
+low_level_func("Adam", "25")
+
+
 const x: ?str = some("hello")
 print(x)
 
@@ -38,17 +48,6 @@ say_hi(&name)
 // const x = none
 // print(x)
 
-/*
-
-use hello::{self, *}
-use other::foo
-
-use(rust) low_level::low_level_func
-
-use(rust) rs_calc
-
-low_level_func("Adam", "25")
-
 const adam = "Adam"
 const madison = "Madison"
 
@@ -62,6 +61,7 @@ print(x)
 x = false
 
 print(x)
+
 
 /*
 

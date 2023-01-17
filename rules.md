@@ -8,7 +8,7 @@ Whenever `let` is used to declare a variable, it equates to `let mut` in Rust.
 Note: Any normal declarations that have any mutability (shallow or deep) must use `let`
 
 Ferrum:
-```
+```rust
 let x = "abc"
 
 let y = &x
@@ -23,15 +23,15 @@ y.append('!')
 
 Rust: 
 ```rust
-let mut x = FeStr::from("abc");
+let mut x = FeString::from("abc");
 
 let mut y = &x;
-y = &FeStr::from("cba");
+y = &FeString::from("cba");
 
 let mut z;
 
 let mut y = &mut x;
-*y = FeStr::from("cba");
+*y = FeString::from("cba");
 y.append('!');
 ```
 
@@ -42,7 +42,7 @@ Whenever `const` is used to declare a variable, it equates to `let` in Rust.
 Note: `const` can only be used on non-mutable data, whether owned or shared reference
 
 Ferrum:
-```
+```rust
 const x = "abc"
 const y = &x
 const z
@@ -53,7 +53,7 @@ const z
 
 Rust:
 ```rust
-let x = FeStr::from("abc");
+let x = FeString::from("abc");
 let y = &x;
 let z;
 ```
@@ -63,107 +63,160 @@ let z;
 The `std::mem` package provides smart pointers for managing data in more complex manors.
 
 Ferrum:
+```rust
+use std::mem::HeapRef
+
+// Heap-allocation (ie. Boxing in Rust)
+// Useful if large data is moved around on the stack a lot,
+//   better to move around stack pointer to large data on heap.
+const name: HeapRef<String> = HeapRef("Adam")
 ```
+
+```rust
+use std::mem::SharedMut
+
+// Allows shared mutable access, without extra memory overhead
+const name: SharedMut<String> = SharedMut("Adam")
+
+let name_ref: &mut String = SharedMut::get_mut(&name)
+let name_ref_2: &mut String = SharedMut::get_mut(&name)
+```
+
+```rust
 use std::mem::Rc
 
-const name: Rc<str> = Rc::new("Adam")
-const name2: Rc<str> = Rc::share(&name)
+// Eager immutable reference counting
+const name: Rc<String> = Rc("Adam")
+const name2: Rc<String> = Rc::share(&name)
 
-const name = Rc::new("Adam", lazy = true)   // Still on stack, not reference counting yet
-const name2 = Rc::share(&name)              // Reference counting starts here
+// Lazy immutable reference counting
+const name = Rc("Adam", lazy = true) // Still on stack, not reference counting yet
+const name2 = Rc::share(&name)       // Reference counting starts here
 ```
 
-```
-use std::mem::RcMut
+```rust
+use std::mem::{Rc, Mutex}
 
-let name: RcMut<str> = RcMut::new("Adam")   // lazy option available here too
-let name2: RcMut<str> = RcMut::share(&name)
+// Reference counting, with runtime check for mutability
+const name: Rc<Mutex<String>> = Rc(Mutex("Adam"))
+const name2: Rc<Mutex<String>> = Rc::share(&name)
+
+let name_lock: MutexLock<String> = name.await_lock(timeout_ms = 50)!
+let name_ref: &mut String = name_lock.open() // &mut String
+
+let name_lock2: ?MutexLock<String> = name2.try_lock() ?? print("cant get mutable name2")
+let name_ref2: ?&mut String = name_lock2?.get() // None
+
+print("{name_ref}, {name_ref2:?}")
 ```
 
+```rust
+use std::mem::Rc
+
+// Mutable reference counting, allows shared mutable access
+const name: Rc<SharedMut<String>> = Rc("Adam")   // lazy option available here too
+const name2: Rc<SharedMut<String>> = Rc::share(&mut name)
 ```
+
+```rust
 use std::mem::Gc
 
-const name: Gc<str> = Gc::new("Adam")       // lazy option available here too
-const name2: Gc<str> = Gc::share(&name)
+// Garbage collection
+const name: Gc<String> = Gc("Adam") // lazy option available here too
+const name2: Gc<String> = Gc::share(&name)
+
+Gc::force_collect() // can be called at any point to clean up unused memory
+
+// Note: GC normally cleans up automatically in background threads. Manual clean up isn't necessary.
+// Best off doing something like this to manually clean up:
+
+const gc_task = Async::start_soon(Gc::force_collect) // Start background clean up
+
+// .. some code here ..
+
+gc_task.await() // Wait for background clean up to be finished
 ```
 
-```
-use std::mem::GcMut
-
-let name: GcMut<str> = GcMut::new("Adam")         // lazy option available here too
-let name2: GcMut<str> = GcMut::share(&name)
-```
-
-Rust:
 ```rust
-let name: FeStr = FeStr::from("Adam");
+use std::mem::{Gc, Mutex}
 
-let mut adam: FeShared<FeStr> = FeShared::new(name);
+// Garbage collection, with runtime check for mutability
+const name: Gc<Mutex<String>> = Gc(Mutex("Adam")) // lazy option available here too
+const name2: Gc<Mutex<String>> = Gc::share(&name)
 
-let mut names: FeList<FeShared<FeStr>> = fe_list![adam];
+let name_lock: MutexLock<String> = name.await_lock(timeout_ms = 50)!
+let name_ref: &mut String = name_lock.open() // &mut String
+
+let name_lock2: ?MutexLock<String> = name2.try_lock() ?? print("cant get mutable name2")
+let name_ref2: ?&mut String = name2?.open() // None
+
+print("{name_ref}, {name_ref2:?}")
+
+Gc::force_collect() // can be called at any point to clean up unused memory
 ```
+
+```rust
+use std::mem::{Gc, SharedMut}
+
+// Mutable garbage collection, allows shared mutable access
+const name: Gc<SharedMut<String>> = Gc(SharedMut("Adam")) // lazy option available here too
+const name2: Gc<SharedMut<String>> = Gc::share(&name)
+
+Gc::force_collect() // can be called at any point to clean up unused memory
+```
+
+## `std::tasks` - Smart Pointers
+
+The `std::tasks` package provides structs and functions to work ith asynchronous tasks.
 
 Ferrum:
-```
-const name: str = "Adam"
 
-// typical creation
-let adam = @name
-
-// sharing the data, not cloning
-let adam2 = @adam
-
-let adam3 = @adam
-
-// shared-mutable state
-adam.append('1')
-adam2.append('2')
-
-print(adam) // "Adam12"
-print(adam2) // "Adam12"
-print(adam3) // "Adam12"
-
-print(@::count(&adam)) // 3
-```
-
-Rust:
 ```rust
-let name: FeStr = FeStr::from("Adam");
+use std::tasks::Async
 
-let mut adam: FeShared<_> = FeShared::new(name);
+const task = Async::start_soon(() => print(""))
 
-let mut adam2 = FeShared::share(adam.as_ref());
-
-let mut adam3 = FeShared::share(adam.as_ref());
-
-adam.append('1');
-adam2.append('2');
-
-print(adam);
-print(adam2);
-print(adam3);
-
-print(FeShared::count(&adam));
+task.await()
 ```
 
-Ferrum:
-```
-// coerced creation
-let adam: @ = "Adam"
-
-// note: *@ creates a temporary mutable reference to avoid unnecessary RC-clones
-*@adam = "Adam Bates"
-
-// won't compile, cannot take out of a mutable reference
-// let taken = *@adam
-```
-
-Rust:
 ```rust
-let mut adam: FeShared<_> = FeShared::new(FeStr::from("Adam"));
+use std::{
+    tasks::{AsyncTasks, sleep},
+    time::Duration,
+}
 
-*(unsafe { FeShared::get_unsafe_mut(adam.as_ref()) }) = FeStr::from("Adam Bates");
+let tasks = AsyncTasks()
+
+tasks.start_soon(() => do
+    sleep(Duration::from_ms(100))
+
+    print("Thread 1")
+;)
+
+tasks.start_soon(() => print("Thread 2"))
+
+tasks.await_all()
 ```
+
+
+## `std::prelude::*` -  Good default imports
+
+```rust
+use std::prelude::*
+
+// equivalent to:
+use std::{
+    self,
+    tasks::{Async, AsyncTasks, sleep},
+    mem::{Rc, Gc, SharedMut, Mutex},
+    String,
+    Map,
+    Set,
+    clone,
+    // etc ...
+}
+```
+
 
 ## `fn` - Functions
 
@@ -175,7 +228,7 @@ Notes:
 - Reference parameters have shallow immutability. Deep mutability depends on reference type (`&` vs `&mut`).
 
 Ferrum:
-```
+```rust
 fn main()
     print("hello world")
 
@@ -204,16 +257,16 @@ fn foo_bar()
     inner()
 ;
 
-fn get_name() -> str
+fn get_name() -> String
     return "Adam"
 ;
 
-fn say_hello(name: &str, age: uint)
+fn say_hello(name: &String, age: uint)
     print("Hello, {age} year old named {name}")
 ;
 
-fn update_name(name: &mut str, force: bool = false) -> bool
-    if !force && *name != "Adam"
+fn update_name(name: &mut String, force: bool = false) -> bool
+    if !force && @name != "Adam"
         return false
     ;
 
@@ -222,7 +275,7 @@ fn update_name(name: &mut str, force: bool = false) -> bool
     return true
 ;
 
-fn consume_name(name: str)
+fn consume_name(name: String)
     name.append('!')
 
     print("consumed: {name}")
@@ -255,27 +308,27 @@ fn foo_bar() {
     print("Hello from foo_bar");
 }
 
-fn get_name() -> FeStr {
-    return FeStr::from("Adam");
+fn get_name() -> FeString {
+    return FeString::from("Adam");
 }
 
-fn say_hello(name: &FeStr, age: FeUint) {
+fn say_hello(name: &FeString, age: FeUint) {
     print(format!("Hello, {} year old named {}", age, name));
 }
 
-fn update_name(name: &mut FeStr, force: Option<bool>) -> bool {
+fn update_name(name: &mut FeString, force: Option<bool>) -> bool {
     let force = force.unwrap_or_else(|| false);
 
-    if !force && name != FeStr::from("Adam") {
+    if !force && *name != FeString::from("Adam") {
         return false;
     }
 
-    name.append(FeStr::from(" Bates"));
+    name.append(FeString::from(" Bates"));
 
     return true;
 }
 
-fn consume_name(mut name: FeStr) {
+fn consume_name(mut name: FeString) {
     name.append('!');
 
     print(format!("consumed: {}", name));
@@ -287,7 +340,7 @@ fn consume_name(mut name: FeStr) {
 Create concrete data structures to hold data, and/or implement methods.
 
 Ferrum:
-```
+```rust
 type Serial = uint
 
 struct Device {
@@ -388,24 +441,111 @@ fn main() {
 }
 ```
 
+## `trait` - Traits
+
+Create abstract traits that can be implemented by structs.
+
+Note: Trait implementations must be directly after the trait definition, or the struct definition
+
+Ferrum:
+```rust
+trait Serializable
+    &self.serialize() -> String
+
+    // Default implementations
+    // Also 'static' methods
+    impl fn serialize_all(values: ~Iter<Self>) -> [String]
+        return values.map(Self::serialize)
+    ;
+;
+// impl for <struct> when after the trait def
+impl for User
+    &self.serialize() -> _
+        => "User \{ name: {self.name}, age: {self.age} }"
+;
+
+struct User {
+    name: String,
+    age: uint,
+}
+
+struct Device {
+    serial_number: String,
+}
+impl
+    &self.get_serial_num() -> &String
+        return &self.serial_number
+    ;
+
+    &mut self.set_serial_num(serial_number: String)
+        self.serial_number = serial_number
+    ;
+;
+// impl <trait> when after the struct def
+impl Serializable
+    &self.serialize() -> String
+        return "Device \{ serial_number: {self.serial_number} }"
+    ;
+;
+```
+
+Rust:
+```rust
+trait Serializable {
+    fn serialize(&self) -> FeString;
+
+    fn serialize_all(values: dyn FeIter<Self>) -> FeVec<String> {
+        return values.map(Self::serialize).collect();
+    }
+}
+impl Serializable for User {
+    fn serialize(&self) -> FeString {
+        return FeString::from_owned(format!("User \{ name: {}, age: {} }", self.name, self.age));
+    }
+}
+
+struct User {
+    name: FeString,
+    age: FeUint,
+}
+
+struct Device {
+    serial_number: FeString,
+}
+impl Device {
+    fn get_serial_num(&self) -> &FeString {
+        return &self.serial_number;
+    }
+
+    fn set_serial_num(&mut self, serial_number: FeString) {
+        self.serial_number = serial_number;
+    }
+}
+impl Serializable for Device {
+    fn serialize(&self) -> FeString {
+        return FeString::from_owned(format!("Device \{ serial_number: {} }", self.serial_number));
+    }
+}
+```
+
 ## `enum` - Enums
 
 Create enums.
 
 Ferrum:
-```
+```rust
 enum MyEnum {
     MyEmptyVal,
     MyTupleVal(int, char, char),
     MyStructVal {
-        name: str,
+        name: String,
         age: uint,
     } = "some value",
 }
 
 const e: MyEnum = MyEnum::MyTupleVal(1, 'a', 'b')
 
-if e.value() is some(value)
+if e.value() is Some(value)
     print(value)
 ;
 ```
@@ -413,17 +553,17 @@ if e.value() is some(value)
 Rust:
 ```rust
 
-const VAL_2: FeStr = FeStr::from_slice("some_value");
+const VAL_2: FeString = FeStr::from_slice("some_value");
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum MyEnum {
     MyEmptyVal,
     MyTupleVal(FeInt, char, char),
-    MyStructVal { name: FeStr, name: FeUint },
+    MyStructVal { name: FeString, name: FeUint },
 }
 
 impl MyEnum {
-    pub fn value(&self) -> Option<&'static FeStr> {
+    pub fn value(&self) -> Option<&'static FeString> {
         return match *self {
             Self::MyEmptyVal => None,
             Self::MyTupleVal(..) => None,
@@ -446,11 +586,11 @@ fn main() {
 `alias` syntax creates type aliases to make referencing long or complicated types easier.
 
 Ferrum:
-```
-alias Cache = Map<(char, char, int), ~Iter<@str>>
+```rust
+alias Cache = Map<(char, char, int), ~Iter<String>>
 
-fn get_some() -> ?Map<(char, char, int), ~Iter<@str>>
-    return none
+fn get_some() -> ?Map<(char, char, int), ~Iter<String>>
+    return None
 ;
 
 fn accept_some(maybe_cache: ?Cache)
@@ -465,9 +605,9 @@ accept_some(cache)
 
 Rust:
 ```rust
-type Cache = FeMap<(char, char, FeInt), Box<dyn FeIter<FeShared<FeStr>>>>;
+type Cache = FeMap<(char, char, FeInt), Box<dyn FeIter<FeShared<FeString>>>>;
 
-fn get_some() -> Option<FeMap<(char, char, FeInt), Box<dyn FeIter<FeShared<FeStr>>>>> {
+fn get_some() -> Option<FeMap<(char, char, FeInt), Box<dyn FeIter<FeShared<FeString>>>>> {
     return None;
 }
 
@@ -487,9 +627,9 @@ fn main() {
 `type` syntax creates an new unique type that wraps some other type. This can be useful for the newtype pattern.
 
 Ferrum:
-```
-type Name = str
-type Email = str
+```rust
+type Name = String
+type Email = String
 type Age = uint
 
 struct Person {
@@ -512,25 +652,25 @@ let person = Person(name, email, age)
 
 const full_name: Name = "Adam Bates"
 
-// won't compile as Name and Email are unique types, even though they both wrap str
+// won't compile as Name and Email are unique types, even though they both wrap String
 // person.email = full_name
 ```
 
 Rust:
 ```rust
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct Name(FeStr);
+struct Name(FeString);
 
-impl<T: Into<FeStr>> From<T> for Name {
+impl<T: Into<FeString>> From<T> for Name {
     fn from(value: T) -> Self {
         return Self(value.into());
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct Email(FeStr);
+struct Email(FeString);
 
-impl<T: Into<FeStr>> From<T> for FeStr {
+impl<T: Into<FeString>> From<T> for FeStr {
     fn from(value: T) -> Self {
         return Self(value.into());
     }
@@ -541,7 +681,7 @@ struct Age(FeUint);
 
 impl Copy for Age {}
 
-impl<T: Into<FeUint>> From<T> for FeStr {
+impl<T: Into<FeUint>> From<T> for FeString {
     fn from(value: T) -> Self {
         return Self(value.into());
     }
@@ -564,15 +704,15 @@ impl Person {
 }
 
 fn main() {
-    let name: Name = Name::from(FeStr::from("Adam"));
+    let name: Name = Name::from(FeString::from("Adam"));
 
-    let email = Email(FeStr::from("adam@example.com"));
+    let email = Email(FeString::from("adam@example.com"));
 
     let age = Age(FeUint::from(101));
 
     let mut person = Person::new(name, email, age);
 
-    let full_name: Name = Name::from(FeStr::from("Adam Bates"));
+    let full_name: Name = Name::from(FeString::from("Adam Bates"));
 }
 ```
 
@@ -581,7 +721,7 @@ fn main() {
 Represent shared (immutable) references using the `&` syntax.
 
 Ferrum:
-```
+```rust
 const name = "Adam"
 
 const borrow_name_1 = &name
@@ -590,10 +730,10 @@ const borrow_name_2 = &name
 print(borrow_name_1, borrow_name_2)
 
 fn get_largest_first_2(
-    value1: -> &str, // -> & syntax tells us which references are used in return (helps w/ lifetimes)
-    value2: -> &str,
-    value3: &str,
-) -> &str
+    value1: -> &String, // ->& syntax tells us which references are used in return (helps w/ lifetimes)
+    value2: -> &String,
+    value3: &String,
+) -> &String
     print(value3)
 
     if value1.len() >= value2.len()
@@ -606,7 +746,7 @@ fn get_largest_first_2(
 const value1 = "a"
 const value2 = "bb"
 
-const largest = get
+const largest = do
     const value3 = "hello"
 
     yield get_largest_first_2(&value1, &value2, &value3)
@@ -615,12 +755,12 @@ const largest = get
 // value3 has been dropped but this is still valid
 print(largest)
 
-fn inferred(value: &str) -> &str
+fn inferred(value: &String) -> &String
     return value
 ;
 
-struct HoldingRefs(&str, &[int]) impl
-    fn &self.get_values() -> (&str, &[int])
+struct HoldingRefs(&String, &[int]) impl
+    &self.get_values() -> (&str, &[int])
         return (&self.0, &self.1)
     ;
 ;
@@ -629,10 +769,10 @@ struct HoldingRefs(&str, &[int]) impl
 Rust:
 ```rust
 fn get_largest_first_2<'a>(
-    value1: &'a FeStr,
-    value2: &'a FeStr,
-    value3: &FeStr,
-) -> &'a FeStr {
+    value1: &'a FeString,
+    value2: &'a FeString,
+    value3: &FeString,
+) -> &'a FeString {
     print(value3);
 
     if value1.len() >= value2.len() {
@@ -642,7 +782,7 @@ fn get_largest_first_2<'a>(
     }
 }
 
-fn inferred(value: &FeStr) -> &FeStr {
+fn inferred(value: &FeString) -> &FeStr {
     return value;
 }
 
@@ -655,19 +795,19 @@ impl<'a> HoldingRefs<'a, 'a> {
 }
 
 fn main() {
-    let name = FeStr::from("Adam");
+    let name = FeString::from("Adam");
 
     let borrow_name_1 = &name;
     let borrow_name_2 = &name;
 
     print(format!("{}, {}", borrow_name_1, borrow_name_2));
 
-    let value1 = FeStr::from("a");
-    let value2 = FeStr::from("bb");
+    let value1 = FeString::from("a");
+    let value2 = FeString::from("bb");
 
     let largest;
     {
-        let value3 = FeStr::from("hello");
+        let value3 = FeString::from("hello");
 
         largest = get_largest_first_2(&value1, &value2, &value3);
     }
@@ -681,7 +821,7 @@ fn main() {
 Represent mutable (unique) references using the `&mut` syntax.
 
 Ferrum:
-```
+```rust
 const name = "Adam"
 
 // Won't compile: Cannot get mutable reference from a const
@@ -697,10 +837,10 @@ let borrow_name_1 = &mut name
 print(borrow_name_1)
 
 fn get_largest_first_2(
-    value1: -> &mut str, // -> & syntax tells us which references are used in return (helps w/ lifetimes)
-    value2: -> &mut str,
-    value3: &mut str,
-) -> &mut str
+    value1: -> &mut String, // -> & syntax tells us which references are used in return (helps w/ lifetimes)
+    value2: -> &mut String,
+    value3: &mut String,
+) -> &mut String
     print(value3)
 
     if value1.len() >= value2.len()
@@ -713,7 +853,7 @@ fn get_largest_first_2(
 let value1 = "a"
 let value2 = "bb"
 
-let largest = get
+let largest = do
     let value3 = "hello"
 
     yield get_largest_first_2(&mut value1, &mut value2, &mut value3)
@@ -722,12 +862,12 @@ let largest = get
 // value3 has been dropped but this is still valid
 print(largest)
 
-fn inferred(value: &str) -> &str
+fn inferred(value: &String) -> &String
     return value
 ;
 
-struct HoldingRefs(&mut str, &mut [int]) impl
-    fn &mut self.get_values() -> (&mut str, &mut [int])
+struct HoldingRefs(&mut String, &mut [int]) impl
+    fn &mut self.get_values() -> (&mut String, &mut [int])
         return (&mut self.0, &mut self.1)
     ;
 ;
@@ -736,10 +876,10 @@ struct HoldingRefs(&mut str, &mut [int]) impl
 Rust:
 ```rust
 fn get_largest_first_2<'a>(
-    value1: &'a mut FeStr,
-    value2: &'a mut FeStr,
-    value3: &mut FeStr,
-) -> &'a mut FeStr {
+    value1: &'a mut FeString,
+    value2: &'a mut FeString,
+    value3: &mut FeString,
+) -> &'a mut FeString {
     print(value3);
 
     if value1.len() >= value2.len() {
@@ -749,7 +889,7 @@ fn get_largest_first_2<'a>(
     }
 }
 
-fn inferred(value: &FeStr) -> &FeStr {
+fn inferred(value: &FeString) -> &FeStr {
     return value;
 }
 
@@ -762,7 +902,7 @@ impl<'a> HoldingRefs<'a, 'a> {
 }
 
 fn main() {
-    let name = FeStr::from("Adam");
+    let name = FeString::from("Adam");
 
     let mut name = name;
 
@@ -770,12 +910,12 @@ fn main() {
 
     print(borrow_name_1);
 
-    let mut value1 = FeStr::from("a");
-    let mut value2 = FeStr::from("bb");
+    let mut value1 = FeString::from("a");
+    let mut value2 = FeString::from("bb");
 
     let mut largest;
     {
-        let mut value3 = FeStr::from("hello");
+        let mut value3 = FeString::from("hello");
 
         largest = get_largest_first_2(&mut value1, &mut value2, &mut value3);
     }
@@ -789,21 +929,21 @@ fn main() {
 Represent optional values using the `?` syntax.
 
 Ferrum:
-```
-const name: ?str = some("Adam")
-const name: ?str = none
+```rust
+const name: ?String = Some("Adam")
+const name: ?String = None
 
 // coerced
-const name: ?str = "Adam"
+const name: ?String = "Adam"
 
-fn get_length(value: ?&str) -> ?uint
+fn get_length(value: ?&String) -> ?uint
     // ?. maps the optional
     const length: ?uint = value?.len()
 
-    // ? short-circuts function, returning none if lhs is none
+    // ? short-circuts function, returning None if lhs is None
     const length: uint = length?
 
-    // values can be coerced into some(...)
+    // values can be coerced into Some(...)
     return length
 ;
 
@@ -812,22 +952,19 @@ const length = get_length(&name)
 
 Rust:
 ```rust
-fn get_length(value: Option<&FeStr>) -> Option<usize> {
+fn get_length(value: Option<&FeString>) -> Option<usize> {
     let length: Option<usize> = value.map(|v| v.len());
 
-    let length: usize = match length {
-        Some(v) => v,
-        None => return None,
-    };
+    let length: usize = length?;
 
     return length.into();
 }
 
 fn main() {
-    let name: Option<FeStr> = Some(FeStr::from("Adam"));
-    let name: Option<FeStr> = None;
+    let name: Option<FeString> = Some(FeStr::from("Adam"));
+    let name: Option<FeString> = None;
 
-    let name: Option<FeStr> = Some(FeStr::from("Adam"));
+    let name: Option<FeString> = Some(FeStr::from("Adam"));
     
     let length = get_length(name.as_ref());
 }
@@ -838,17 +975,17 @@ fn main() {
 Represent results using `!` syntax.
 
 Ferrum:
-```
-const name: !str = ok("Adam")
-const name: !str = err(123)
+```rust
+const name: !String = Ok("Adam")
+const name: !String = Err(123)
 
-const name: !str = "Adam"
+const name: !String = "Adam"
 
-fn get_length(value: !&str) -> !uint
+fn get_length(value: !&String) -> !uint
     // !. maps the optional
     const length: !uint = value!.len()
 
-    // ! short-circuts function, returning none if lhs is none
+    // ! short-circuts function, returning None if lhs is None
     const length: uint = length!
 
     // values can be coerced into ok(...)
@@ -860,19 +997,19 @@ const length = get_length(&name)
 
 Rust:
 ```rust
-fn get_length(value: FeResult<&FeStr>) -> FeResult<usize> {
+fn get_length(value: FeResult<&FeString>) -> FeResult<usize> {
     let length: FeResult<usize> = value.map_ok(|v| v.len());
 
-    let length: usize = length!;
+    let length: usize = length?;
 
     return length.into();
 }
 
 fn main() {
-    let name: FeResult<FeStr> = Ok(FeStr::from("Adam"));
-    let name: FeResult<FeStr> = Err(FeInt::from(123));
+    let name: FeResult<FeString> = Ok(FeStr::from("Adam"));
+    let name: FeResult<FeString> = Err(FeInt::from(123));
 
-    let name: FeResult<FeStr> = Ok(FeStr::from("Adam"));
+    let name: FeResult<FeString> = Ok(FeStr::from("Adam"));
     
     let length = get_length(name.as_ref());
 }
@@ -883,7 +1020,7 @@ fn main() {
 `[]` can be used to create lists.
 
 Ferrum:
-```
+```rust
 const values: [int] = [1, 2, 3]
 
 // The above is syntactic-sugar for:
@@ -930,7 +1067,7 @@ print(values);
 `[]` can also be used to create arrays, when a size is specified.
 
 Ferrum:
-```
+```rust
 const values: [int; 3] = [1, 2, 3]
 
 fn print_all(numbers: &[int; N])
@@ -989,7 +1126,7 @@ fn main() {
 `#{}` can be used to create dynamic key-value maps.
 
 Ferrum:
-```
+```rust
 const values: #{ char: int } = #{
     'a': 1,
     'b': 2,
@@ -1011,7 +1148,7 @@ let mapping = #{
     my_char: my_int,
 }
 
-if mapping[&my_char] is some(n)
+if mapping.get(&my_char) is Some(n)
     print(n)
 ;
 
@@ -1053,7 +1190,7 @@ mapping.insert('x', FeInt::from(0));
 `#[]` can be used to create sets.
 
 Ferrum:
-```
+```rust
 const values: #[int] = #[1, 1, 2, 2, 3]
 
 // The above is syntactic-sugar for:
@@ -1065,7 +1202,7 @@ const my_int = 42
 
 let set = #[my_int]
 
-if set[&my_int]
+if set.has(&my_int)
     print(true)
 ;
 
@@ -1096,7 +1233,7 @@ set.insert(FeInt::from(101));
 `..` syntax can be used to auto-fill the rest of something, when it is obvious to the compiler.
 
 Ferrum:
-```
+```rust
 const (a, b, .., f, g) = (1, 2, 3, 4, 5, 6, 7)
 
 print(a, b, f, g) // 1, 2, 6, 7
@@ -1159,26 +1296,26 @@ Safe functions cannot contain any code paths that cause a panic
 Note: the `stable` keyword can be ignored when running a development build
 
 Ferrum:
-```
-pub stable fn main() {
+```rust
+pub stable fn main()
     print("Can't panic!")
 
-    // won't compile as safe fns can't panic, and some_func contains a panic
+    // won't compile as stable fns can't panic, and some_func contains a panic
     // some_func()
-}
+;
 
-fn some_func() {
+fn some_func()
     #TODO
-}
+;
 ```
 
-## `~` - Dynamic Contract Objects
+## `~` - Dynamic Interface Objects
 
-Contracts can be referenced directly (using monomorphization), or dynamically with `~` (using dynamic dispatch)
+Interfaces can be referenced directly (using monomorphization), or dynamically with `~` (using dynamic dispatch)
 
 Ferrum:
-```
-contract Connection
+```rust
+interface Connection
     &mut self.connect() -> bool
 ;
 
@@ -1196,7 +1333,7 @@ struct Wrapper2 {
     c: &mut ~Connection,
 }
 
-fn handle_connection1(c: &mut Connection)
+fn handle_connection1<T: Connection>(c: &mut T)
     let wrapper = Wrapper1 { c }
     wrapper.c.connect()
 ;
@@ -1206,17 +1343,17 @@ fn handle_connection2(c: &mut ~Connection)
     wrapper.c.connect()
 ;
 
+let y: DbConnection = DbConnection()
+handle_connection1(&mut y)
+
+let y: DbConnection = DbConnection()
+handle_connection2(&mut y)
+
 // ~Connection cannot be passed as Connection
 // let y: ~Connection = DbConnection()
 // handle_connection1(&mut y)
 
-let y: DbConnection = DbConnection()
-handle_connection1(&mut y)
-
 let y: ~Connection = DbConnection()
-handle_connection2(&mut y)
-
-let y: DbConnection = DbConnection()
 handle_connection2(&mut y)
 ```
 
@@ -1269,19 +1406,19 @@ handle_connection2(&mut y);
 `=>` syntax can be used to create closures.
 
 Ferrum:
-```
+```rust
 const x = 1
-const add: ~Fn(int, int) -> int = a, b => a + b + x
+const add: ~Fn(int, int) -> int = (a, b) => a + b + x
 
 let y = 2
-let add_mut: ~FnMut(int, int) -> int = a, b => get
+let add_mut: ~FnMut(int, int) -> int = (a, b) => do
     y += a + b
     yield y
 ;
 
 const z = 3
 const add_once: ~FnOnce(int, int) -> int
-    = a, b => a + b + z
+    = (a, b) => a + b + z
 
 const value1 = add(3, 4)
 const value2 = add_mut(3, 4)
@@ -1314,7 +1451,7 @@ let value3 = add_once(3, 4);
 `use` can be used to import and/or re-export
 
 Ferrum:
-```
+```rust
 /*
 Given:
 src
@@ -1327,8 +1464,8 @@ src
 */
 
 // src/_main.fe
-    use utils
-    use ~/utils // `~/` points to src root
+    use ./utils // `./` points to current dir
+    use ~/utils // `~/` points to src dir
 
     use utils::strings
     
@@ -1367,45 +1504,312 @@ Rust:
 
 ---
 
-## Frontend Component syntax
+# Example Ferrum Program:
+```rust
+use std::prelude::*
+use std::cli
 
-Svelte-style, cleaned up, and using Ferrum
+print("S-Expression Calculator!")
+print("Enter an S-Expression containing integers, 'add', and/or 'multiply' to see the result:")
 
-Ferrum Component:
+let cache = Cache()
+
+loop
+    const input = cli::await_line()!
+        .then_mut_trim()
+
+    match parse_s_expression(input, &mut cache)
+        Ok(result) => print("Result: {result}"),
+        Err(message) => print_err("Error! {message}"),
+    ;
+;
+
+alias Cache = Map<String, int>
+
+pub stable fn parse_s_expression(
+    text: String,
+    cache: &mut Cache = &mut Cache()
+) -> !int
+    const NO_OPEN_MSG = "No opening '(' was found to match the closing ')'."
+
+    // Note: Closures that don't use surrounding context are optimized into functions
+    const build_invalid_int_msg = (val) => "Invalid integer: {val}"
+    const build_unrecognized_msg = (val) => "Unrecognized S-Expression format: {val}"
+
+    while text.find_index(')') is Some(close_paren_idx)
+        if close_paren_idx is 0
+            // Won't really clone NO_OPEN_MSG here. Under the hood it will share the string.
+            // Clone only happens if string is non-static
+            return Err(clone(&NO_OPEN_MSG))
+        ;
+
+        if cache.get(&text)
+            return @it
+        ;
+
+        const open_paren_idx = text.find_index(
+            '(',
+            reverse = true,
+            
+            // Note: Compiler knows that (close_paren_idx - 1) can safely be inferred as NonNegative<int> here
+            //       because close_paren_idx can safely be inferred as NonZero<int> here
+            //       This means coersion to uint is safely inferred here
+            max = close_paren_idx - 1,
+        )
+
+        const open_paren_idx = open_paren_idx ?? return Err(clone(&NO_OPEN_MSG))
+
+        const simple_expr = &text[open_paren_idx + 1 .. close_paren_idx]
+
+        if cache.get(simple_expr)
+            return @it
+        ;
+
+        const value = match simple_expr.split(' ')
+            ["add" or "multiply" as cmd, a, b] => do
+                const a = a.parse::<int>() ?? return Err(build_invalid_int_msg(a))
+                const b = b.parse::<int>() ?? return Err(build_invalid_int_msg(b))
+
+                yield match cmd
+                    "add" => a + b,
+                    "multiply" => a * b,
+                ;
+            ;
+
+            [value] if value.parse::<int>() is Ok(value) => value,
+
+            _ => return Err(build_unrecognized_msg(simple_expr))
+        ;
+
+        cache.insert(clone(simple_expr), value)
+
+        if open_paren_idx is 0
+            return value
+        else
+            text.replace_range(open_paren_idx ..= close_paren_idx, value)
+        ;
+    ;
+
+    return text.parse()
+;
 ```
-prop name: state<str> = "World"
 
-$: print("Hello, {name}")
+Pure Rust version:
+```rust
+use std::collections::HashMap;
+use std::io;
 
-<h1>Hello {name}</>
-<input bind:value={~name} />
+fn main() -> Result<(), String> {
+    println!("S-Expression Calculator!");
+    println!("Enter an S-Expression containing integers, 'add', and/or 'multiply' to see the result:");
 
-<>
-    let count: ~ = 0
+    let mut cache = Cache::new();
 
-    <h2>{count}</>
-    <button value="+" on:click={() => @count += 1} />
-    <button value="-" on:click={() => @count -= 1} />
-</>
+    let cli = io::stdin();
+
+    loop {
+        let mut input = String::new();
+        cli
+            .read_line(&mut input)
+            .map_err(|e| format!("{e}"))?;
+
+        let input = input.trim().to_string();
+
+        match parse_s_expression(input, Some(&mut cache)) {
+            Ok(result) => println!("Result: {result}"),
+            Err(message) => println!("Error! {message}"),
+        }
+    }
+}
+
+type Cache = HashMap<String, isize>;
+
+fn parse_s_expression(
+    mut text: String,
+    cache: Option<&mut Cache>,
+) -> Result<isize, String> {
+    let cache = {
+        use std::mem::MaybeUninit;
+
+        let mut created_cache: MaybeUninit<Cache> = MaybeUninit::zeroed();
+        let created_cache_mut_ref: &mut Cache = unsafe { &mut *created_cache.as_mut_ptr() };
+
+        &mut match cache {
+            Some(cache) => cache,
+            None => {
+                created_cache.write(Cache::new());
+                *created_cache_mut_ref = unsafe { created_cache.assume_init() };
+
+                created_cache_mut_ref
+            },
+        }
+    };
+    
+    const NO_OPEN_MSG: &'static str = "No opening '(' was found to match the closing ')'.";
+
+    let build_invalid_int_msg = |val: String| -> String { format!("Invalid integer: {val}") };
+    let build_unrecognized_msg = |val: String| -> String { format!("Unrecognized S-Expression format: {val}") };
+
+    while let Some(close_paren_idx) = text.find(')') {
+        if close_paren_idx == 0 {
+            return Err(String::from(NO_OPEN_MSG));
+        }
+
+        if let Some(cached) = cache.get(&text) {
+            return Ok(*cached);
+        }
+
+        let open_paren_idx = text[..close_paren_idx].rfind(
+            '(',
+        );
+
+        let Some(open_paren_idx) = open_paren_idx else {
+            return Err(String::from(NO_OPEN_MSG));
+        };
+        let open_paren_idx = if let Some(open_paren_idx) = open_paren_idx {
+            open_paren_idx
+        } else {
+            return Err(String::from(NO_OPEN_MSG));
+        };
+
+        let simple_expr = &text[open_paren_idx + 1 .. close_paren_idx];
+
+        if let Some(cached) = cache.get(simple_expr) {
+            return Ok(*cached);
+        }
+
+        let value: isize = match simple_expr.split(' ').collect::<Vec<&str>>()[..] {
+            [cmd @ ("add" | "multiply"), a, b] => {
+                let Ok(a) = a.parse::<isize>() else { return Err(build_invalid_int_msg(a.to_string())) };
+                let Ok(b) = b.parse::<isize>() else { return Err(build_invalid_int_msg(b.to_string())) };
+
+                match cmd {
+                    "add" => a + b,
+                    "multiply" => a * b,
+                    _ => unreachable!(),
+                }
+            }
+
+            [value] => if let Ok(value) = value.parse::<isize>() { value } else {
+                return Err(build_unrecognized_msg(String::from(simple_expr)));
+            },
+
+            _ => return Err(build_unrecognized_msg(String::from(simple_expr))),
+        };
+
+        cache.insert(String::from(simple_expr), value);
+
+        if open_paren_idx == 0 {
+            return Ok(value);
+        } else {
+            text.replace_range(
+                open_paren_idx ..= close_paren_idx,
+                &value.to_string(),
+            );
+        }
+    }
+
+    return text.parse().map_err(|_| build_invalid_int_msg(text));
+}
 ```
 
-Svelte Component:
-```svelte
-<script>
-	export let name = "World";
-	$: console.log("Hello, %s", name);
-	
-	let count = 0;
-</script>
+idea:
 
-<h1>Hello {name}!</h1>
-<input bind:value={name} />
+```rust
+struct String {
+    chars: Chars,
+}
 
-<div>
-	<h2>{count}</h2>
-	<button on:click={() => count += 1}>+</button>
-	<button on:click={() => count -= 1}>-</button>
-</div>
+impl
+    // `return self`, NOT `return Self`
+    // Difference being that return self will return with whatever type the method was called on
+    // So if owned type, mutable reference will happen automatically, and the owned value will be returned
+    pub &mut self.trim() -> self
+        let start_count = 0
+        let end_count = 0
+        
+        for c in self
+            if c.is_whitespace()
+                start_count += 1
+            else
+                break        
+            ;
+        ;
+
+        for c in self.reverse()
+            if c.is_whitespace()
+                end_count += 1
+            else
+                break
+            ;
+        ;
+
+        self.replace_range(
+            self.len() - end_count .. self.len(), // this is optimized to 1 len() call (or maybe just inlined)
+            '',
+        )
+
+        self.replace_range(
+            0 ..= start_count,
+            '',
+        )
+    
+        // return not needed for `self`
+    ;
+
+    pub &self.then_print() -> self
+        print(self)
+    ;
+;
+
+const trimmed_str: String = "   abc   123   ".trim()
+
+// The rust equivalent would be:
+let trimmed_str: String = {
+    let mut tmp = String::from("   abc   123   ");
+    tmp.trim();
+    tmp
+};
+
+const x = "  abc  123  ".clone().trim()
 ```
 
+
+```rust
+use std::prelude::*
+
+const (rx_channel, tx_channel) = Channel()
+
+let tasks = AsyncTasks()
+
+tasks.start_soon(() => do
+    let tx = tx_channel.share()
+
+    const res = http::get("www.google.com")
+
+    match res
+        Ok(res) => tx.send(res)
+        Err(e) => print_err(e)
+    ;
+;)
+
+tasks.start_soon(() => do
+    let tx = tx_channel.share()
+
+    const res = http::get("https://example.com")
+
+    match res
+        Ok(res) => tx.send(res)
+        Err(e) => print_err(e)
+    ;
+;)
+
+const rx = rx_channel.share()
+
+while rx.await_next(timeout_ms = 1000) is Ok(res)
+    print(res)
+;
+
+tasks.await_all(timeout_ms = 50)!
+```
 

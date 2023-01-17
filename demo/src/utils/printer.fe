@@ -1,0 +1,4 @@
+
+pub fn print_hello(name: &str)
+    print("Hello {name}")
+;
