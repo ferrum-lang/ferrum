@@ -48,7 +48,7 @@ const MAX_SECS = 10
 const TIMEOUT_MS = (MAX_SECS + 1) * 1000
 
 // Run multiple asynchronous tasks concurrently,
-// and in parallel if system has multiple threads
+// and in parallel if system has multiple cpu cores
 let tasks = AsyncTasks()
 
 const finished_task_ids = Mutex([])
@@ -157,7 +157,7 @@ async fn main() -> fe::Result<()> {
 
             say_hello(
                 &person,
-                &_question,
+                fe::Some(&_question),
             )
         };
 
