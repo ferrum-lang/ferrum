@@ -1,15 +1,19 @@
 # The Ferrum Programming Language
 
 ## Important!
-This language is a prototype-in-progress. The ideas & repos are very much in early conception, and not yet finished or fleshed out._
+This language is a work in progress. The ideas & implementations are still being prototyped. The language, as specified in this file, is not yet finished or fleshed out.
+
+---
 
 ## What is this?
 
-This is a simplified, batteries-included rust-like programming language.
+Ferrum is meant to be a simplified, batteries-included rust-like programming language, for high-level software development.
 
-The goal of the language is to provide a trimmed-down version of Rust with strong opinions and a fully-featured std library for high-level software development.
+The goal of the language is to make high-performance high-level software development easier & safer. This goal is achieved by providing a trimmed-down rust-like language, with strong opinions and a fully-featured std library.
 
 ## Language Design
+
+A lot of the heavy lifting is done by Rust, and by the available std library (which is just a public rust crate).
 
 Some notable differences between Ferrum and Rust:
 
@@ -113,7 +117,8 @@ use ferrum_runtime::lang as fe;
 use ferrum_runtime::std::prelude::*;
 use ferrum_runtime::std::time::Duration;
 
-fn main() -> fe::Result<()> {
+#[fe::async_main]
+async fn main() -> fe::Result<()> {
     const MAX_SECS: fe::UInt = fe::UInt::_10;
     const TIMEOUT_MS: fe::UInt = fe::UInt::_10_000;
 
@@ -137,7 +142,7 @@ fn main() -> fe::Result<()> {
         });
     }
 
-    tasks.await_all(fe::Some(TIMEOUT_MS)).await;
+    tasks.await_all(fe::Some(TIMEOUT_MS)).await?;
 
     print(fe::format!("{}", finished_task_ids.into_inner()));
 
@@ -148,7 +153,7 @@ fn main() -> fe::Result<()> {
 
     for person in people {
         let hello = {
-            let _question = FeString::from_static("How's it going?");
+            const _question: FeString = FeString::from_static("How's it going?");
 
             say_hello(
                 &person,
@@ -158,6 +163,8 @@ fn main() -> fe::Result<()> {
 
         print(hello);
     }
+
+    fe::Ok(())
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -182,6 +189,7 @@ fn say_hello(
     let name = &person_.name;
     let country = &person_.country;
     
+    // Only allocate & use default value when question_ is None
     let mut question_default_ = std::mem::MaybeUninit::<FeString>::zeroed();
     let question: &FeString = {
         match question_ {
