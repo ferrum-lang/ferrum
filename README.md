@@ -1,62 +1,206 @@
 # The Ferrum Programming Language
 
-## Important! This language is a prototype-in-progress. The ideas & repos are very much in early conception, and not yet finished or fleshed out.
+## Important!
+This language is a prototype-in-progress. The ideas & repos are very much in early conception, and not yet finished or fleshed out._
 
-At this stage, if you look too closely at any piece, you'll find problems. And that's ok :) Right now this project is just for fun.
+## What is this?
 
-The langauge is meant to be a "wrapper" or "layer" over-top of Rust, by transpiling into Rust source code and using Cargo to execute it.
+This is a simplified, batteries-included rust-like programming language.
 
-What I hope to do with this, is a language with the type safety and style of Rust, but more accessible and faster development, limited scope (no `unsafe` or `macros`), and a minor performance hit.
+The goal of the language is to provide a trimmed-down version of Rust with strong opinions and a fully-featured std library for high-level software development.
 
 ## Language Design
 
-The design of the language has been evolving as I come to understand the nuances of what I'm trying to do. I'll get an idea (for example, separating shallow vs deep mutability), and then hit a brick wall when it comes to propogating those changes out (ie. do function return values need to mark types as deeply mutable).
+Some notable differences between Ferrum and Rust:
 
-This is fun for me, but it means that anytime someone else looks at this language, it's probably different than the last time.
+- Ferrum's `stable` keyword guarantees at compile-time that there are no panicing code-paths
+- Ferrum does not have `unsafe`
+- Ferrum does not have macros
+- Ferrum's main `fn` is optional
+  - The entry file `./src/_main.fe` will allow top-level statements only if no main `fn` is defined
+- Every Ferrum `fn` is capable of running concurrently
+  - An async runtime (`tokio`) will be baked in to the binary only when required
+- Iterations that can be run in parallel will be
+  - A parallel executor (`rayon`) will be baked in to the binary only when required
+- Ferrum makes optional garbage collection easy
+  - A garbage collector (`shredder`) will be baked in to the binary only when required
+- Ferrum code blocks don't use braces `{}`, instead:
+  - Some syntax can open a code block, ie `for`-statements and `fn`s
+  - Code blocks are closed with semicolons `;`
+- Ferrum statements don't end with semicolons `;`, instead
+  - New-lines have syntactic meaning, allowing new statements to be started
+  - Note: A single statement can still span across multiple new-lines
+- And many more smaller QoL features
 
-I've gotten to the point of transpiling some langauge code that calls functions and handles simple operations into Rust code, but it inevitably gets scrapped when I realize another major flaw in my design.
+Example program in Ferrum vs Rust
 
-I'm currently on attempt 3, but not much development is happening as I'm still brainstorming solutions to solve the problems I've hit, while still staying true to my original goal of simplicity and accessibiliy.
+The following Ferrum code:
+```rust
+use std::prelude::*
 
-Here's an example of what I envision the language to look like for a simple `nth_fibonnacci` recursive solution:
+use std::time::Duration
 
-```
-for n in 0..20
-    print("{n}: {nth_fib(n)}")
+const MAX_SECS = 10
+const TIMEOUT_MS = (MAX_SECS + 1) * 1000
+
+// Run multiple asynchronous tasks concurrently,
+// and in parallel if system has multiple threads
+let tasks = AsyncTasks()
+
+const finished_task_ids = Mutex([])
+
+for secs, idx in [0, 2, 5, MAX_SECS]
+
+    tasks.start_soon(() => do
+        print("Task {idx}: Pre-sleep")
+
+        sleep(Duration::from_secs(secs))
+
+        print("Task {idx}: Post-sleep")
+
+        let lock = finished_task_ids.await_lock()
+        let list = lock.open()
+
+        list.push(idx)
+    ;)
 ;
 
-fn nth_fib(n: uint, cache: &mut Cache = #{}) -> biguint
-    type Cache = Map<uint, biguint>
+tasks.await_all(timeout_ms = TIMEOUT_MS)!
 
-    if n is (0 or 1)
-        return n
+print(finished_task_ids.into_inner())
+
+// Structs look like Rust, but come with a constructor, Clone, Debug, PartialEq, Eq, etc...
+struct Person {
+    name: String,
+    country: ?String,
+}
+
+const people = [
+    Person("Adam Bates", "Canada"),
+    Person("Stranger")
+]
+
+
+for person in people
+    const hello = say_hello(
+        question = &"How's it going?",
+        &person,
+    )
+
+    print(hello)
+;
+
+
+fn say_hello(
+    { name, country }: &Person,
+    question: &String = &"How are you?",
+) -> String
+    let out = "Hello, my name is {name}"
+
+    if country
+        out += ", and I am from {country}"
     ;
 
-    do return it if cache[n]
+    out += ". {question}"
 
-    const prev1 = nth_fib(n - 1, cache)
-    const prev2 = nth_fib(n - 2, cache)
-
-    const fib = prev1 + prev2
-
-    cache[n] = fib
-
-    return fib
+    return out
 ;
 ```
 
-## The Oxidize Build Tool
+Would output Rust code that looks something like:
+```rust
+use ferrum_runtime::lang as fe;
+use ferrum_runtime::std::prelude::*;
+use ferrum_runtime::std::time::Duration;
 
-Ideally this project will just be a CLI that allows you to interface with the compiler, but the actual compiler I call `oxidize`, which will be a separate crate.
+fn main() -> fe::Result<()> {
+    const MAX_SECS: fe::UInt = fe::UInt::_10;
+    const TIMEOUT_MS: fe::UInt = fe::UInt::_10_000;
 
-This way it should be easy to programmatically interface with the compiler for anyone who's interested.
+    let mut tasks = AsyncTasks::new();
 
-## Why?
+    let finished_task_ids = FeMutex::new(fe::list![]);
 
-Rust is a fantastic programming language that changes the status-quo. But it's a self-proclaimed "systems" programming language, designed for low-level programming including interacting with hardware, full memory control, unsafe code, and many other features that are unnecessary for most non-systems programming.
+    for (idx, secs) in [fe::UInt::_0, fe::UInt::_2, fe::UInt::_5, MAX_SECS] {
 
-The goal of this language is to take the lessons from Rust, and apply them to a higher-level "general-purpose" programming language that is built on Rust. Concepts like managing mutability, compile-time match guarantees, possibly ownership & borrowing, and more. But also without ever worrying about lifetimes; making unique / shared memory easy with opt-in automatic reference counting; a single, easy to use, string type; string templating; variable arguments; dynamic lists by default; and much more!
+        tasks.start_soon(async {
+            print(fe::format!("Task {}: Pre-sleep", idx));
 
-Of course, building some of these concepts means losing some performance. But for the average programmer, the loss in performance should be minimal compared to the gain in accessibility.
+            sleep(Duration::from_secs(secs)).await;
 
+            print(fe::format!("Task {}: Post-sleep", idx));
 
+            let mut lock = finished_task_ids.await_lock().await;
+            let mut list = lock.open();
+
+            list.push(idx);
+        });
+    }
+
+    tasks.await_all(fe::Some(TIMEOUT_MS)).await;
+
+    print(fe::format!("{}", finished_task_ids.into_inner()));
+
+    let people = fe::list![
+        Person::new(FeString::from_static("Adam Bates"), fe::Some(FeString::from_static("Canada"))),
+        Person::new(FeString::from_static("Stranger"), fe::None),
+    ];
+
+    for person in people {
+        let hello = {
+            let _question = FeString::from_static("How's it going?");
+
+            say_hello(
+                &person,
+                &_question,
+            )
+        };
+
+        print(hello);
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Person {
+    name: FeString,
+    country: fe::Option<FeString>,
+}
+
+impl Person {
+    pub fn new(name: FeString, country: fe::Option<FeString>) -> Self {
+        return Self {
+            name,
+            country,
+        };
+    }
+}
+
+fn say_hello(
+    person_: &Person,
+    question_: fe::Option<&FeString>,
+) -> FeString {
+    let name = &person_.name;
+    let country = &person_.country;
+    
+    let mut question_default_ = std::mem::MaybeUninit::<FeString>::zeroed();
+    let question: &FeString = {
+        match question_ {
+            fe::Some(question) => question,
+            fe::None => {
+                question_default_.write(FeString::from_static("How are you?"));
+                unsafe { question_default_.assume_init_ref() }
+            },
+        }
+    };
+
+    let mut out = fe::format!("Hello, my name is {}", name);
+
+    if let Some(country) = country {
+        out.append(fe::format!(", and I am from {}", country));
+    }
+
+    out.append(fe::format!(". {}", question));
+
+    return out;
+}
+```
