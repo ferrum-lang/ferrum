@@ -190,7 +190,7 @@ fn say_hello(
     let country = &person_.country;
     
     // Only allocate & use default value when question_ is None
-    let mut question_default_ = std::mem::MaybeUninit::<FeString>::zeroed();
+    let mut question_default_ = std::mem::MaybeUninit::<FeString>::uninit();
     let question: &FeString = {
         match question_ {
             fe::Some(question) => question,
@@ -208,6 +208,11 @@ fn say_hello(
     }
 
     out.append(fe::format!(". {}", question));
+
+    if question_.is_none() {
+        // Drop default value
+        let _ = unsafe { question_default_.assume_init() };
+    }
 
     return out;
 }
