@@ -47,7 +47,7 @@ use fe::{
 static const MAX_SECS = 10
 static const TIMEOUT_SECS = MAX_SECS + 1
 
-pub safe fn main()
+pub safe fn main(): !
     // Run multiple asynchronous tasks concurrently,    
     // and in parallel if system has multiple cpu cores
     let tasks = AsyncTasks()
@@ -125,8 +125,8 @@ use ferrum_runtime::std::{
 
 #[fe::async_main]
 async fn main() -> fe::Result<()> {
-    const MAX_SECS: fe::UInt = fe::UInt::_10;
-    const TIMEOUT_MS: fe::UInt = fe::UInt::_10_000;
+    const MAX_SECS: fe::UInt = fe::UInt::C_10;
+    const TIMEOUT_SECS: fe::UInt = fe::UInt::C_11;
 
     let mut tasks = AsyncTasks::new();
 
@@ -148,16 +148,16 @@ async fn main() -> fe::Result<()> {
         });
     }
 
-    tasks.await_all(fe::Some(TIMEOUT_MS)).await?;
+    tasks.await_all(fe::Some(Duration::from_secs(TIMEOUT_SECS.clone()))).await?;
 
     print(fe::format!("{}", finished_task_ids.into_inner()));
 
-    f1()?;
+    f1();
 
     fe::Ok(())
 }
 
-fn f1() -> fe::Result<()> {
+fn f1() {
     let people = fe::list![
         Person::new(FeString::from_static("Adam Bates"), fe::Some(FeString::from_static("Canada"))),
         Person::new(FeString::from_static("Stranger"), fe::None),
@@ -175,8 +175,6 @@ fn f1() -> fe::Result<()> {
 
         print(hello);
     }
-
-    fe::Ok(())
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
