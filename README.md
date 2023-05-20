@@ -17,7 +17,6 @@ A lot of the heavy lifting is done by Rust, and by the available std library (wh
 
 Some notable differences between Ferrum and Rust:
 
-- Ferrum's `stable` keyword guarantees at compile-time that there are no panicing code-paths
 - Ferrum has 3 types of functions: `pure`, `safe`, and `unsafe`
     * `pure` functions are safe functions that have 0 side-effects, and will always produce the same output given the same input
     * `safe` functions are normal code functions, but have no codepaths that can cause a runtime panic
@@ -46,7 +45,7 @@ use fe::{
 }
 
 static const MAX_SECS = 10
-static const TIMEOUT_MS = (MAX_SECS + 1) * 1000
+static const TIMEOUT_SECS = MAX_SECS + 1
 
 pub safe fn main()
     // Run multiple asynchronous tasks concurrently,    
@@ -70,7 +69,7 @@ pub safe fn main()
         ;)
     ;
     
-    tasks.await_all(timeout_ms = TIMEOUT_MS)!
+    tasks.await_all(timeout = Duration::from_secs(TIMEOUT_SECS))!
     
     print(finished_task_ids.unwrap())
 
