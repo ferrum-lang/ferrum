@@ -9,7 +9,7 @@ This language is a work in progress. The ideas & implementations are still being
 
 Ferrum is meant to be a simplified, batteries-included rust-like programming language, for high-level software development.
 
-The goal of the language is to make high-performance high-level software development easier & safer. This goal is achieved by providing a trimmed-down rust-like language, with strong opinions and a fully-featured std library.
+The goal of the language is to make high-performance high-level software development easier & safer. This goal is achieved by providing a trimmed-down rust-like language, with strong opinions and a fully-featured library.
 
 ## Language Design
 
@@ -18,16 +18,15 @@ A lot of the heavy lifting is done by Rust, and by the available std library (wh
 Some notable differences between Ferrum and Rust:
 
 - Ferrum's `stable` keyword guarantees at compile-time that there are no panicing code-paths
-- Ferrum does not have `unsafe`
+- Ferrum has 3 types of functions: `pure`, `safe`, and `unsafe`
+    * `pure` functions are safe functions that have 0 side-effects, and will always produce the same output given the same input
+    * `safe` functions are normal code functions, but have no codepaths that can cause a runtime panic
+    * `unsafe` functions are normal code functions that can cause runtime panics
 - Ferrum does not have macros
-- Ferrum's main `fn` is optional
-  - The entry file `./src/_main.fe` will allow top-level statements only if no main `fn` is defined
 - Every Ferrum `fn` is capable of running concurrently
   - An async runtime (`tokio`) will be baked in to the binary only when required
 - Iterations that can be run in parallel will be
   - A parallel executor (`rayon`) will be baked in to the binary only when required
-- Ferrum makes optional garbage collection easy
-  - A garbage collector (`shredder`) will be baked in to the binary only when required
 - Ferrum code blocks don't use braces `{}`, instead:
   - Some syntax can open a code block, ie `for`-statements and `fn`s
   - Code blocks are closed with semicolons `;`
@@ -40,38 +39,43 @@ Example program in Ferrum vs Rust
 
 The following Ferrum code:
 ```rust
-use std::prelude::*
+use fe::{
+    print,
+    async::{ AsyncTasks, Mutex, },
+    time::{ Duration, sleep, },
+}
 
-use std::time::Duration
+static const MAX_SECS = 10
+static const TIMEOUT_MS = (MAX_SECS + 1) * 1000
 
-const MAX_SECS = 10
-const TIMEOUT_MS = (MAX_SECS + 1) * 1000
+pub safe fn main()
+    // Run multiple asynchronous tasks concurrently,    
+    // and in parallel if system has multiple cpu cores
+    let tasks = AsyncTasks()
+    
+    let finished_task_ids = Mutex([])
+    
+    for secs, idx in [0, 2, 5, MAX_SECS]
+        tasks.start_soon(() -> do
+            print("Task {idx}: Pre-sleep")
+    
+            sleep(Duration::from_secs(secs))
+    
+            print("Task {idx}: Post-sleep")
+    
+            let lock = finished_task_ids.await_lock()
+            let list = lock.open()
+    
+            list.push(idx)
+        ;)
+    ;
+    
+    tasks.await_all(timeout_ms = TIMEOUT_MS)!
+    
+    print(finished_task_ids.unwrap())
 
-// Run multiple asynchronous tasks concurrently,
-// and in parallel if system has multiple cpu cores
-let tasks = AsyncTasks()
-
-const finished_task_ids = Mutex([])
-
-for secs, idx in [0, 2, 5, MAX_SECS]
-
-    tasks.start_soon(() => do
-        print("Task {idx}: Pre-sleep")
-
-        sleep(Duration::from_secs(secs))
-
-        print("Task {idx}: Post-sleep")
-
-        let lock = finished_task_ids.await_lock()
-        let list = lock.open()
-
-        list.push(idx)
-    ;)
+    f1()
 ;
-
-tasks.await_all(timeout_ms = TIMEOUT_MS)!
-
-print(finished_task_ids.into_inner())
 
 // Structs look like Rust, but come with a constructor, Clone, Debug, PartialEq, Eq, etc...
 struct Person {
@@ -79,23 +83,23 @@ struct Person {
     country: ?String,
 }
 
-const people = [
-    Person("Adam Bates", "Canada"),
-    Person("Stranger")
-]
+safe fn f1()
+    const people = [
+        Person("Adam Bates", "Canada"),
+        Person("Stranger")
+    ]
 
-
-for person in people
-    const hello = say_hello(
-        question = &"How's it going?",
-        &person,
-    )
-
-    print(hello)
+    for person in people
+        const hello = say_hello(
+            question = &"How's it going?",
+            &person,
+        )
+        
+        print(hello)
+    ;
 ;
 
-
-fn say_hello(
+pure fn say_hello(
     { name, country }: &Person,
     question: &String = &"How are you?",
 ) -> String
@@ -114,8 +118,11 @@ fn say_hello(
 Would output Rust code that looks something like:
 ```rust
 use ferrum_runtime::lang as fe;
-use ferrum_runtime::std::prelude::*;
-use ferrum_runtime::std::time::Duration;
+use ferrum_runtime::std::{
+    print,
+    r#async::{ AsyncTasks, FeMutex },
+    time::{ Duration, sleep },
+};
 
 #[fe::async_main]
 async fn main() -> fe::Result<()> {
@@ -124,7 +131,7 @@ async fn main() -> fe::Result<()> {
 
     let mut tasks = AsyncTasks::new();
 
-    let finished_task_ids = FeMutex::new(fe::list![]);
+    let mut finished_task_ids = FeMutex::new(fe::list![]);
 
     for (idx, secs) in [fe::UInt::_0, fe::UInt::_2, fe::UInt::_5, MAX_SECS] {
 
@@ -146,6 +153,12 @@ async fn main() -> fe::Result<()> {
 
     print(fe::format!("{}", finished_task_ids.into_inner()));
 
+    f1()?;
+
+    fe::Ok(())
+}
+
+fn f1() -> fe::Result<()> {
     let people = fe::list![
         Person::new(FeString::from_static("Adam Bates"), fe::Some(FeString::from_static("Canada"))),
         Person::new(FeString::from_static("Stranger"), fe::None),
