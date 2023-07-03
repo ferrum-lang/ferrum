@@ -1,2 +1,0 @@
-pub fn do_something_crazy(name: str, age: str) -> str
-

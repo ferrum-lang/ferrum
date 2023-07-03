@@ -5,9 +5,7 @@ use std::path::PathBuf;
 fn main() -> Result {
     let mut args = std::env::args().skip(1);
 
-    let target_dir = args
-        .next()
-        .unwrap_or_else(|| String::from("."));
+    let target_dir = args.next().unwrap_or_else(|| String::from("."));
 
     let target_dir = PathBuf::from(target_dir);
 
@@ -26,8 +24,7 @@ fn main() -> Result {
 
     let project = ferrum_oxidize::build_project(config)?;
 
-    let output = std::process::Command::new(project.out_file)
-        .output()?;
+    let output = std::process::Command::new(project.out_file).output()?;
 
     if !output.status.success() {
         let stderr = output.stderr;
