@@ -7,5 +7,5 @@ edition = "2021"
 
 [dependencies]
 structopt = "0.3.13"
-ferrum_compiler = { path = "../ferrum_compiler" }
+ferrum_compiler = { path = "./ferrum_compiler" }
 

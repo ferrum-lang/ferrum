@@ -1,0 +1,3 @@
+[submodule "ferrum_compiler"]
+	path = ferrum_compiler
+	url = git@github.com:ferrum-lang/ferrum_compiler.git
