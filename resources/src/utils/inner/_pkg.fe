@@ -1,7 +1,0 @@
-use ~/other::{self, foo}
-
-pub fn lol() => pass
-
-fn abc_123() => pass
-
-

@@ -1,6 +1,8 @@
-use ferrum_oxidize::Result;
+use ferrum_compiler::helpers;
+use ferrum_compiler::result::Result;
 
 use std::path::PathBuf;
+use std::process;
 
 fn main() -> Result {
     let mut args = std::env::args().skip(1);
@@ -9,38 +11,28 @@ fn main() -> Result {
 
     let target_dir = PathBuf::from(target_dir);
 
-    let verbose = match args.next() {
-        Some(arg) if arg.as_str() == "-v" => true,
-        _ => false,
-    };
+    // let verbose = match args.next() {
+    //     Some(arg) if arg.as_str() == "-v" => true,
+    //     _ => false,
+    // };
 
-    let config = ferrum_oxidize::Config {
-        entry_file: Some(target_dir.join(PathBuf::from("src/_main.fe"))),
-        build_dir: Some(target_dir.join(PathBuf::from(".ferrum/cargo_gen"))),
-        out_file: Some(target_dir.join(PathBuf::from("main"))),
-        verbose,
-        ..Default::default()
-    };
+    // TODO: support config in compiler
+    // let config = Config {
+    //     entry_file: Some(target_dir.join(PathBuf::from("src/_main.fe"))),
+    //     build_dir: Some(target_dir.join(PathBuf::from(".ferrum/cargo_gen"))),
+    //     out_file: Some(target_dir.join(PathBuf::from("main"))),
+    //     verbose,
+    //     ..Default::default()
+    // };
 
-    let project = ferrum_oxidize::build_project(config)?;
+    let out = helpers::run_full(target_dir)?;
 
-    let output = std::process::Command::new(project.out_file).output()?;
+    let _ = process::Command::new("clear").status()?;
 
-    if !output.status.success() {
-        let stderr = output.stderr;
-        let string = String::from_utf8(stderr)?;
+    // println!("{}", String::from_utf8(out.stderr)?);
+    // println!("Output:\n------\n");
 
-        panic!("{}", string);
-    }
-
-    let stdout = output.stdout;
-    let string = String::from_utf8(stdout)?;
-
-    if verbose {
-        println!("\n\n*** OUTPUT ***\n{}*** END ***", string);
-    } else {
-        println!("{string}");
-    }
+    println!("{}", String::from_utf8(out.stdout)?);
 
     return Ok(());
 }

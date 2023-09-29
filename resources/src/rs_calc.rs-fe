@@ -1,1 +1,0 @@
-pub fn get_longest(a: &str, b: &str) -> &str
