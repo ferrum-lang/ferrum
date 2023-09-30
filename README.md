@@ -64,4 +64,4 @@ fn main()
 ;
 ```
 
-For more examples, see [ferrum_compiler/examples](https://github.com/ferrum-lang/ferrum_compiler/tree/main/examples)
+For more examples, see [examples](https://github.com/ferrum-lang/ferrum/tree/main/examples)
