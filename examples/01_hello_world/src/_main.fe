@@ -1,0 +1,5 @@
+use ::fe::print
+
+pub fn main()
+    print("Hello, world!")
+;

@@ -1,0 +1,22 @@
+use ::fe::print
+
+pub fn main()
+    mut n = 0
+
+    while n <= 25
+    	print("fib({n}): {nth_fib(n)}")
+
+    	n += 1
+    ;
+;
+
+// Slow recursive implementation
+
+fn nth_fib(n: Int): Int
+    if n <= 1
+    	return 1
+    ;
+
+    return nth_fib(n - 1) + nth_fib(n - 2)
+;
+
