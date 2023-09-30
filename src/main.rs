@@ -1,3 +1,5 @@
+#![allow(clippy::needless_return)]
+
 use ferrum_compiler::helpers;
 use ferrum_compiler::result::Result;
 
