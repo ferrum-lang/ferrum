@@ -1,8 +1,10 @@
+#![allow(clippy::needless_return)]
+
 use ferrum_compiler::helpers;
 use ferrum_compiler::result::Result;
 
 use std::path::PathBuf;
-use std::process;
+// use std::process;
 
 fn main() -> Result {
     let mut args = std::env::args().skip(1);
@@ -27,12 +29,12 @@ fn main() -> Result {
 
     let out = helpers::run_full(target_dir)?;
 
-    let _ = process::Command::new("clear").status()?;
+    // let _ = process::Command::new("clear").status()?;
 
     // println!("{}", String::from_utf8(out.stderr)?);
     // println!("Output:\n------\n");
 
-    println!("{}", String::from_utf8(out.stdout)?);
+    print!("{}", String::from_utf8(out.stdout)?);
 
     return Ok(());
 }

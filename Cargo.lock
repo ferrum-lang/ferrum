@@ -59,7 +59,9 @@ dependencies = [
 
 [[package]]
 name = "ferrum_compiler"
-version = "0.1.0"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d82f9ef30c2f422bfcb4de122e15d791c514ac5f00228094c687cce9aa4f6b2f"
 dependencies = [
  "anyhow",
  "lazy_static",
