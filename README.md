@@ -1,5 +1,7 @@
 # The Ferrum Programming Language
 
+[![CI](https://github.com/ferrum-lang/ferrum/actions/workflows/ci.yml/badge.svg)](https://github.com/ferrum-lang/ferrum/actions/workflows/ci.yml)
+
 **Note:** This language is a work in progress. The designs and implementations are unstable.
 
 ## Another Programming Language?
