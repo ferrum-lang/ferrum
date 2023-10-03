@@ -5,8 +5,6 @@ use ferrum_compiler::result::Result;
 
 use std::env;
 
-use env_logger;
-
 fn main() -> Result {
     env_logger::init();
 
