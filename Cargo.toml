@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-structopt = "0.3.13"
-ferrum_compiler = "*"
+env_logger = "0.10.0"
+ferrum_compiler = "0.0.2"
+log = "0.4.20"
 
